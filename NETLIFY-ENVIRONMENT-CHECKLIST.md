@@ -2,6 +2,19 @@
 
 Add these values in Netlify under **Project configuration > Environment variables**. Do not add the Firebase JSON file or Cloudinary secret to GitHub.
 
+## Netlify secret-scanner exceptions
+
+Firebase's `NEXT_PUBLIC_*` settings are intentionally sent to the browser. The included `netlify.toml` excludes only those public keys from Netlify's environment-value scan and safelists the Firebase auth domain for smart detection. Secret scanning remains enabled for the Firebase service account and other private credentials.
+
+If an existing Netlify project has not received the updated `netlify.toml`, add these two ordinary environment variables manually:
+
+```text
+SECRETS_SCAN_OMIT_KEYS=NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_SITE_URL
+SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES=haykalelaine-1ac3f.firebaseapp.com
+```
+
+Do not mark these two scanner-configuration variables as secret.
+
 ## Already identified
 
 ```text
