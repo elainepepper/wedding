@@ -1,0 +1,23 @@
+import { adminAuth, weddingRef } from "./firebase-admin";
+
+export type AdminIdentity = { uid: string; displayName: string; email: string; role: "owner" | "partner" | "planner" };
+
+export async function requireAdmin(request: Request): Promise<AdminIdentity | null> {
+  const authorization = request.headers.get("authorization") ?? "";
+  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  if (!token) return null;
+  try {
+    const decoded = await adminAuth.verifyIdToken(token, true);
+    const email = decoded.email?.toLowerCase();
+    if (!email) return null;
+    const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
+    if (email === ownerEmail) return { uid: decoded.uid, email, displayName: decoded.name || email, role: "owner" };
+    const access = await weddingRef.collection("admins").where("email", "==", email).where("active", "==", true).limit(1).get();
+    if (access.empty) return null;
+    const record = access.docs[0].data() as { name?: string; role?: "partner" | "planner" };
+    if (record.role !== "partner" && record.role !== "planner") return null;
+    return { uid: decoded.uid, email, displayName: record.name || decoded.name || email, role: record.role };
+  } catch {
+    return null;
+  }
+}

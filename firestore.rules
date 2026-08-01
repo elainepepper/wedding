@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All wedding data is accessed by trusted Next.js route handlers using the
+    // Firebase Admin SDK. Guests cannot query tokens, internal notes, manager
+    // access, after-party permissions, party size or other guest records.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
