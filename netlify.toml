@@ -9,6 +9,9 @@
   # Keep scanning enabled for genuine server-side secrets.
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_SITE_URL"
   SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "haykalelaine-1ac3f.firebaseapp.com"
+  # Firebase's installed TypeScript declarations contain example AIza keys.
+  # Disable pattern guessing while retaining literal scanning for marked secrets.
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 [[headers]]
   for = "/*"

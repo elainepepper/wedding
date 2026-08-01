@@ -11,9 +11,10 @@ If an existing Netlify project has not received the updated `netlify.toml`, add 
 ```text
 SECRETS_SCAN_OMIT_KEYS=NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_SITE_URL
 SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES=haykalelaine-1ac3f.firebaseapp.com
+SECRETS_SCAN_SMART_DETECTION_ENABLED=false
 ```
 
-Do not mark these two scanner-configuration variables as secret.
+Do not mark these scanner-configuration variables as secret. Smart detection is disabled because Firebase's installed declaration files contain example `AIza` strings. Literal scanning remains enabled for environment variables marked as secrets; do not set `SECRETS_SCAN_ENABLED=false`.
 
 ## Already identified
 

@@ -6,7 +6,23 @@ export const WEDDING_ID = "elaine-haykal-2026";
 
 function serviceAccount() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  return raw ? cert(JSON.parse(raw.replace(/\r?\n/g, "\\n"))) : applicationDefault();
+  if (!raw) return applicationDefault();
+
+  const parsed = JSON.parse(raw) as {
+    project_id?: string;
+    client_email?: string;
+    private_key?: string;
+  };
+
+  if (!parsed.project_id || !parsed.client_email || !parsed.private_key) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is missing required service-account fields.");
+  }
+
+  return cert({
+    projectId: parsed.project_id,
+    clientEmail: parsed.client_email,
+    privateKey: parsed.private_key.replace(/\\n/g, "\n"),
+  });
 }
 
 const app = getApps()[0] ?? initializeApp({
