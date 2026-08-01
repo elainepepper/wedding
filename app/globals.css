@@ -2558,3 +2558,189 @@ legend {
   .cinematic-layer--mid { width: 92vw; opacity: calc(.32 - var(--welcome-portal) * .16); }
   .cinematic-layer--left { left: -34vw; bottom: -13vh; width: 98vw; opacity: calc(.62 - var(--welcome-portal) * .22); }
 }
+
+/* v6 spatial layout: deeper prologue, clear central copy, framed venue map. */
+.cinematic-stage {
+  perspective: 1100px;
+  perspective-origin: 50% 48%;
+  transform-style: preserve-3d;
+}
+
+.cinematic-film-wash {
+  translate: 0 0 -220px;
+  scale: 1.26;
+}
+
+.cinematic-layer {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.cinematic-layer--far {
+  top: -16vh;
+  width: min(1180px, 92vw);
+  translate: 0 0 -170px;
+  opacity: calc(.76 - var(--welcome-portal) * .34);
+}
+
+.cinematic-layer--mid {
+  top: auto;
+  bottom: -26vh;
+  width: min(1120px, 88vw);
+  translate: 0 0 -60px;
+  opacity: calc(.42 - var(--welcome-portal) * .22);
+  transform: translate3d(calc(-50% + var(--pointer-x) * 11px), calc(var(--pointer-y) * 7px + var(--welcome-portal) * 9vh), 0) rotateX(calc(var(--pointer-y) * -.8deg)) scale(calc(.9 + var(--welcome-portal) * .34));
+}
+
+.cinematic-layer--left {
+  left: -23vw;
+  bottom: -32vh;
+  width: min(980px, 70vw);
+  translate: 0 0 110px;
+  opacity: calc(.76 - var(--welcome-portal) * .3);
+  transform: translate3d(calc(var(--welcome-portal) * -22vw + var(--pointer-x) * 25px), calc(var(--welcome-portal) * 12vh + var(--pointer-y) * 14px), 0) rotate(calc(-12deg - var(--welcome-portal) * 8deg)) scale(calc(.86 + var(--welcome-portal) * .6));
+}
+
+.cinematic-layer--right {
+  right: -18vw;
+  top: -25vh;
+  bottom: auto;
+  width: min(790px, 54vw);
+  translate: 0 0 155px;
+  opacity: calc(.72 - var(--welcome-portal) * .28);
+  transform: translate3d(calc(var(--welcome-portal) * 22vw + var(--pointer-x) * -28px), calc(var(--welcome-portal) * -8vh + var(--pointer-y) * -15px), 0) rotate(calc(11deg + var(--welcome-portal) * 9deg)) scale(calc(.86 + var(--welcome-portal) * .58));
+}
+
+.cinematic-portal {
+  transform-style: preserve-3d;
+  transform: translate3d(-50%, -50%, 25px) rotateX(calc(var(--pointer-y) * -.7deg)) rotateY(calc(var(--pointer-x) * .8deg)) scale(calc(.78 + var(--welcome-portal) * .36));
+}
+
+.cinematic-copy {
+  top: 50%;
+  z-index: 8;
+  min-height: min(58vh, 560px);
+  padding: clamp(2rem, 5vw, 4.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  translate: 0 0 120px;
+  text-align: center;
+}
+
+.cinematic-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8% -4%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(239, 211, 203, .94) 0 28%, rgba(239, 211, 203, .72) 52%, transparent 76%);
+  filter: blur(4px);
+}
+
+.cinematic-copy--intro,
+.cinematic-copy--names,
+.cinematic-copy--date { transform-origin: 50% 50%; }
+
+/* The venue map is now a square exhibit beside the travel information. */
+.scene--venue {
+  min-height: 100svh;
+  padding: clamp(5.5rem, 8vw, 8rem) clamp(1.25rem, 6vw, 6rem);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 520px);
+  grid-template-rows: auto;
+  gap: clamp(2rem, 5vw, 6rem);
+  align-items: center;
+}
+
+.venue-card {
+  position: relative;
+  top: auto;
+  grid-column: 1;
+  grid-row: 1;
+  width: min(680px, 100%);
+  min-height: auto;
+  margin: 0;
+  padding: 0;
+  justify-self: end;
+}
+
+.venue-map {
+  position: relative;
+  top: auto;
+  grid-column: 2;
+  grid-row: 1;
+  width: min(100%, 520px);
+  height: auto;
+  aspect-ratio: 1;
+  justify-self: start;
+  border: clamp(8px, 1vw, 14px) solid rgba(239, 211, 203, .92);
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(190, 106, 121, .24), 14px 16px 0 rgba(192, 122, 134, .2);
+  transform: translate3d(calc(var(--pointer-x) * -5px), calc(var(--pointer-y) * -4px), 0) rotate(calc(var(--pointer-x) * .35deg));
+}
+
+.venue-map::after { content: none; }
+.venue-map iframe { transform: none; }
+
+/* The wishes copy gets a clean central field; the lace stays below it. */
+.scene--wishes {
+  background: radial-gradient(circle at 50% 38%, rgba(239, 211, 203, .95), transparent 46%), linear-gradient(155deg, var(--fairy), rgba(221, 168, 165, .55));
+}
+
+#wishes::before { opacity: .08; left: -12vw; }
+
+.scene-art--wishes-lace {
+  left: 50%;
+  bottom: -21vh;
+  width: min(1050px, 88vw);
+  max-height: 52vh;
+  object-fit: contain;
+  opacity: .34;
+  filter: drop-shadow(0 24px 48px rgba(190, 106, 121, .14));
+  transform: translate3d(calc(-50% + var(--pointer-x) * 7px), calc((1 - var(--scene-progress)) * 7vh + var(--pointer-y) * 5px), 0) scale(calc(.92 + var(--scene-progress) * .12));
+}
+
+.wishes-card {
+  width: min(590px, 88vw);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border: 1px solid rgba(190, 106, 121, .24);
+  border-radius: 44% 44% 18px 18px / 12% 12% 18px 18px;
+  background: rgba(239, 211, 203, .82);
+  box-shadow: 0 30px 80px rgba(190, 106, 121, .12);
+  backdrop-filter: blur(12px);
+}
+
+.wishes-card .script-kicker { margin-top: .25rem; }
+
+@media (max-width: 760px) {
+  .cinematic-stage { perspective: 850px; }
+  .cinematic-copy { width: min(92vw, 580px); min-height: 56vh; padding: 2rem 1.15rem; translate: 0 0 70px; }
+  .cinematic-layer--far { top: -7vh; width: 128vw; }
+  .cinematic-layer--mid { bottom: -8vh; width: 122vw; }
+  .cinematic-layer--left { left: -42vw; bottom: -10vh; width: 105vw; opacity: calc(.56 - var(--welcome-portal) * .22); }
+  .cinematic-layer--right { display: block; right: -48vw; top: -9vh; width: 96vw; opacity: calc(.48 - var(--welcome-portal) * .2); }
+
+  .scene--venue {
+    min-height: auto;
+    padding: 5.5rem 1.2rem 4rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 2.5rem;
+  }
+  .venue-card { grid-column: 1; grid-row: 1; width: 100%; justify-self: stretch; }
+  .venue-map { grid-column: 1; grid-row: 2; width: min(100%, 430px); justify-self: center; transform: none; }
+  .map-button { align-self: center; }
+
+  .scene-art--wishes-lace { bottom: -7vh; width: 130vw; opacity: .25; }
+  .wishes-card { width: min(94vw, 590px); padding: 2rem 1.15rem; border-radius: 80px 80px 18px 18px / 30px 30px 18px 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-film-wash,
+  .cinematic-layer,
+  .cinematic-copy { translate: 0; scale: 1; }
+  .venue-map,
+  .scene-art--wishes-lace { transform: none; }
+}
