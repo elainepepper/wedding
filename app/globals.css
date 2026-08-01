@@ -318,6 +318,206 @@
   .recommendation-glow { transform: none; }
 }
 
+/* 2026 palette refinement: the public invitation stays airy and within the
+   couple's five-pink art direction. Dark neutrals are reserved for readable text. */
+.wedding-shell--storybook {
+  --enchanted: var(--coral);
+  --enchanted-dark: var(--manhattan);
+  --lantern: var(--fairy);
+}
+
+.wedding-shell--storybook .scene--welcome,
+.scene--cinematic,
+.cinematic-stage {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(239, 211, 203, .96) 0 22%, rgba(221, 168, 165, .58) 54%, transparent 76%),
+    linear-gradient(150deg, var(--fairy) 0%, var(--pastel) 48%, var(--rhapsodic) 76%, var(--coral) 100%);
+}
+
+.storybook-canopy {
+  background:
+    radial-gradient(ellipse at 8% 20%, var(--manhattan) 0 20%, transparent 21%),
+    radial-gradient(ellipse at 25% 0%, var(--coral) 0 24%, transparent 25%),
+    radial-gradient(ellipse at 75% 0%, var(--coral) 0 24%, transparent 25%),
+    radial-gradient(ellipse at 92% 20%, var(--manhattan) 0 20%, transparent 21%);
+  opacity: .3;
+}
+
+.lantern {
+  color: var(--manhattan);
+  border-color: rgba(190, 106, 121, .45);
+  background: radial-gradient(circle, var(--fairy) 0 16%, var(--pastel) 42%, rgba(220, 157, 150, .18) 74%);
+  box-shadow: 0 0 45px 18px rgba(239, 211, 203, .42);
+}
+
+.wedding-shell--storybook .hero-content,
+.wedding-shell--storybook .hero-content h1,
+.wedding-shell--storybook .hero-content .guest-name-label {
+  color: var(--ink);
+  text-shadow: 0 3px 24px rgba(239, 211, 203, .82);
+}
+
+.scene--invitation,
+.scene--paper,
+.scene--pearl,
+.scene--wishes {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(221, 168, 165, .32), transparent 32%),
+    linear-gradient(145deg, var(--fairy), rgba(239, 211, 203, .55));
+}
+
+.scene--blush {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(239, 211, 203, .7), transparent 38%),
+    linear-gradient(145deg, var(--pastel), var(--rhapsodic));
+}
+
+.scene--blush::after { border-color: rgba(190, 106, 121, .42); }
+.dress-card h2 { color: var(--ink); }
+.dress-card > p:not(.step-label):not(.script-kicker) { color: rgba(87, 45, 57, .82); }
+.script-kicker,
+.scene--blush .ribbon-divider,
+.scene--blush .step-label { color: var(--manhattan); }
+.swatches [title="Enchanted green"] { background: var(--manhattan) !important; }
+
+.wedding-shell--storybook .primary-button {
+  color: var(--fairy);
+  background: var(--manhattan);
+  box-shadow: 0 12px 28px rgba(190, 106, 121, .2);
+}
+
+.wedding-shell--storybook .primary-button:hover,
+.wedding-shell--storybook .primary-button:focus-visible { background: var(--coral); }
+
+.scene--venue {
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--fairy), var(--pastel) 52%, var(--rhapsodic));
+}
+
+.venue-map::after {
+  background: linear-gradient(90deg, rgba(239, 211, 203, .12), rgba(239, 211, 203, .78) 66%, rgba(221, 168, 165, .96));
+}
+
+.venue-map iframe { filter: grayscale(.42) sepia(.18) saturate(.72) hue-rotate(315deg) contrast(.86) brightness(1.08); }
+.venue-card .step-label,
+.venue-card h2,
+.venue-address,
+.arrival-grid h3,
+.arrival-grid p,
+.venue-card .text-button { color: var(--ink); }
+.arrival-grid article { border-color: rgba(190, 106, 121, .42); }
+.arrival-grid article > span { color: var(--manhattan); }
+.venue-card .text-button { border-color: rgba(190, 106, 121, .48); }
+
+.scene--recommendations {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(239, 211, 203, .9), transparent 27%),
+    radial-gradient(circle at 78% 78%, rgba(190, 106, 121, .2), transparent 30%),
+    linear-gradient(145deg, var(--fairy), var(--pastel) 54%, var(--rhapsodic));
+}
+
+.recommendation-glow {
+  background:
+    radial-gradient(circle at 12% 18%, var(--manhattan) 0 2px, transparent 4px),
+    radial-gradient(circle at 80% 26%, var(--coral) 0 2px, transparent 4px),
+    radial-gradient(circle at 62% 76%, var(--manhattan) 0 2px, transparent 4px);
+  opacity: .5;
+}
+
+.recommendations-card > .section-intro { color: rgba(87, 45, 57, .78); }
+.recommendation-grid a {
+  color: var(--ink);
+  border-color: rgba(190, 106, 121, .4);
+  background: rgba(239, 211, 203, .6);
+  box-shadow: 0 20px 50px rgba(190, 106, 121, .13);
+}
+.recommendation-grid a:hover,
+.recommendation-grid a:focus-visible { border-color: var(--manhattan); background: rgba(239, 211, 203, .82); }
+.recommendation-grid span,
+.recommendation-grid i { color: var(--manhattan); }
+.recommendation-grid p { color: rgba(87, 45, 57, .75); }
+
+.scene--confirmation {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(239, 211, 203, .9), transparent 31%),
+    linear-gradient(145deg, var(--pastel), var(--rhapsodic) 70%);
+}
+.scene--confirmation::after { border-color: rgba(190, 106, 121, .42); }
+.confirmation-card h2,
+.confirmation-card > p:not(.eyebrow),
+.confirmation-details,
+.scene--confirmation .text-button { color: var(--ink); }
+.wax-seal { color: var(--manhattan); border-color: rgba(190, 106, 121, .55); box-shadow: inset 0 0 0 5px rgba(239, 211, 203, .18), 0 0 30px rgba(190, 106, 121, .16); }
+.scene--confirmation .text-button { border-color: rgba(190, 106, 121, .45); }
+
+.cinematic-film-wash {
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(239, 211, 203, .96) 0 14%, rgba(221, 168, 165, .55) 42%, transparent 70%),
+    linear-gradient(180deg, rgba(239, 211, 203, .82), rgba(221, 168, 165, calc(.72 - var(--welcome-portal) * .2)) 56%, rgba(220, 157, 150, .84)),
+    linear-gradient(90deg, rgba(192, 122, 134, .22), transparent 28% 72%, rgba(190, 106, 121, .22));
+  box-shadow: inset 0 0 14vw rgba(190, 106, 121, .12);
+}
+
+.cinematic-layer {
+  filter: drop-shadow(0 24px 38px rgba(190, 106, 121, .18));
+}
+
+.cinematic-layer--far {
+  top: -8vh;
+  width: min(1050px, 86vw);
+  opacity: calc(.78 - var(--welcome-portal) * .3);
+}
+
+.cinematic-layer--mid {
+  top: 50%;
+  left: 50%;
+  width: min(760px, 62vw);
+  opacity: calc(.42 - var(--welcome-portal) * .2);
+  transform: translate3d(calc(-50% + var(--pointer-x) * 7px), calc(-50% + var(--pointer-y) * 5px + var(--welcome-portal) * -8vh), 0) scale(calc(.86 + var(--welcome-portal) * .42));
+}
+
+.cinematic-layer--left {
+  left: -16vw;
+  bottom: -30vh;
+  width: min(900px, 67vw);
+  opacity: calc(.7 - var(--welcome-portal) * .22);
+}
+
+.cinematic-layer--right {
+  right: -15vw;
+  bottom: -24vh;
+  width: min(790px, 58vw);
+  opacity: calc(.68 - var(--welcome-portal) * .2);
+}
+
+.cinematic-portal {
+  border-color: rgba(190, 106, 121, calc(.58 - var(--welcome-portal) * .2));
+  box-shadow: 0 0 0 1px rgba(239, 211, 203, .32), 0 0 90px rgba(190, 106, 121, .2), inset 0 0 90px rgba(239, 211, 203, .2);
+}
+.cinematic-portal::before,
+.cinematic-portal::after,
+.cinematic-portal span { border-color: rgba(190, 106, 121, .3); }
+
+.cinematic-copy { color: var(--ink); text-shadow: 0 3px 30px rgba(239, 211, 203, .7); }
+.cinematic-copy .eyebrow,
+.cinematic-copy h1,
+.cinematic-copy h2,
+.cinematic-copy > p:not(.eyebrow) { color: var(--ink); }
+.cinematic-copy h2 span { color: var(--manhattan); }
+.cinematic-copy--date .primary-button { color: var(--fairy); background: var(--manhattan); }
+.cinematic-copy--date .primary-button:hover { background: var(--coral); }
+
+@media (max-width: 760px) {
+  .venue-map::after { background: linear-gradient(180deg, transparent 42%, var(--fairy) 100%); }
+  .cinematic-layer--far { width: 118vw; }
+  .cinematic-layer--mid { width: 92vw; opacity: calc(.32 - var(--welcome-portal) * .16); }
+  .cinematic-layer--left { left: -34vw; bottom: -13vh; width: 98vw; }
+}
+
 /* Supplied French line-art and translucent tape — no generated illustrations. */
 #welcome::before,
 #invitation::before,
@@ -2272,4 +2472,89 @@ legend {
   .cinematic-copy--date h2,
   .cinematic-copy--date > p { display: none; }
   .cinematic-stage .scroll-cue { display: none; }
+}
+
+/* Final public-page palette lock. Keep this after the cinematic module. */
+.wedding-shell--storybook { --enchanted: var(--coral); --enchanted-dark: var(--manhattan); --lantern: var(--fairy); }
+.wedding-shell--storybook .scene--welcome,
+.scene--cinematic,
+.cinematic-stage {
+  color: var(--ink);
+  background: radial-gradient(circle at 50% 35%, rgba(239,211,203,.96) 0 22%, rgba(221,168,165,.58) 54%, transparent 76%), linear-gradient(150deg, var(--fairy) 0%, var(--pastel) 48%, var(--rhapsodic) 76%, var(--coral) 100%);
+}
+.wedding-shell--storybook .hero-content,
+.wedding-shell--storybook .hero-content h1,
+.wedding-shell--storybook .hero-content .guest-name-label { color: var(--ink); text-shadow: 0 3px 24px rgba(239,211,203,.82); }
+.scene--invitation,
+.scene--paper,
+.scene--pearl,
+.scene--wishes { background: radial-gradient(circle at 18% 15%, rgba(221,168,165,.32), transparent 32%), linear-gradient(145deg, var(--fairy), rgba(239,211,203,.55)); }
+.scene--blush { color: var(--ink); background: radial-gradient(circle at 50% 50%, rgba(239,211,203,.7), transparent 38%), linear-gradient(145deg, var(--pastel), var(--rhapsodic)); }
+.scene--blush::after { border-color: rgba(190,106,121,.42); }
+.dress-card h2 { color: var(--ink); }
+.dress-card > p:not(.step-label):not(.script-kicker) { color: rgba(87,45,57,.82); }
+.script-kicker,
+.scene--blush .ribbon-divider,
+.scene--blush .step-label { color: var(--manhattan); }
+.swatches [title="Enchanted green"] { background: var(--manhattan) !important; }
+.wedding-shell--storybook .primary-button { color: var(--fairy); background: var(--manhattan); box-shadow: 0 12px 28px rgba(190,106,121,.2); }
+.wedding-shell--storybook .primary-button:hover,
+.wedding-shell--storybook .primary-button:focus-visible { background: var(--coral); }
+
+.scene--venue { color: var(--ink); background: linear-gradient(135deg, var(--fairy), var(--pastel) 52%, var(--rhapsodic)); }
+.venue-map::after { background: linear-gradient(90deg, rgba(239,211,203,.12), rgba(239,211,203,.78) 66%, rgba(221,168,165,.96)); }
+.venue-map iframe { filter: grayscale(.42) sepia(.18) saturate(.72) hue-rotate(315deg) contrast(.86) brightness(1.08); }
+.venue-card .step-label,
+.venue-card h2,
+.venue-address,
+.arrival-grid h3,
+.arrival-grid p,
+.venue-card .text-button { color: var(--ink); }
+.arrival-grid article { border-color: rgba(190,106,121,.42); }
+.arrival-grid article > span { color: var(--manhattan); }
+.venue-card .text-button { border-color: rgba(190,106,121,.48); }
+
+.scene--recommendations { color: var(--ink); background: radial-gradient(circle at 18% 20%, rgba(239,211,203,.9), transparent 27%), radial-gradient(circle at 78% 78%, rgba(190,106,121,.2), transparent 30%), linear-gradient(145deg, var(--fairy), var(--pastel) 54%, var(--rhapsodic)); }
+.recommendation-glow { background: radial-gradient(circle at 12% 18%, var(--manhattan) 0 2px, transparent 4px), radial-gradient(circle at 80% 26%, var(--coral) 0 2px, transparent 4px), radial-gradient(circle at 62% 76%, var(--manhattan) 0 2px, transparent 4px); opacity: .5; }
+.recommendations-card > .section-intro { color: rgba(87,45,57,.78); }
+.recommendation-grid a { color: var(--ink); border-color: rgba(190,106,121,.4); background: rgba(239,211,203,.6); box-shadow: 0 20px 50px rgba(190,106,121,.13); }
+.recommendation-grid a:hover,
+.recommendation-grid a:focus-visible { border-color: var(--manhattan); background: rgba(239,211,203,.82); }
+.recommendation-grid span,
+.recommendation-grid i { color: var(--manhattan); }
+.recommendation-grid p { color: rgba(87,45,57,.75); }
+
+.scene--confirmation { color: var(--ink); background: radial-gradient(circle at 50% 42%, rgba(239,211,203,.9), transparent 31%), linear-gradient(145deg, var(--pastel), var(--rhapsodic) 70%); }
+.scene--confirmation::after { border-color: rgba(190,106,121,.42); }
+.confirmation-card h2,
+.confirmation-card > p:not(.eyebrow),
+.confirmation-details,
+.scene--confirmation .text-button { color: var(--ink); }
+.wax-seal { color: var(--manhattan); border-color: rgba(190,106,121,.55); box-shadow: inset 0 0 0 5px rgba(239,211,203,.18), 0 0 30px rgba(190,106,121,.16); }
+.scene--confirmation .text-button { border-color: rgba(190,106,121,.45); }
+
+.cinematic-film-wash { background: radial-gradient(ellipse at 50% 46%, rgba(239,211,203,.96) 0 14%, rgba(221,168,165,.55) 42%, transparent 70%), linear-gradient(180deg, rgba(239,211,203,.82), rgba(221,168,165,calc(.72 - var(--welcome-portal) * .2)) 56%, rgba(220,157,150,.84)), linear-gradient(90deg, rgba(192,122,134,.22), transparent 28% 72%, rgba(190,106,121,.22)); box-shadow: inset 0 0 14vw rgba(190,106,121,.12); }
+.cinematic-layer { filter: drop-shadow(0 24px 38px rgba(190,106,121,.18)); }
+.cinematic-layer--far { top: -8vh; width: min(1050px,86vw); opacity: calc(.78 - var(--welcome-portal) * .3); }
+.cinematic-layer--mid { top: 50%; left: 50%; width: min(760px,62vw); opacity: calc(.42 - var(--welcome-portal) * .2); transform: translate3d(calc(-50% + var(--pointer-x) * 7px),calc(-50% + var(--pointer-y) * 5px + var(--welcome-portal) * -8vh),0) scale(calc(.86 + var(--welcome-portal) * .42)); }
+.cinematic-layer--left { left: -16vw; bottom: -30vh; width: min(900px,67vw); opacity: calc(.7 - var(--welcome-portal) * .22); }
+.cinematic-layer--right { right: -15vw; bottom: -24vh; width: min(790px,58vw); opacity: calc(.68 - var(--welcome-portal) * .2); }
+.cinematic-portal { border-color: rgba(190,106,121,calc(.58 - var(--welcome-portal) * .2)); box-shadow: 0 0 0 1px rgba(239,211,203,.32), 0 0 90px rgba(190,106,121,.2), inset 0 0 90px rgba(239,211,203,.2); }
+.cinematic-portal::before,
+.cinematic-portal::after,
+.cinematic-portal span { border-color: rgba(190,106,121,.3); }
+.cinematic-copy { color: var(--ink); text-shadow: 0 3px 30px rgba(239,211,203,.7); }
+.cinematic-copy .eyebrow,
+.cinematic-copy h1,
+.cinematic-copy h2,
+.cinematic-copy > p:not(.eyebrow) { color: var(--ink); }
+.cinematic-copy h2 span { color: var(--manhattan); }
+.cinematic-copy--date .primary-button { color: var(--fairy); background: var(--manhattan); }
+.cinematic-copy--date .primary-button:hover { background: var(--coral); }
+
+@media (max-width: 760px) {
+  .venue-map::after { background: linear-gradient(180deg, transparent 42%, var(--fairy) 100%); }
+  .cinematic-layer--far { width: 118vw; opacity: calc(.7 - var(--welcome-portal) * .28); }
+  .cinematic-layer--mid { width: 92vw; opacity: calc(.32 - var(--welcome-portal) * .16); }
+  .cinematic-layer--left { left: -34vw; bottom: -13vh; width: 98vw; opacity: calc(.62 - var(--welcome-portal) * .22); }
 }

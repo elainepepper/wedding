@@ -1,12 +1,22 @@
 # Supplied artwork notes
 
-The decorative illustrations in `public/wedding/decor/` were selected from the two asset folders supplied by the site owner:
+All decorative imagery in `public/wedding/decor/` comes from artwork supplied by the site owner. No AI-generated or replacement illustrations were created.
 
-- `46-手绘法式浪漫元素png格式-复古红`
+The light cinematic landing scene uses selected elements from:
+
+- `vol.406白色蕾丝蝴蝶结-茶酱`
+- `可商用 拼贴风半透明丝带蝴蝶结免抠素材手账PNG设计元素24款`
 - `vol.403透明胶带`
 
-No replacement or AI-generated illustrations were created. The selected PNG artwork was resized and converted to transparent WebP files for faster website loading while preserving the original drawings.
+The selected PNG artwork was only resized and converted to transparent WebP for faster loading. The four landing assets are:
 
-The cinematic opening uses the owner's supplied `WhatsApp Video 2026-08-01 at 11.07.18 PM.mp4`, copied into the site as `public/wedding/landing-film.mp4`. It is a muted visual loop; configurable wedding music remains separate and requires the guest to press the music control.
+- `lace-bow-white.webp`
+- `lace-ribbon-white.webp`
+- `ribbon-pink-sheer.webp`
+- `lace-tape-white.webp`
 
-The site owner is responsible for retaining the original purchase/licensing records for these artwork packs.
+The `8048` set was reviewed but not placed on the landing scene because its blue details and generic “Love Thanks” wording conflict with the five-colour pink palette and personalised invitation copy.
+
+The former landing video remains in the project archive but is no longer loaded by the public page. Configurable wedding music remains available and starts only after the guest presses the music control.
+
+The site owner is responsible for retaining the original purchase and licensing records for all supplied artwork packs.

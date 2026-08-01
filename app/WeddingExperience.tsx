@@ -130,7 +130,6 @@ export function WeddingExperience({ invitationToken }: { invitationToken?: strin
   const [music, setMusic] = useState<MusicSettings>({ musicUrl: null, musicTitle: null });
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const filmRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -263,26 +262,6 @@ export function WeddingExperience({ invitationToken }: { invitationToken?: strin
     };
   }, [rsvp.attendance, submitted, inviteLoading]);
 
-  useEffect(() => {
-    const film = filmRef.current;
-    if (!film) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncFilm = () => {
-      if (reduceMotion.matches || document.hidden) {
-        film.pause();
-        return;
-      }
-      void film.play().catch(() => undefined);
-    };
-    syncFilm();
-    reduceMotion.addEventListener("change", syncFilm);
-    document.addEventListener("visibilitychange", syncFilm);
-    return () => {
-      reduceMotion.removeEventListener("change", syncFilm);
-      document.removeEventListener("visibilitychange", syncFilm);
-    };
-  }, [inviteLoading]);
-
   const sectionIds = useMemo(() => {
     const ids = ["welcome", "invitation", "venue", "rsvp"];
     if (rsvp.attendance === "yes") ids.push("dress", "meal", "travel");
@@ -409,11 +388,11 @@ export function WeddingExperience({ invitationToken }: { invitationToken?: strin
 
     <section id="welcome" className="scene scene--welcome scene--cinematic is-visible" data-scene aria-label="Wedding invitation introduction">
       <div className="cinematic-stage">
-        <video ref={filmRef} className="cinematic-film" src="/wedding/landing-film.mp4" muted loop playsInline preload="metadata" aria-hidden="true" />
         <div className="cinematic-film-wash" aria-hidden="true" />
-        <img className="cinematic-layer cinematic-layer--far" src="/wedding/decor/bow-tape.webp" alt="" aria-hidden="true" />
-        <img className="cinematic-layer cinematic-layer--left" src="/wedding/decor/candelabra.webp" alt="" aria-hidden="true" />
-        <img className="cinematic-layer cinematic-layer--right" src="/wedding/decor/place-setting.webp" alt="" aria-hidden="true" />
+        <img className="cinematic-layer cinematic-layer--far" src="/wedding/decor/lace-ribbon-white.webp" alt="" aria-hidden="true" />
+        <img className="cinematic-layer cinematic-layer--mid" src="/wedding/decor/lace-tape-white.webp" alt="" aria-hidden="true" />
+        <img className="cinematic-layer cinematic-layer--left" src="/wedding/decor/ribbon-pink-sheer.webp" alt="" aria-hidden="true" />
+        <img className="cinematic-layer cinematic-layer--right" src="/wedding/decor/lace-bow-white.webp" alt="" aria-hidden="true" />
         <div className="cinematic-portal" aria-hidden="true"><span /></div>
         <div className="cinematic-copy cinematic-copy--intro">
           <p className="eyebrow">Elaine &amp; Haykal &middot; 07.11.26</p>
