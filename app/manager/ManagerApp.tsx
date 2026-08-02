@@ -65,7 +65,7 @@ function Status({ value }: { value: string }) {
   return <span className={`status status--${value.toLowerCase().replaceAll(" ", "-")}`}><i />{value}</span>;
 }
 
-export function ManagerApp({ initialAdminName, authToken, onSignOut }: { initialAdminName: string; authToken: string; onSignOut: () => void | Promise<void> }) {
+export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignOut }: { initialAdminName: string; signedInEmail: string; authToken: string; onSignOut: () => void | Promise<void> }) {
   const [data, setData] = useState<ManagerData | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
@@ -143,7 +143,7 @@ export function ManagerApp({ initialAdminName, authToken, onSignOut }: { initial
   };
 
   if (loading) return <ManagerLoading />;
-  if (error || !data) return <div className="manager-fatal"><span>✦</span><h1>We couldn’t open the guest book.</h1><p>{error}</p><button onClick={() => load()}>Try again</button></div>;
+  if (error || !data) return <div className="manager-fatal"><span>✦</span><h1>We couldn’t open the guest book.</h1><p>{error}</p>{signedInEmail ? <small>Currently signed in as <strong>{signedInEmail}</strong></small> : null}<div className="manager-fatal-actions"><button onClick={() => load()}>Try again</button><button className="secondary-button" onClick={() => void onSignOut()}>Sign out and choose another account</button></div></div>;
 
   return (
     <div className="manager-shell">
