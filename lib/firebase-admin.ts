@@ -4,18 +4,68 @@ import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 
 export const WEDDING_ID = "elaine-haykal-2026";
 
-function serviceAccount() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!raw) return applicationDefault();
+let firebaseAdminConfigurationError = "";
 
-  const parsed = JSON.parse(raw) as {
+function normaliseServiceAccountValue(value: string) {
+  let raw = value.trim();
+
+  // Be forgiving when a value was copied from a .env file or a Markdown code
+  // block into Netlify instead of copying only the JSON value.
+  raw = raw.replace(/^FIREBASE_SERVICE_ACCOUNT_JSON\s*=\s*/i, "").trim();
+  raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith("`") && raw.endsWith("`"))) {
+    raw = raw.slice(1, -1).trim();
+  }
+
+  // Some environment-variable screens wrap the complete JSON in a JSON
+  // string. Decode that outer layer before parsing the service account.
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      const decoded = JSON.parse(raw);
+      if (typeof decoded === "string") raw = decoded.trim();
+    } catch {
+      // Leave it untouched so the clearer validation error below is used.
+    }
+  }
+
+  return raw;
+}
+
+function serviceAccount() {
+  const encoded = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64?.trim();
+  const supplied = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+
+  if (!encoded && !supplied) {
+    firebaseAdminConfigurationError = "FIREBASE_SERVICE_ACCOUNT_JSON is missing in Netlify.";
+    return applicationDefault();
+  }
+
+  let raw = supplied ? normaliseServiceAccountValue(supplied) : "";
+  if (!raw && encoded) {
+    try {
+      raw = Buffer.from(encoded, "base64").toString("utf8").trim();
+    } catch {
+      firebaseAdminConfigurationError = "FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 is not valid Base64.";
+      return applicationDefault();
+    }
+  }
+
+  let parsed: {
     project_id?: string;
     client_email?: string;
     private_key?: string;
   };
 
+  try {
+    parsed = JSON.parse(raw) as typeof parsed;
+  } catch {
+    firebaseAdminConfigurationError = "FIREBASE_SERVICE_ACCOUNT_JSON is incomplete or is not valid JSON. Copy the complete file from its first { to its final } into the Netlify value field.";
+    return applicationDefault();
+  }
+
   if (!parsed.project_id || !parsed.client_email || !parsed.private_key) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is missing required service-account fields.");
+    firebaseAdminConfigurationError = "FIREBASE_SERVICE_ACCOUNT_JSON is missing project_id, client_email, or private_key.";
+    return applicationDefault();
   }
 
   return cert({
@@ -35,6 +85,10 @@ export const adminAuth = getAuth(app);
 export const firestore = getFirestore(app);
 export const serverTimestamp = FieldValue.serverTimestamp;
 export const weddingRef = firestore.collection("weddings").doc(WEDDING_ID);
+
+export function assertFirebaseAdminConfigured() {
+  if (firebaseAdminConfigurationError) throw new Error(firebaseAdminConfigurationError);
+}
 
 export function plainValue(value: unknown): unknown {
   if (value instanceof Timestamp) return value.toDate().toISOString().replace("T", " ").slice(0, 19);

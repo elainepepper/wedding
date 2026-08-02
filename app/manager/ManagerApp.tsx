@@ -65,6 +65,18 @@ function Status({ value }: { value: string }) {
   return <span className={`status status--${value.toLowerCase().replaceAll(" ", "-")}`}><i />{value}</span>;
 }
 
+async function readApiResponse<T>(response: Response): Promise<T & { error?: string }> {
+  const body = await response.text();
+  if (!body.trim()) {
+    throw new Error("The Guest Manager server returned no response. In Netlify, check that FIREBASE_SERVICE_ACCOUNT_JSON contains the complete service-account file, then clear the deploy cache and redeploy.");
+  }
+  try {
+    return JSON.parse(body) as T & { error?: string };
+  } catch {
+    throw new Error("The Guest Manager server returned an unreadable response. Check FIREBASE_SERVICE_ACCOUNT_JSON in Netlify, then clear the deploy cache and redeploy.");
+  }
+}
+
 export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignOut }: { initialAdminName: string; signedInEmail: string; authToken: string; onSignOut: () => void | Promise<void> }) {
   const [data, setData] = useState<ManagerData | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
@@ -83,7 +95,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
     if (!quiet) setLoading(true);
     try {
       const response = await fetch("/api/manager", { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
-      const result = await response.json() as ManagerData & { error?: string };
+      const result = await readApiResponse<ManagerData>(response);
       if (!response.ok) throw new Error(result.error || "Unable to load the guest manager.");
       setData(result);
       setError("");
@@ -102,7 +114,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
 
   const act = async (payload: Record<string, unknown>, success: string) => {
     const response = await fetch("/api/manager", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(payload) });
-    const result = await response.json() as { error?: string; summary?: { added: number; updated: number; skipped: number; errors: string[] } };
+    const result = await readApiResponse<{ summary?: { added: number; updated: number; skipped: number; errors: string[] } }>(response);
     if (!response.ok) throw new Error(result.error || "The change could not be saved.");
     await load(true);
     notify(result.summary ? `${result.summary.added} added · ${result.summary.updated} updated · ${result.summary.skipped} skipped` : success);
@@ -183,7 +195,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
             const body = new FormData();
             body.append("file", file);
             const response = await fetch("/api/manager/assets", { method: "POST", headers: { Authorization: `Bearer ${authToken}` }, body });
-            const result = await response.json() as { url?: string; error?: string };
+            const result = await readApiResponse<{ url?: string }>(response);
             if (!response.ok || !result.url) throw new Error(result.error || "The illustration could not be uploaded.");
             return result.url;
           }}

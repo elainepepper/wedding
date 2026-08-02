@@ -47,6 +47,10 @@ Create `FIREBASE_SERVICE_ACCOUNT_JSON` in Netlify. Its value must be the complet
 
 Mark it as a secret. Do not upload that JSON file to GitHub and do not put it inside the website ZIP.
 
+Copy from the first `{` through the final `}`. Do not paste the filename, a Windows file path, `FIREBASE_SERVICE_ACCOUNT_JSON=`, or Markdown backticks into the value field. After changing it, use **Deploys > Trigger deploy > Clear cache and deploy site**.
+
+If the Guest Manager says that the server returned no response or that this value is incomplete, delete the Netlify variable and create it again from the original JSON file. The website also accepts a Base64-encoded copy under `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64`, but only one of the two service-account variables should be used.
+
 ## Cloudinary
 
 Artwork dragged into the Website Editor is uploaded through a protected server route. Obtain the real secret from **Cloudinary > Settings > API Keys** and use either one complete URL:

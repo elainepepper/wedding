@@ -1,4 +1,4 @@
-import { nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
+import { assertFirebaseAdminConfigured, nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { requireAdmin } from "../../../lib/manager-auth";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 
@@ -16,51 +16,57 @@ async function addActivity(adminName: string, action: string, recordType: string
 }
 
 export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
-  if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
-  const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
-    weddingRef.collection("guests").where("archived", "==", 0).get(),
-    weddingRef.collection("households").get(),
-    weddingRef.collection("tables").get(),
-    weddingRef.collection("events").where("is_enabled", "==", 1).get(),
-    weddingRef.collection("activityLogs").orderBy("created_at", "desc").limit(30).get(),
-    weddingRef.get(),
-    weddingRef.collection("admins").where("active", "==", true).get(),
-  ]);
-  const households = householdSnapshot.docs.map(plainDoc);
-  const tables = tableSnapshot.docs.map(plainDoc);
-  const householdById = new Map(households.map((item) => [Number(item.id), item]));
-  const tableById = new Map(tables.map((item) => [Number(item.id), item]));
-  const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc).filter((item) => item.age_group === "Adult").map((guest): Record<string, unknown> => {
-    const household = householdById.get(Number(guest.household_id));
-    const table = tableById.get(Number(guest.table_id));
-    return { ...guest, household_name: household?.name ?? null, invitation_slug: household?.invitation_slug ?? null, invitation_token: household?.invitation_token ?? null, invitation_enabled: household?.invitation_enabled ?? 0, opened_at: household?.opened_at ?? null, last_activity_at: household?.last_activity_at ?? null, table_name: table?.name ?? null };
-  }).sort((a, b) => String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")));
-  const householdRows: Array<Record<string, unknown>> = households.map((household): Record<string, unknown> => {
-    const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
-    return { ...household, guest_count: members.length, max_guests: members.length, confirmed_count: members.filter((guest) => guest.rsvp_status === "Confirmed").length, declined_count: members.filter((guest) => guest.rsvp_status === "Declined").length };
-  }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  const tableRows: Array<Record<string, unknown>> = tables.map((table): Record<string, unknown> => ({ ...table, guest_count: guests.filter((guest) => guest.rsvp_status === "Confirmed" && Number(guest.table_id) === Number(table.id)).length })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
-  const managers = [{ id: 0, email: ownerEmail, name: "Wedding owner", role: "owner", active: 1, created_at: null }, ...managerSnapshot.docs.map(plainDoc)];
-  return Response.json({
-    admin: { displayName: admin.displayName, email: admin.email, role: admin.role },
-    guests,
-    households: householdRows,
-    tables: tableRows,
-    events: eventSnapshot.docs.map(plainDoc).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
-    activities: activitySnapshot.docs.map(plainDoc),
-    settings: settingsSnapshot.data() ?? {},
-    managers,
-  });
+  try {
+    assertFirebaseAdminConfigured();
+    const admin = await requireAdmin(request);
+    if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
+    const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
+      weddingRef.collection("guests").where("archived", "==", 0).get(),
+      weddingRef.collection("households").get(),
+      weddingRef.collection("tables").get(),
+      weddingRef.collection("events").where("is_enabled", "==", 1).get(),
+      weddingRef.collection("activityLogs").orderBy("created_at", "desc").limit(30).get(),
+      weddingRef.get(),
+      weddingRef.collection("admins").where("active", "==", true).get(),
+    ]);
+    const households = householdSnapshot.docs.map(plainDoc);
+    const tables = tableSnapshot.docs.map(plainDoc);
+    const householdById = new Map(households.map((item) => [Number(item.id), item]));
+    const tableById = new Map(tables.map((item) => [Number(item.id), item]));
+    const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc).filter((item) => item.age_group === "Adult").map((guest): Record<string, unknown> => {
+      const household = householdById.get(Number(guest.household_id));
+      const table = tableById.get(Number(guest.table_id));
+      return { ...guest, household_name: household?.name ?? null, invitation_slug: household?.invitation_slug ?? null, invitation_token: household?.invitation_token ?? null, invitation_enabled: household?.invitation_enabled ?? 0, opened_at: household?.opened_at ?? null, last_activity_at: household?.last_activity_at ?? null, table_name: table?.name ?? null };
+    }).sort((a, b) => String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")));
+    const householdRows: Array<Record<string, unknown>> = households.map((household): Record<string, unknown> => {
+      const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+      return { ...household, guest_count: members.length, max_guests: members.length, confirmed_count: members.filter((guest) => guest.rsvp_status === "Confirmed").length, declined_count: members.filter((guest) => guest.rsvp_status === "Declined").length };
+    }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const tableRows: Array<Record<string, unknown>> = tables.map((table): Record<string, unknown> => ({ ...table, guest_count: guests.filter((guest) => guest.rsvp_status === "Confirmed" && Number(guest.table_id) === Number(table.id)).length })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
+    const managers = [{ id: 0, email: ownerEmail, name: "Wedding owner", role: "owner", active: 1, created_at: null }, ...managerSnapshot.docs.map(plainDoc)];
+    return Response.json({
+      admin: { displayName: admin.displayName, email: admin.email, role: admin.role },
+      guests,
+      households: householdRows,
+      tables: tableRows,
+      events: eventSnapshot.docs.map(plainDoc).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
+      activities: activitySnapshot.docs.map(plainDoc),
+      settings: settingsSnapshot.data() ?? {},
+      managers,
+    });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "The Guest Manager server could not start." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin(request);
-  if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
-  const payload = await request.json() as Record<string, unknown>;
-  const action = clean(payload.action, 60);
   try {
+    assertFirebaseAdminConfigured();
+    const admin = await requireAdmin(request);
+    if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
+    const payload = await request.json() as Record<string, unknown>;
+    const action = clean(payload.action, 60);
     if (action === "addGuest") {
       const firstName = clean(payload.firstName, 100);
       const lastName = clean(payload.lastName, 100);
