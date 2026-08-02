@@ -1,0 +1,365 @@
+{
+  "version": 2,
+  "depth": 1500,
+  "stations": [
+    {
+      "x": 0,
+      "y": 0
+    },
+    {
+      "x": -110,
+      "y": -20
+    },
+    {
+      "x": 130,
+      "y": 10
+    },
+    {
+      "x": -70,
+      "y": 30
+    },
+    {
+      "x": 90,
+      "y": -25
+    },
+    {
+      "x": -100,
+      "y": 15
+    },
+    {
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "chapters": [
+    {
+      "id": "title",
+      "kind": "title",
+      "border": "frame-blossom",
+      "overline": "07 · 11 · 2026  ·  Kuala Lumpur",
+      "heading": "Elaine & Haykal",
+      "line": "",
+      "planes": [
+        {
+          "art": "gen-watercolor-heartburst-sticker",
+          "x": -0.5,
+          "y": 24.6,
+          "z": -220,
+          "w": 24,
+          "float": "slow"
+        }
+      ]
+    },
+    {
+      "id": "kuching",
+      "border": "frame-sketch",
+      "overline": "Chapter one · Kuching, Sarawak",
+      "heading": "A girl from the city of cats",
+      "line": "Elaine grew up in Kuching, where even the streets seem to purr.",
+      "planes": [
+        {
+          "art": "gen-whimsical-pink-and-blue-pavilion",
+          "x": 10.4,
+          "y": -12.5,
+          "z": -80,
+          "w": 66
+        },
+        {
+          "art": "gen-wavy-pastel-watercolour-ribbon-sticker",
+          "x": 12.1,
+          "y": 16.6,
+          "z": 0,
+          "w": 56.5
+        },
+        {
+          "art": "gen-pastel-watercolour-girl-sticker",
+          "x": -18.4,
+          "y": 2.8,
+          "z": -20,
+          "w": 33.5
+        },
+        {
+          "art": "pink-flower-03",
+          "x": 28.9,
+          "y": -30,
+          "z": 0,
+          "w": 10.5
+        },
+        {
+          "art": "gen-cream-bow-with-pink-outline",
+          "x": -4.1,
+          "y": -32.4,
+          "z": 0,
+          "w": 24
+        }
+      ]
+    },
+    {
+      "id": "georgetown",
+      "blue": true,
+      "border": "frame-sketch",
+      "overline": "Chapter two · George Town, Penang",
+      "heading": "A boy from the island",
+      "line": "Across the sea, Haykal grew up among the shophouses and street food of George Town.",
+      "planes": [
+        {
+          "art": "blue-branch-03",
+          "x": -34,
+          "y": -26,
+          "z": -240,
+          "w": 20,
+          "float": "slow"
+        },
+        {
+          "art": "blue-leaf-02",
+          "x": 36,
+          "y": -8,
+          "z": 80,
+          "w": 10,
+          "float": "slow"
+        },
+        {
+          "art": "pink-branch",
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 24
+        },
+        {
+          "art": "gen-pastel-baroque-heritage-building-sticker",
+          "x": -15.2,
+          "y": -32.1,
+          "z": 0,
+          "w": 85
+        }
+      ]
+    },
+    {
+      "id": "perth",
+      "border": "frame-calla",
+      "overline": "Chapter three · Perth, 2016",
+      "heading": "Of all the cities in the world",
+      "line": "Two strangers crossed the same ocean to the same quiet city — and didn’t know it yet.",
+      "planes": [
+        {
+          "art": "pearl-strand",
+          "x": 0,
+          "y": -36,
+          "z": -220,
+          "w": 54,
+          "float": "slow"
+        },
+        {
+          "art": "gen-blue-cottage-with-pink-door",
+          "x": -1.6,
+          "y": -16.7,
+          "z": 0,
+          "w": 95
+        },
+        {
+          "art": "blossoming-tree-left",
+          "x": -33.8,
+          "y": -10.9,
+          "z": -150,
+          "w": 22
+        },
+        {
+          "art": "bud-tree-right",
+          "x": -28.6,
+          "y": -3.9,
+          "z": -160,
+          "w": 20
+        },
+        {
+          "art": "gen-pastel-couple-on-a-blue-armchair",
+          "x": 18.8,
+          "y": -1.2,
+          "z": 0,
+          "w": 21.5
+        }
+      ]
+    },
+    {
+      "id": "together",
+      "border": "frame-calla",
+      "overline": "Chapter four · Perth, 2020",
+      "heading": "The year the world stood still",
+      "line": "And somehow, that was when everything began — friendship quietly became love.",
+      "planes": [
+        {
+          "art": "wavy-ribbon",
+          "x": 0,
+          "y": -32,
+          "z": -200,
+          "w": 48,
+          "float": "slow"
+        },
+        {
+          "art": "blue-potted-tree",
+          "x": -34,
+          "y": 2,
+          "z": -120,
+          "w": 17
+        },
+        {
+          "art": "couple-on-sofa",
+          "x": 2,
+          "y": 2,
+          "z": -30,
+          "w": 38
+        },
+        {
+          "art": "gen-watercolor-heartburst-sticker",
+          "x": 30,
+          "y": -14,
+          "z": 30,
+          "w": 20,
+          "float": "fast"
+        },
+        {
+          "art": "small-flower-dish",
+          "x": 32,
+          "y": 26,
+          "z": 70,
+          "w": 12,
+          "float": "slow"
+        },
+        {
+          "art": "gen-pastel-couple-on-a-blue-armchair",
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 24
+        }
+      ]
+    },
+    {
+      "id": "seoul",
+      "border": "frame-swirl",
+      "overline": "Chapter five · Seoul, autumn 2025",
+      "heading": "On one knee, under falling leaves",
+      "line": "On an autumn day in Seoul, Haykal asked. Elaine said yes.",
+      "planes": [
+        {
+          "art": "ginkgo-leaf-01",
+          "x": 34,
+          "y": -12,
+          "z": -80,
+          "w": 9,
+          "float": "fast"
+        },
+        {
+          "art": "ginkgo-leaf-03",
+          "x": 26,
+          "y": -30,
+          "z": -40,
+          "w": 8,
+          "float": "slow"
+        },
+        {
+          "art": "gen-pastel-cherry-blossom-lane-sticker",
+          "x": 1.3,
+          "y": -16.3,
+          "z": 0,
+          "w": 80
+        },
+        {
+          "art": "gen-kneeling-proposal-with-ring-box",
+          "x": -4,
+          "y": 8,
+          "z": -20,
+          "w": 44
+        },
+        {
+          "art": "gen-tender-bouquet-in-pastel-watercolour",
+          "x": -12.4,
+          "y": 3.3,
+          "z": 0,
+          "w": 36
+        },
+        {
+          "art": "gen-open-ring-box-with-diamond",
+          "x": 24.4,
+          "y": 17.6,
+          "z": 0,
+          "w": 24
+        }
+      ]
+    },
+    {
+      "id": "wedding",
+      "kind": "finale",
+      "border": "frame-blossom",
+      "overline": "Chapter six · Kuala Lumpur",
+      "heading": "…and now, forever",
+      "finale": {
+        "overline": "You are warmly invited",
+        "heading": "7 November 2026",
+        "line": "The Grand Salon · Grand Hyatt Kuala Lumpur\nDoors from 6:00pm · the celebration begins 6:45pm",
+        "cta": "Enter our celebration ↓"
+      },
+      "planes": [
+        {
+          "art": "bg/pearl-floral",
+          "x": 0,
+          "y": -6,
+          "z": -320,
+          "w": 86,
+          "opacity": 0.5
+        },
+        {
+          "art": "floral-arch-2",
+          "x": 0,
+          "y": -36,
+          "z": -220,
+          "w": 56
+        },
+        {
+          "art": "grand-hyatt-facade",
+          "x": -28,
+          "y": -18,
+          "z": -150,
+          "w": 34
+        },
+        {
+          "art": "fairytale-gate",
+          "x": 32,
+          "y": -12,
+          "z": -130,
+          "w": 22
+        },
+        {
+          "video": "twirl-scrub.mp4",
+          "poster": "twirl-poster.webp",
+          "x": 0,
+          "y": 2,
+          "z": -20,
+          "w": 42,
+          "blend": "multiply"
+        },
+        {
+          "art": "bride-holding-cake",
+          "x": -33,
+          "y": 18,
+          "z": 40,
+          "w": 15
+        },
+        {
+          "art": "groom-on-chair-lower",
+          "x": 33,
+          "y": 20,
+          "z": 50,
+          "w": 15
+        },
+        {
+          "art": "gen-pastel-birthday-cake-table",
+          "x": 0,
+          "y": 36,
+          "z": 110,
+          "w": 22,
+          "float": "fast"
+        }
+      ]
+    }
+  ]
+}
