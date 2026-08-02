@@ -308,13 +308,6 @@
           "opacity": 0.5
         },
         {
-          "art": "floral-arch-2",
-          "x": 0,
-          "y": -36,
-          "z": -220,
-          "w": 56
-        },
-        {
           "art": "grand-hyatt-facade",
           "x": -28,
           "y": -18,
@@ -322,19 +315,12 @@
           "w": 34
         },
         {
-          "art": "fairytale-gate",
-          "x": 32,
-          "y": -12,
-          "z": -130,
-          "w": 22
-        },
-        {
           "video": "twirl-scrub.mp4",
           "poster": "twirl-poster.webp",
-          "x": 0,
+          "x": 0.1,
           "y": 2,
           "z": -20,
-          "w": 42,
+          "w": 72.5,
           "blend": "multiply"
         },
         {
@@ -342,13 +328,6 @@
           "x": -33,
           "y": 18,
           "z": 40,
-          "w": 15
-        },
-        {
-          "art": "groom-on-chair-lower",
-          "x": 33,
-          "y": 20,
-          "z": 50,
           "w": 15
         },
         {
