@@ -1,13 +1,25 @@
 export const editableScenes = ["welcome", "invitation", "venue", "rsvp", "dress", "meal", "travel", "recommendations", "wishes", "confirmation"] as const;
 export type EditableScene = (typeof editableScenes)[number];
 
+// Chapters guests may hide. The RSVP journey (welcome, invitation, rsvp, meal,
+// confirmation) stays mandatory so replies and menu choices can never break.
+export const hideableScenes = ["venue", "dress", "travel", "recommendations", "wishes"] as const;
+
+export type CustomPage = {
+  id: string;
+  title: string;
+  kicker: string;
+  body: string;
+  afterScene: EditableScene;
+};
+
 export const decorationMotions = ["none", "float", "sway", "drift", "shimmer", "cursor"] as const;
 export type DecorationMotion = (typeof decorationMotions)[number];
 
 export type SiteDecoration = {
   id: string;
   name: string;
-  scene: EditableScene;
+  scene: string; // an editable chapter id or a custom page id
   src: string;
   x: number;
   y: number;
@@ -44,6 +56,8 @@ export type SiteDesign = {
   content: SiteContent;
   decorations: SiteDecoration[];
   hiddenBuiltIns: string[];
+  hiddenScenes: string[];
+  customPages: CustomPage[];
   motionDamping: number;
   cursorMotion: boolean;
   fontPair: string;
@@ -130,6 +144,8 @@ export const defaultSiteDesign: SiteDesign = {
     { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true, motion: "float", motionStrength: .35 },
   ],
   hiddenBuiltIns: ["invitation-frame"],
+  hiddenScenes: [],
+  customPages: [],
   motionDamping: .1,
   cursorMotion: true,
   fontPair: "playfair-cormorant",
@@ -160,10 +176,25 @@ export function normaliseSiteDesign(value: unknown): SiteDesign {
     const candidate = typeof sourceContent[typedKey] === "string" ? sourceContent[typedKey] as string : fallback;
     return [key, legacyCopy[typedKey] === candidate ? fallback : candidate];
   })) as SiteContent;
+  // Custom pages parse before decorations so artwork can be placed on them.
+  const customPages: CustomPage[] = Array.isArray(source.customPages) ? source.customPages.slice(0, 6).flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const page = item as Partial<CustomPage>;
+    const title = typeof page.title === "string" && page.title.trim() ? page.title.trim().slice(0, 80) : `Our page ${index + 1}`;
+    return [{
+      id: typeof page.id === "string" && /^custom-[a-z0-9-]{1,40}$/.test(page.id) ? page.id : `custom-page-${index + 1}`,
+      title,
+      kicker: typeof page.kicker === "string" ? page.kicker.trim().slice(0, 120) : "",
+      body: typeof page.body === "string" ? page.body.trim().slice(0, 1500) : "",
+      afterScene: editableScenes.includes(page.afterScene as EditableScene) ? page.afterScene as EditableScene : "recommendations",
+    }];
+  }) : defaultSiteDesign.customPages;
+  const customPageIds = new Set(customPages.map((page) => page.id));
+  const hiddenScenes = Array.isArray(source.hiddenScenes) ? source.hiddenScenes.filter((item): item is string => typeof item === "string" && hideableScenes.includes(item as never)) : defaultSiteDesign.hiddenScenes;
   const decorations = Array.isArray(source.decorations) ? source.decorations.slice(0, 60).flatMap((item, index) => {
     if (!item || typeof item !== "object") return [];
     const decoration = item as Partial<SiteDecoration>;
-    const scene = editableScenes.includes(decoration.scene as EditableScene) ? decoration.scene as EditableScene : "invitation";
+    const scene = editableScenes.includes(decoration.scene as EditableScene) || customPageIds.has(decoration.scene as string) ? decoration.scene as string : "invitation";
     const src = typeof decoration.src === "string" && (decoration.src.startsWith("/wedding/") || decoration.src.startsWith("https://res.cloudinary.com/")) ? decoration.src : decorationLibrary[0].src;
     return [{
       id: typeof decoration.id === "string" && decoration.id ? decoration.id.slice(0, 80) : `element-${index + 1}`,
@@ -179,5 +210,5 @@ export function normaliseSiteDesign(value: unknown): SiteDesign {
   const allowedBuiltIns = new Set(builtInArtwork.map((item) => item.id));
   const hiddenBuiltIns = Array.isArray(source.hiddenBuiltIns) ? source.hiddenBuiltIns.filter((item): item is string => typeof item === "string" && allowedBuiltIns.has(item as never)) : defaultSiteDesign.hiddenBuiltIns;
   const fontPair = fontPairs.some((pair) => pair.id === source.fontPair) ? source.fontPair as string : defaultSiteDesign.fontPair;
-  return { content, decorations, hiddenBuiltIns, motionDamping: number(source.motionDamping, .1, .05, .24), cursorMotion: source.cursorMotion !== false, fontPair };
+  return { content, decorations, hiddenBuiltIns, hiddenScenes, customPages, motionDamping: number(source.motionDamping, .1, .05, .24), cursorMotion: source.cursorMotion !== false, fontPair };
 }

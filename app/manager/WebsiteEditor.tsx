@@ -3,6 +3,8 @@
 import { DragEvent, FormEvent, PointerEvent, useMemo, useState } from "react";
 import {
   builtInArtwork,
+  CustomPage,
+  hideableScenes,
   decorationLibrary,
   defaultSiteDesign,
   editableScenes,
@@ -24,19 +26,25 @@ const sceneNames: Record<EditableScene, string> = {
   welcome: "Landing", invitation: "Invitation", venue: "Venue", rsvp: "RSVP", dress: "Dress code", meal: "Meal", travel: "Travel", recommendations: "KL favourites", wishes: "Wishes", confirmation: "Confirmation",
 };
 
-function PreviewCopy({ design, scene }: { design: SiteDesign; scene: EditableScene }) {
+function sceneLabel(design: SiteDesign, scene: string) {
+  return sceneNames[scene as EditableScene] ?? design.customPages.find((page) => page.id === scene)?.title ?? "Custom page";
+}
+
+function PreviewCopy({ design, scene }: { design: SiteDesign; scene: string }) {
   const c = design.content;
+  const custom = design.customPages.find((page) => page.id === scene);
+  if (custom) return <><small>{custom.kicker || "A little extra"}</small><h2>{custom.title}</h2><p>{custom.body || "Write this page&rsquo;s words in the Pages panel."}</p></>;
   if (scene === "welcome") return <><small>{c.heroKicker}</small><h2>{c.heroGreeting}<br /><i>guest!</i></h2><p>{c.heroNote}</p></>;
   if (scene === "invitation") return <><small>{c.familyLine}</small><p>{c.invitationLine}</p><h2>{c.brideName}<i>&amp;</i>{c.groomName}</h2><p>{c.eventDate} · {c.eventTime}<br />{c.venueName}</p></>;
   if (scene === "venue") return <><small>Where we shall celebrate</small><h2>{c.venueName}</h2><p>{c.venueAddress}</p></>;
   if (scene === "dress") return <><small>{c.dressKicker}</small><h2>{c.dressCode}</h2><p>{c.dressNote}</p><strong className="editor-dress-restriction">{c.dressRestriction}</strong></>;
   if (scene === "wishes") return <><small>{c.wishesKicker}</small><h2>{c.wishesHeading}</h2></>;
-  return <><small>{sceneNames[scene]}</small><h2>{c.brideName} <i>&amp;</i> {c.groomName}</h2><p>Drag an illustration directly on this canvas, then refine it below.</p></>;
+  return <><small>{sceneLabel(design, scene)}</small><h2>{c.brideName} <i>&amp;</i> {c.groomName}</h2><p>Drag an illustration directly on this canvas, then refine it below.</p></>;
 }
 
 export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Props) {
   const [design, setDesign] = useState(() => normaliseSiteDesign(initialDesign));
-  const [scene, setScene] = useState<EditableScene>("invitation");
+  const [scene, setScene] = useState<string>("invitation");
   const [selectedId, setSelectedId] = useState<string | null>(design.decorations.find((item) => item.scene === "invitation")?.id ?? null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -154,12 +162,24 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
         </div></details>
         <details open><summary>Typography</summary><div className="font-pair-list">{fontPairs.map((pair) => <article key={pair.id} className={design.fontPair === pair.id ? "is-active" : ""} style={{ "--pair-header": pair.headerFamily, "--pair-body": pair.bodyFamily } as React.CSSProperties}><button type="button" onClick={() => setDesign((current) => ({ ...current, fontPair: pair.id }))}><strong>{pair.name}</strong><b>Elaine &amp; Haykal</b><span>{pair.header} + {pair.body}</span></button><p><a href={pair.headerUrl} target="_blank" rel="noreferrer">Download {pair.header} ↗</a><a href={pair.bodyUrl} target="_blank" rel="noreferrer">Download {pair.body} ↗</a></p></article>)}</div></details>
         <details><summary>Original artwork</summary><div className="editor-builtins">{builtInArtwork.map((item) => { const shown = !design.hiddenBuiltIns.includes(item.id); return <label key={item.id}><span>{item.label}</span><button type="button" className={shown ? "is-on" : ""} role="switch" aria-checked={shown} onClick={() => setDesign((current) => ({ ...current, hiddenBuiltIns: shown ? [...current.hiddenBuiltIns, item.id] : current.hiddenBuiltIns.filter((id) => id !== item.id) }))}><i /></button></label>; })}</div></details>
+        <details><summary>Pages</summary><div className="editor-fields">
+          <p className="editor-hint">The welcome, invitation, RSVP, dinner and confirmation chapters always stay, so replies can never break. Everything else is yours to hide or add.</p>
+          {hideableScenes.map((id) => { const shown = !design.hiddenScenes.includes(id); return <label key={id} className="element-visible"><input type="checkbox" checked={shown} onChange={(event) => setDesign((current) => ({ ...current, hiddenScenes: event.target.checked ? current.hiddenScenes.filter((item) => item !== id) : [...current.hiddenScenes, id] }))} /><span>Show “{sceneNames[id]}”</span></label>; })}
+          {design.customPages.map((page) => <div key={page.id} className="custom-page-editor">
+            <label><span>Page title</span><input value={page.title} maxLength={80} onChange={(event) => setDesign((current) => ({ ...current, customPages: current.customPages.map((item) => item.id === page.id ? { ...item, title: event.target.value } : item) }))} /></label>
+            <label><span>Small introduction line</span><input value={page.kicker} maxLength={120} onChange={(event) => setDesign((current) => ({ ...current, customPages: current.customPages.map((item) => item.id === page.id ? { ...item, kicker: event.target.value } : item) }))} /></label>
+            <label><span>Page words</span><textarea rows={4} maxLength={1500} value={page.body} onChange={(event) => setDesign((current) => ({ ...current, customPages: current.customPages.map((item) => item.id === page.id ? { ...item, body: event.target.value } : item) }))} /></label>
+            <label><span>Appears after</span><select value={page.afterScene} onChange={(event) => setDesign((current) => ({ ...current, customPages: current.customPages.map((item) => item.id === page.id ? { ...item, afterScene: event.target.value as CustomPage["afterScene"] } : item) }))}>{editableScenes.map((id) => <option key={id} value={id}>{sceneNames[id]}</option>)}</select></label>
+            <button type="button" className="danger-link" onClick={() => setDesign((current) => ({ ...current, customPages: current.customPages.filter((item) => item.id !== page.id), decorations: current.decorations.filter((item) => item.scene !== page.id) }))}>Remove this page</button>
+          </div>)}
+          {design.customPages.length < 6 ? <button type="button" className="editor-add-page" onClick={() => { const id = `custom-page-${Date.now().toString(36)}`; setDesign((current) => ({ ...current, customPages: [...current.customPages, { id, title: "A love story", kicker: "A little more about us", body: "Write your page here — how you met, your registry, or anything you would like guests to know.", afterScene: "recommendations" }] })); setScene(id); }}>＋ Add a page</button> : <small>Up to six custom pages keeps the story elegant.</small>}
+        </div></details>
         <details><summary>Motion</summary><div className="editor-fields"><label><span>Scroll smoothness</span><input type="range" min="0.05" max="0.2" step="0.01" value={design.motionDamping} onChange={(event) => setDesign({ ...design, motionDamping: Number(event.target.value) })} /><small>Lower is softer and more cinematic; 0.10 is recommended for phones.</small></label>
           <label className="element-visible"><input type="checkbox" checked={design.cursorMotion} onChange={(event) => setDesign({ ...design, cursorMotion: event.target.checked })} /><span>Cursor parallax — artwork drifts gently with the pointer (desktop only; never on touch or reduced-motion)</span></label></div></details>
       </aside>
 
       <section className="editor-stage-panel">
-        <div className="editor-stage-toolbar"><nav className="editor-scenes" aria-label="Preview a website chapter">{editableScenes.map((item) => <button type="button" key={item} className={scene === item ? "is-active" : ""} onClick={() => { setScene(item); setSelectedId(design.decorations.find((element) => element.scene === item)?.id ?? null); }}>{sceneNames[item]}</button>)}</nav><div className="editor-preview-mode" aria-label="Preview size"><button type="button" className={previewMode === "desktop" ? "is-active" : ""} onClick={() => setPreviewMode("desktop")}>▰ Desktop</button><button type="button" className={previewMode === "mobile" ? "is-active" : ""} onClick={() => setPreviewMode("mobile")}>▯ Mobile</button></div></div>
+        <div className="editor-stage-toolbar"><nav className="editor-scenes" aria-label="Preview a website chapter">{[...editableScenes, ...design.customPages.map((page) => page.id)].map((item) => <button type="button" key={item} className={scene === item ? "is-active" : ""} onClick={() => { setScene(item); setSelectedId(design.decorations.find((element) => element.scene === item)?.id ?? null); }}>{sceneLabel(design, item)}</button>)}</nav><div className="editor-preview-mode" aria-label="Preview size"><button type="button" className={previewMode === "desktop" ? "is-active" : ""} onClick={() => setPreviewMode("desktop")}>▰ Desktop</button><button type="button" className={previewMode === "mobile" ? "is-active" : ""} onClick={() => setPreviewMode("mobile")}>▯ Mobile</button></div></div>
         <div className={`editor-canvas-viewport is-${previewMode}`}>
           <div className="editor-canvas-help"><strong>Position your artwork</strong><span>Drag it directly on the canvas. Select it for exact size, rotation and layer controls. Arrow keys nudge one step; Shift + arrow nudges five.</span></div>
           <div className={`editor-canvas editor-canvas--${scene}${fileHover ? " is-file-hover" : ""}`} style={{ "--preview-header": selectedFont.headerFamily, "--preview-body": selectedFont.bodyFamily } as React.CSSProperties} onPointerMove={moveElement} onPointerUp={() => setDraggingId(null)} onPointerCancel={() => setDraggingId(null)} onDragEnter={(event) => { event.preventDefault(); setFileHover(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFileHover(false); }} onDrop={dropFile}>
@@ -168,7 +188,7 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
             {fileHover ? <div className="editor-drop-overlay"><strong>Drop your illustration here</strong><span>It will be placed exactly at your pointer.</span></div> : null}
           </div>
         </div>
-        <div className="element-toolbar"><div><h3>{sceneNames[scene]} illustrations</h3><span>{sceneDecorations.length} editable element{sceneDecorations.length === 1 ? "" : "s"} · drag directly on the canvas</span></div><div><label className={`editor-upload-button${uploading ? " is-loading" : ""}`}><input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void addFiles(files); event.currentTarget.value = ""; }} />{uploading ? uploadProgress || "Uploading…" : "↑ Upload illustrations"}</label><button type="button" onClick={addDecoration}>＋ Add supplied art</button></div></div>
+        <div className="element-toolbar"><div><h3>{sceneLabel(design, scene)} illustrations</h3><span>{sceneDecorations.length} editable element{sceneDecorations.length === 1 ? "" : "s"} · drag directly on the canvas</span></div><div><label className={`editor-upload-button${uploading ? " is-loading" : ""}`}><input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void addFiles(files); event.currentTarget.value = ""; }} />{uploading ? uploadProgress || "Uploading…" : "↑ Upload illustrations"}</label><button type="button" onClick={addDecoration}>＋ Add supplied art</button></div></div>
         {uploadError ? <p className="editor-upload-error" role="alert">{uploadError}</p> : null}
         <div className="element-chips">{sceneDecorations.map((item) => <button type="button" key={item.id} className={selectedId === item.id ? "is-active" : ""} onClick={() => setSelectedId(item.id)}><img src={item.src} alt="" /><span>{item.name}</span></button>)}{!sceneDecorations.length ? <p>Drag a PNG, JPG or WebP onto the canvas, or choose “Add supplied art”.</p> : null}</div>
         {selected ? <section className="element-inspector"><header><input aria-label="Element name" value={selected.name} onChange={(event) => updateDecoration(selected.id, { name: event.target.value })} /><div><button type="button" onClick={() => duplicateDecoration(selected)}>Duplicate</button><button type="button" onClick={() => removeDecoration(selected.id)}>Remove</button></div></header><div className="element-quick-actions"><button type="button" onClick={() => nudgeSelected(-2, 0)}>← Left</button><button type="button" onClick={() => nudgeSelected(0, -2)}>↑ Up</button><button type="button" onClick={() => nudgeSelected(0, 2)}>↓ Down</button><button type="button" onClick={() => nudgeSelected(2, 0)}>Right →</button><button type="button" onClick={() => updateDecoration(selected.id, { x: 50, y: 50 })}>Centre</button><button type="button" onClick={() => updateDecoration(selected.id, { rotation: 0 })}>Straighten</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.max(-3, selected.depth - 1) })}>Send backward</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.min(3, selected.depth + 1) })}>Bring forward</button></div><div className="element-control-grid">

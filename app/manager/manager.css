@@ -418,3 +418,10 @@
   .invitation-link-buttons > * { min-height: 44px; flex: 1 1 150px; text-align: center; }
   .editor-canvas-help { align-items: flex-start; flex-direction: column; }
 }
+
+/* Pages panel */
+.editor-hint { margin: 0 0 .6rem; color: #8B5E57; font-size: .78rem; line-height: 1.5; font-style: italic; }
+.custom-page-editor { display: grid; gap: .55rem; margin: .7rem 0; padding: .8rem; border: 1px solid #E8DCD4; border-radius: 8px; background: #FDF9F6; }
+.custom-page-editor .danger-link { justify-self: start; }
+.editor-add-page { min-height: 44px; border: 1px dashed #CDBA9A; border-radius: 8px; background: transparent; color: #8E4258; font-weight: 600; cursor: pointer; }
+.editor-add-page:hover { background: #FDF9F6; }

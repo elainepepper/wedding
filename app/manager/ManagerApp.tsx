@@ -275,14 +275,25 @@ function InvitationLinks({ households, guests, notify, setTab }: { households: H
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
   const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
   const invitationUrl = selected ? `${typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin}/invite/${selected.invitation_token}` : "";
+  const memberNames = members.map(displayName).join(" & ");
   const copy = async () => {
-    if (!invitationUrl) return;
-    await navigator.clipboard.writeText(invitationUrl);
-    notify("Personal invitation link copied");
+    if (!invitationUrl || !selected) return;
+    // Names travel with the link so pasting into the wrong chat is obvious.
+    await navigator.clipboard.writeText(`${memberNames || selected.name} — ${invitationUrl}`);
+    notify(`Link copied with names: ${memberNames || selected.name}`);
+  };
+  const copyAll = async () => {
+    const origin = window.location.origin;
+    const lines = households.map((household) => {
+      const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & ") || household.name;
+      return `${names} — ${origin}/invite/${household.invitation_token}`;
+    });
+    await navigator.clipboard.writeText(lines.join("\n"));
+    notify(`${lines.length} labelled links copied — one per household`);
   };
   return <div className="manager-page invitation-links-page">
     <div className="section-intro-row"><div><p className="panel-kicker">Private invitations</p><h2>Personal link generator</h2><span>Preview each guest journey, then copy its secure link for WhatsApp or text.</span></div><a className="secondary-button" href="/invitation-preview" target="_blank" rel="noreferrer">Preview every page ↗</a></div>
-    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => <option key={household.id} value={household.id}>{household.name}</option>)}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy guest link</button></div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Paste it into WhatsApp or a text message to that household.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
+    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => { const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & "); return <option key={household.id} value={household.id}>{household.name}{names && names !== household.name ? ` — ${names}` : ""}</option>; })}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy link + names</button><button type="button" className="secondary-button" onClick={() => void copyAll()}>Copy all links</button></div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Paste it into WhatsApp or a text message to that household.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
   </div>;
 }
 
