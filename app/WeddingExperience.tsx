@@ -99,6 +99,9 @@ const countryCodes = [
 const salmonDescription = "Seared Alaskan salmon with Peruvian asparagus, heirloom baby carrot, avruga caviar, celeriac mash and citrus fennel beurre blanc.";
 const lambDescription = "Almond dukkha-crusted lamb with potato pavé, smoked eggplant purée, tomato on vines confit and balsamic rosemary reduction.";
 const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+const sceneLabels: Record<string, string> = {
+  welcome: "Our story", invitation: "The invitation", venue: "The Grand Salon", rsvp: "Your reply", dress: "Dress code", meal: "Dinner", travel: "Your journey", recommendations: "Kuala Lumpur", wishes: "From the heart", confirmation: "Until November",
+};
 
 function splitMobile(mobile: string | null) {
   if (!mobile) return { countryCode: "+60", phoneNumber: "" };
@@ -286,6 +289,11 @@ export function WeddingExperience({ invitationToken }: { invitationToken?: strin
     if (submitted) ids.push("confirmation");
     return ids;
   }, [invitationToken, rsvp.attendance, submitted]);
+  const activeIndex = Math.max(0, sectionIds.indexOf(activeSection));
+  const moveChapter = (direction: -1 | 1) => {
+    const target = sectionIds[Math.max(0, Math.min(sectionIds.length - 1, activeIndex + direction))];
+    if (target) scrollToSection(target);
+  };
 
   const update = <K extends keyof RsvpState>(key: K, value: RsvpState[K]) => {
     setRsvp((current) => ({ ...current, [key]: value }));
@@ -406,8 +414,9 @@ export function WeddingExperience({ invitationToken }: { invitationToken?: strin
     <a className="skip-experience" href="#rsvp">Skip the cinematic introduction</a>
     {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
     <div className="scroll-progress" aria-hidden="true"><i style={{ height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%` }} /></div>
-    <nav className="scene-nav" aria-label="Invitation sections">{sectionIds.map((id) => <button key={id} type="button" className={activeSection === id ? "is-active" : ""} onClick={() => scrollToSection(id)} aria-label={`Go to ${id}`} aria-current={activeSection === id ? "step" : undefined}><span /></button>)}</nav>
+    <nav className="scene-nav" aria-label="Invitation sections">{sectionIds.map((id) => <button key={id} type="button" className={activeSection === id ? "is-active" : ""} onClick={() => scrollToSection(id)} aria-label={`Go to ${sceneLabels[id] || id}`} aria-current={activeSection === id ? "step" : undefined}><span /><b>{sceneLabels[id] || id}</b></button>)}</nav>
     <EditableDecorationOverlay design={siteDesign} activeScene={activeSection} />
+    <aside className="mobile-chapter-dock" aria-label="Invitation chapter controls"><button type="button" onClick={() => moveChapter(-1)} disabled={activeIndex === 0} aria-label="Previous chapter">←</button><div><small>{String(activeIndex + 1).padStart(2, "0")} / {String(sectionIds.length).padStart(2, "0")}</small><strong>{sceneLabels[activeSection] || activeSection}</strong><i><span style={{ width: `${((activeIndex + 1) / sectionIds.length) * 100}%` }} /></i></div><button type="button" onClick={() => moveChapter(1)} disabled={activeIndex === sectionIds.length - 1} aria-label="Next chapter">→</button></aside>
 
     <section id="welcome" className="scene scene--welcome scene--cinematic is-visible" data-scene aria-label="Wedding invitation introduction">
       <div className="cinematic-stage">

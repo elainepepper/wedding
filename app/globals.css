@@ -3005,3 +3005,95 @@ html { scroll-snap-type: none; }
   .scene-art--floral { transform: translate3d(-50%, -50%, 0); }
   #invitation::before { transform: none; }
 }
+
+/* v11: award-polish navigation, depth and phone-first chapter controls. */
+.wedding-shell::after {
+  content: "";
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  pointer-events: none;
+  opacity: .045;
+  background-image: radial-gradient(circle at 18% 21%, var(--ink) 0 .55px, transparent .8px), radial-gradient(circle at 72% 68%, var(--manhattan) 0 .45px, transparent .75px);
+  background-size: 9px 11px, 13px 15px;
+  mix-blend-mode: multiply;
+}
+
+.scene-nav button { position: relative; }
+.scene-nav button b {
+  position: absolute;
+  right: calc(100% + .8rem);
+  top: 50%;
+  width: max-content;
+  border: 1px solid rgba(190,106,121,.25);
+  border-radius: 999px;
+  padding: .42rem .66rem;
+  color: var(--ink);
+  background: rgba(239,211,203,.82);
+  box-shadow: 0 8px 25px rgba(87,45,57,.08);
+  backdrop-filter: blur(12px);
+  font: 600 .58rem/1 var(--font-body, "Fraunces", serif);
+  letter-spacing: .06em;
+  opacity: 0;
+  transform: translate3d(8px,-50%,0);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+.scene-nav button:hover b,
+.scene-nav button:focus-visible b { opacity: 1; transform: translate3d(0,-50%,0); }
+
+.mobile-chapter-dock { display: none; }
+.scene-content :where(.primary-button, .text-button, .choice-card) { transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, background-color .28s ease, border-color .28s ease; }
+.scene-content .primary-button:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(190,106,121,.26); }
+.scene-content :where(input, select, textarea):focus-visible { outline: 2px solid var(--manhattan); outline-offset: 3px; box-shadow: 0 0 0 7px rgba(190,106,121,.1); }
+.form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 30px 90px rgba(190,106,121,.1); }
+
+@media (max-width: 760px) {
+  .wedding-shell { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .wedding-shell::after { opacity: .028; }
+  .scene-nav, .scroll-progress { display: none; }
+  .mobile-chapter-dock {
+    position: fixed;
+    z-index: 92;
+    right: max(.7rem, env(safe-area-inset-right));
+    bottom: max(.65rem, env(safe-area-inset-bottom));
+    left: max(.7rem, env(safe-area-inset-left));
+    min-height: 64px;
+    border: 1px solid rgba(190,106,121,.34);
+    border-radius: 22px;
+    padding: .45rem;
+    display: grid;
+    grid-template-columns: 48px minmax(0,1fr) 48px;
+    align-items: center;
+    gap: .55rem;
+    color: var(--ink);
+    background: rgba(239,211,203,.86);
+    box-shadow: 0 18px 50px rgba(87,45,57,.18);
+    backdrop-filter: blur(18px) saturate(1.15);
+  }
+  .mobile-chapter-dock > button {
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(190,106,121,.36);
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    background: rgba(255,255,255,.34);
+    font-size: 1.05rem;
+  }
+  .mobile-chapter-dock > button:disabled { opacity: .28; }
+  .mobile-chapter-dock > div { min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: end; gap: .12rem .6rem; }
+  .mobile-chapter-dock small { color: var(--manhattan); font-size: .55rem; font-weight: 700; letter-spacing: .12em; }
+  .mobile-chapter-dock strong { min-width: 0; overflow: hidden; font: italic 500 .76rem/1.2 var(--font-body, "Fraunces", serif); text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-chapter-dock i { grid-column: 1 / -1; height: 2px; margin-top: .28rem; overflow: hidden; background: rgba(190,106,121,.2); }
+  .mobile-chapter-dock i span { height: 100%; display: block; background: linear-gradient(90deg,var(--coral),var(--manhattan)); transition: width .5s cubic-bezier(.2,.8,.2,1); }
+  .scene-content :where(.primary-button, .text-button, .choice-card):active { transform: scale(.985); }
+  .form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 20px 55px rgba(190,106,121,.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-content :where(.primary-button, .text-button, .choice-card),
+  .mobile-chapter-dock i span { transition: none; }
+  .scene-content .primary-button:hover { transform: none; }
+}
