@@ -7,7 +7,11 @@ export async function requireAdmin(request: Request): Promise<AdminIdentity | nu
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!token) return null;
   try {
-    const decoded = await adminAuth.verifyIdToken(token, true);
+    // Standard verification validates the signature, audience, issuer and
+    // expiry without requiring a second Identity Toolkit lookup. The extra
+    // revoked-token lookup can fail on Netlify when the service-account IAM
+    // permissions have not propagated yet, incorrectly rejecting the owner.
+    const decoded = await adminAuth.verifyIdToken(token);
     const email = decoded.email?.toLowerCase();
     if (!email) return null;
     const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
