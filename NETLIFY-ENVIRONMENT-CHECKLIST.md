@@ -49,13 +49,21 @@ Mark it as a secret. Do not upload that JSON file to GitHub and do not put it in
 
 ## Cloudinary
 
-The supplied Cloudinary URL still contains the placeholder `<your_api_secret>`. Obtain the real secret from **Cloudinary > Settings > API Keys** and add it to Netlify as:
+Artwork dragged into the Website Editor is uploaded through a protected server route. Obtain the real secret from **Cloudinary > Settings > API Keys** and use either one complete URL:
 
 ```text
-CLOUDINARY_API_SECRET
+CLOUDINARY_URL=cloudinary://YOUR_API_KEY:YOUR_API_SECRET@grj5sf3s
 ```
 
-Add `CLOUDINARY_UPLOAD_PRESET` only if browser uploads will be enabled.
+or the three separate values:
+
+```text
+CLOUDINARY_CLOUD_NAME=grj5sf3s
+CLOUDINARY_API_KEY=YOUR_API_KEY
+CLOUDINARY_API_SECRET=YOUR_API_SECRET
+```
+
+Do not add quotation marks around the values. `CLOUDINARY_UPLOAD_PRESET` is not required for the secure Website Editor upload route.
 
 ## Netlify URL
 

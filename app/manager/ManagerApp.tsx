@@ -1,6 +1,8 @@
 "use client";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { SiteDesign } from "../../lib/site-design";
+import { WebsiteEditor } from "./WebsiteEditor";
 
 type Guest = {
   id: number; household_id: number | null; first_name: string; last_name: string; preferred_name: string | null;
@@ -26,15 +28,20 @@ type Household = {
 type SeatingTable = { id: number; name: string; shape: string; capacity: number; x: number; y: number; locked: number; notes: string | null; guest_count: number };
 type Activity = { id: number; admin_name: string; action: string; detail: string; created_at: string };
 type ManagerUser = { id: number; email: string; name: string; role: "owner" | "partner" | "planner"; active: number; created_at: string };
-type Settings = Record<string, string | null> & { wedding_name: string; couple_names: string; wedding_date: string; rsvp_deadline: string; timezone: string };
+type Settings = Record<string, unknown> & {
+  wedding_name: string; couple_names: string; wedding_date: string; rsvp_deadline: string; timezone: string; site_design?: unknown;
+  website_url?: string | null; invitation_wording?: string | null; confirmation_message?: string | null; date_format?: string | null;
+  cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
+};
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "rsvps" | "seating" | "afterparty" | "imports" | "exports" | "settings";
+type Tab = "overview" | "guests" | "households" | "rsvps" | "seating" | "afterparty" | "imports" | "exports" | "website" | "settings";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "overview", label: "Overview", glyph: "◫" }, { id: "guests", label: "Guests", glyph: "♙" },
   { id: "households", label: "Households", glyph: "⌂" }, { id: "rsvps", label: "RSVPs", glyph: "✓" },
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
   { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
+  { id: "website", label: "Website editor", glyph: "✎" },
   { id: "settings", label: "Settings", glyph: "◇" },
 ];
 
@@ -169,6 +176,18 @@ export function ManagerApp({ initialAdminName, authToken, onSignOut }: { initial
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "imports" ? <Imports act={act} /> : null}
         {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
+        {tab === "website" ? <WebsiteEditor
+          initialDesign={data.settings.site_design}
+          save={async (siteDesign: SiteDesign) => { await act({ action: "saveWebsiteDesign", siteDesign }, "Website design published"); }}
+          upload={async (file: File) => {
+            const body = new FormData();
+            body.append("file", file);
+            const response = await fetch("/api/manager/assets", { method: "POST", headers: { Authorization: `Bearer ${authToken}` }, body });
+            const result = await response.json() as { url?: string; error?: string };
+            if (!response.ok || !result.url) throw new Error(result.error || "The illustration could not be uploaded.");
+            return result.url;
+          }}
+        /> : null}
         {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} /> : null}
       </main>
 

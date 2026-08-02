@@ -1,0 +1,182 @@
+export const editableScenes = ["welcome", "invitation", "venue", "rsvp", "dress", "meal", "travel", "recommendations", "wishes", "confirmation"] as const;
+export type EditableScene = (typeof editableScenes)[number];
+
+export type SiteDecoration = {
+  id: string;
+  name: string;
+  scene: EditableScene;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  opacity: number;
+  rotation: number;
+  depth: number;
+  visible: boolean;
+};
+
+export type SiteContent = {
+  heroKicker: string;
+  heroGreeting: string;
+  heroNote: string;
+  familyLine: string;
+  invitationLine: string;
+  brideName: string;
+  groomName: string;
+  eventDate: string;
+  eventTime: string;
+  venueName: string;
+  venueAddress: string;
+  dressKicker: string;
+  dressCode: string;
+  dressNote: string;
+  dressRestriction: string;
+  wishesKicker: string;
+  wishesHeading: string;
+};
+
+export type SiteDesign = {
+  content: SiteContent;
+  decorations: SiteDecoration[];
+  hiddenBuiltIns: string[];
+  motionDamping: number;
+  fontPair: string;
+};
+
+export const fontPairs = [
+  {
+    id: "luxurious-fraunces",
+    name: "Romantic Editorial",
+    header: "Luxurious Script",
+    body: "Fraunces",
+    headerFamily: '"Luxurious Script", "Brush Script MT", cursive',
+    bodyFamily: '"Fraunces", Georgia, serif',
+    headerUrl: "https://fonts.google.com/specimen/Luxurious+Script",
+    bodyUrl: "https://fonts.google.com/specimen/Fraunces",
+  },
+  {
+    id: "windsong-cormorant",
+    name: "Storybook Romance",
+    header: "WindSong",
+    body: "Cormorant Garamond",
+    headerFamily: '"WindSong", "Brush Script MT", cursive',
+    bodyFamily: '"Cormorant Garamond", Georgia, serif',
+    headerUrl: "https://fonts.google.com/specimen/WindSong",
+    bodyUrl: "https://fonts.google.com/specimen/Cormorant+Garamond",
+  },
+  {
+    id: "montecarlo-newsreader",
+    name: "Modern Fairytale",
+    header: "MonteCarlo",
+    body: "Newsreader",
+    headerFamily: '"MonteCarlo", "Brush Script MT", cursive',
+    bodyFamily: '"Newsreader", Georgia, serif',
+    headerUrl: "https://fonts.google.com/specimen/MonteCarlo",
+    bodyUrl: "https://fonts.google.com/specimen/Newsreader",
+  },
+  {
+    id: "allura-lora",
+    name: "Soft Calligraphy",
+    header: "Allura",
+    body: "Lora",
+    headerFamily: '"Allura", "Brush Script MT", cursive',
+    bodyFamily: '"Lora", Georgia, serif',
+    headerUrl: "https://fonts.google.com/specimen/Allura",
+    bodyUrl: "https://fonts.google.com/specimen/Lora",
+  },
+] as const;
+
+export const decorationLibrary = [
+  { name: "White lace bow", src: "/wedding/decor/lace-bow-white.webp" },
+  { name: "White lace ribbon", src: "/wedding/decor/lace-ribbon-white.webp" },
+  { name: "Pink sheer bow", src: "/wedding/decor/ribbon-pink-sheer.webp" },
+  { name: "White lace tape", src: "/wedding/decor/lace-tape-white.webp" },
+  { name: "French bow", src: "/wedding/decor/bow.webp" },
+  { name: "Pearl floral", src: "/wedding/pearl-floral.png" },
+  { name: "Floral arch", src: "/wedding/floral-frame.png" },
+  { name: "Dinner table", src: "/wedding/dinner-table.png" },
+  { name: "Feast table", src: "/wedding/feast-table.png" },
+] as const;
+
+export const builtInArtwork = [
+  { id: "invitation-frame", label: "Invitation floral arch" },
+  { id: "invitation-blooms", label: "Invitation side flowers" },
+  { id: "dinner-table", label: "RSVP dinner table" },
+  { id: "dress-frame", label: "Dress-code frame" },
+  { id: "feast-table", label: "Meal feast table" },
+  { id: "travel-floral", label: "Travel floral background" },
+  { id: "wishes-lace", label: "Wishes lace" },
+] as const;
+
+export const defaultSiteDesign: SiteDesign = {
+  content: {
+    heroKicker: "Elaine & Haykal · 07.11.26",
+    heroGreeting: "Hello,",
+    heroNote: "A beautiful evening awaits, and it would mean the world to share it with you.",
+    familyLine: "With the love and blessing of their families",
+    invitationLine: "request the pleasure of your company at their wedding reception",
+    brideName: "Elaine",
+    groomName: "Haykal",
+    eventDate: "7 November 2026",
+    eventTime: "6:30pm",
+    venueName: "The Grand Salon",
+    venueAddress: "Level 1, Grand Hyatt Kuala Lumpur\n12 Jalan Pinang, 50450 Kuala Lumpur",
+    dressKicker: "An evening in your finest",
+    dressCode: "Black tie, in colour",
+    dressNote: "We invite you to arrive in formal eveningwear, with colour and a touch of romance. Think graceful silhouettes, polished tailoring and shoes made for dancing.",
+    dressRestriction: "Kindly avoid white, ivory, cream and beige — these shades are reserved for the bride.",
+    wishesKicker: "A few words for our forever",
+    wishesHeading: "Your wishes for our next chapter",
+  },
+  decorations: [
+    { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true },
+  ],
+  hiddenBuiltIns: ["invitation-frame"],
+  motionDamping: .1,
+  fontPair: "luxurious-fraunces",
+};
+
+const legacyCopy: Partial<Record<keyof SiteContent, string>> = {
+  heroNote: "A celebration has been written in the stars.",
+  familyLine: "Together with their families",
+  invitationLine: "You are joyfully invited to the wedding reception of",
+  dressKicker: "Dress for the moonlight",
+  dressCode: "Black tie",
+  dressNote: "Formal evening wear, with a little shimmer if the mood takes you. Think romantic silhouettes, polished tailoring, and dancing shoes.",
+  wishesKicker: "A note for our next chapter",
+  wishesHeading: "Warm wishes & marriage advice",
+};
+
+const number = (value: unknown, fallback: number, min: number, max: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
+};
+
+export function normaliseSiteDesign(value: unknown): SiteDesign {
+  if (!value || typeof value !== "object") return structuredClone(defaultSiteDesign);
+  const source = value as Partial<SiteDesign>;
+  const sourceContent = source.content && typeof source.content === "object" ? source.content as Partial<SiteContent> : {};
+  const content = Object.fromEntries(Object.entries(defaultSiteDesign.content).map(([key, fallback]) => {
+    const typedKey = key as keyof SiteContent;
+    const candidate = typeof sourceContent[typedKey] === "string" ? sourceContent[typedKey] as string : fallback;
+    return [key, legacyCopy[typedKey] === candidate ? fallback : candidate];
+  })) as SiteContent;
+  const decorations = Array.isArray(source.decorations) ? source.decorations.slice(0, 60).flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const decoration = item as Partial<SiteDecoration>;
+    const scene = editableScenes.includes(decoration.scene as EditableScene) ? decoration.scene as EditableScene : "invitation";
+    const src = typeof decoration.src === "string" && (decoration.src.startsWith("/wedding/") || decoration.src.startsWith("https://res.cloudinary.com/")) ? decoration.src : decorationLibrary[0].src;
+    return [{
+      id: typeof decoration.id === "string" && decoration.id ? decoration.id.slice(0, 80) : `element-${index + 1}`,
+      name: typeof decoration.name === "string" && decoration.name ? decoration.name.slice(0, 100) : `Element ${index + 1}`,
+      scene, src,
+      x: number(decoration.x, 50, -20, 120), y: number(decoration.y, 50, -20, 120), width: number(decoration.width, 35, 5, 140),
+      opacity: number(decoration.opacity, .5, 0, 1), rotation: number(decoration.rotation, 0, -180, 180), depth: number(decoration.depth, 0, -3, 3),
+      visible: decoration.visible !== false,
+    }];
+  }) : defaultSiteDesign.decorations;
+  const allowedBuiltIns = new Set(builtInArtwork.map((item) => item.id));
+  const hiddenBuiltIns = Array.isArray(source.hiddenBuiltIns) ? source.hiddenBuiltIns.filter((item): item is string => typeof item === "string" && allowedBuiltIns.has(item as never)) : defaultSiteDesign.hiddenBuiltIns;
+  const fontPair = fontPairs.some((pair) => pair.id === source.fontPair) ? source.fontPair as string : defaultSiteDesign.fontPair;
+  return { content, decorations, hiddenBuiltIns, motionDamping: number(source.motionDamping, .1, .05, .24), fontPair };
+}

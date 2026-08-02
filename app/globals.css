@@ -2744,3 +2744,264 @@ legend {
   .venue-map,
   .scene-art--wishes-lace { transform: none; }
 }
+
+/* v7: seamless motion and editable composition layers. */
+html { scroll-snap-type: none; }
+.scene { scroll-snap-align: none; }
+.reveal { transition: opacity .72s cubic-bezier(.22,.72,.2,1), transform .9s cubic-bezier(.18,.78,.18,1); }
+.cinematic-layer,
+.cinematic-portal,
+.cinematic-copy,
+.editable-decoration-overlay img { transition: opacity .56s cubic-bezier(.22,.72,.2,1), filter .56s ease; }
+
+.editable-decoration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+.editable-decoration-overlay img {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 36px rgba(190,106,121,.14));
+  will-change: transform, opacity;
+}
+.editable-decoration-overlay img:not(.is-active) { visibility: hidden; transition: opacity .4s ease, visibility 0s linear .4s; }
+
+/* The original full-page arch caused the overlap shown in the review image. */
+.scene--invitation { min-height: 145svh; }
+.scene-art--floral {
+  top: 50%;
+  left: 50%;
+  width: min(700px, 66vw);
+  max-height: 78vh;
+  opacity: .1;
+  object-fit: contain;
+  transform: translate3d(calc(-50% + var(--pointer-x) * -5px), calc(-50% + var(--pointer-y) * -4px), 0) scale(calc(.9 + var(--scene-progress) * .08));
+}
+.invitation-card {
+  width: min(720px, 88vw);
+  padding: clamp(2rem, 5vw, 4.2rem);
+  border: 1px solid rgba(190,106,121,.22);
+  border-radius: 46% 46% 24px 24px / 10% 10% 24px 24px;
+  background: rgba(239,211,203,.88);
+  box-shadow: 0 30px 90px rgba(190,106,121,.13);
+  backdrop-filter: blur(15px);
+}
+.floating-bloom { opacity: .12; }
+.floating-bloom--left { left: -10vw; }
+.floating-bloom--right { right: -10vw; }
+
+.hide-invitation-frame .scene-art--floral,
+.hide-invitation-blooms .floating-bloom,
+.hide-dinner-table .scene-art--dinner,
+.hide-dress-frame .scene-art--wide-frame,
+.hide-feast-table .scene-art--feast,
+.hide-travel-floral .scene-art--pearl,
+.hide-wishes-lace .scene-art--wishes-lace { display: none !important; }
+
+/* v8 mobile-first typography and touch refinements. */
+.wedding-shell { font-family: var(--font-body, "Fraunces", Georgia, serif); }
+.wedding-shell :where(p, label, input, select, textarea, button, a, small, legend) { font-family: var(--font-body, "Fraunces", Georgia, serif); }
+.wedding-shell :where(h1, h2),
+.wedding-shell .guest-name-label strong,
+.wedding-shell .invitation-card h2 span,
+.wedding-shell .script-kicker,
+.wedding-shell .wax-seal span { font-family: var(--font-header, "Luxurious Script", "Brush Script MT", cursive); -webkit-text-stroke: .25px currentColor; text-rendering: geometricPrecision; }
+.dress-restriction { margin: 1.1rem auto .5rem !important; max-width: 34rem; padding: .85rem 1rem; border-block: 1px solid rgba(190,106,121,.42); color: #8e3f53 !important; font: italic 600 clamp(.86rem, 1.5vw, 1rem)/1.65 var(--font-body, "Fraunces", Georgia, serif) !important; }
+
+@keyframes handwritten-reveal {
+  from { clip-path: inset(0 100% 0 0); filter: blur(.8px); }
+  to { clip-path: inset(0 -8% 0 0); filter: blur(0); }
+}
+.scene.is-visible:not(.scene--cinematic) .scene-content > :where(h1, h2, .script-kicker) { animation: handwritten-reveal 1.15s cubic-bezier(.18,.82,.2,1) both; }
+
+@media (max-width: 760px) {
+  html { scroll-padding-top: 0; }
+  .scene { min-height: 100svh; padding-inline: max(1rem, env(safe-area-inset-left)); padding-bottom: max(3rem, env(safe-area-inset-bottom)); }
+  .scene--cinematic { min-height: 310svh; }
+  .cinematic-stage { min-height: 100svh; height: 100svh; }
+  .scene-content { width: min(94vw, 650px); }
+  .scene-content :where(h1, h2) { font-size: clamp(3.1rem, 16vw, 5.2rem); line-height: .88; }
+  .hero-content { width: min(92vw, 520px); padding-inline: .4rem; }
+  .hero-content .hero-note { max-width: 20rem; font-size: .96rem; line-height: 1.6; }
+  .invitation-card { min-height: auto; padding: 3.2rem 1rem 2.2rem; }
+  .invitation-card .event-details { width: 100%; grid-template-columns: 1fr; gap: .35rem; }
+  .invitation-card .event-details p { padding: .65rem .25rem; border-left: 0; border-top: 1px solid rgba(190,106,121,.22); }
+  .venue-card, .form-card, .dress-card, .wishes-card { width: min(94vw, 590px); padding-inline: 1rem; }
+  .venue-map { width: min(92vw, 430px); aspect-ratio: 1; border-radius: 18px; }
+  .arrival-grid { grid-template-columns: 1fr; }
+  .arrival-grid article { min-height: auto; padding: 1rem; }
+  .choice-grid--two, .meal-choices { grid-template-columns: 1fr; }
+  .choice-card { min-height: 112px; }
+  .recommendation-grid { grid-template-columns: 1fr; }
+  .wedding-shell :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { min-height: 50px; font-size: 16px; }
+  .wedding-shell textarea { min-height: 120px; }
+  .wedding-shell :where(.primary-button, .text-button, .segmented-control button) { min-height: 52px; }
+  .primary-button { width: min(100%, 340px); justify-content: center; }
+  .segmented-control { width: 100%; }
+  .segmented-control button { flex: 1 1 50%; }
+  .field-grid, .phone-grid { grid-template-columns: 1fr; }
+  .scene-nav { right: max(.35rem, env(safe-area-inset-right)); }
+  .scene-nav button { width: 34px; height: 34px; display: grid; place-items: center; }
+  .sound-control { top: max(.7rem, env(safe-area-inset-top)); left: max(.7rem, env(safe-area-inset-left)); min-height: 44px; }
+  .editable-decoration-overlay img { max-width: 135vw; }
+}
+
+@media (max-width: 420px) {
+  .scene-content :where(h1, h2) { font-size: clamp(2.8rem, 15vw, 4.25rem); }
+  .cinematic-copy { width: 90vw; }
+  .cinematic-copy h2 { font-size: clamp(3rem, 15vw, 4.8rem); }
+  .party-rsvp-list .segmented-control { display: grid; grid-template-columns: 1fr; }
+  .party-rsvp-list .segmented-control button { width: 100%; }
+  .dress-card { padding-top: 2.4rem; padding-bottom: 2.4rem; }
+  .dress-restriction { padding: .8rem .4rem; }
+  .recommendations-card { padding-inline: .85rem; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .editable-decoration-overlay img { transform: translate3d(-50%, -50%, 0) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene.is-visible:not(.scene--cinematic) .scene-content > :where(h1, h2, .script-kicker) { animation: none; clip-path: none; filter: none; }
+}
+
+@media (max-width: 760px) {
+  .scene--invitation { min-height: 125svh; }
+  .invitation-card { width: min(94vw, 650px); padding: 2.2rem 1.1rem; border-radius: 70px 70px 20px 20px / 25px 25px 20px 20px; }
+  .scene-art--floral { width: 92vw; opacity: .07; }
+  .editable-decoration-overlay img { max-width: 150vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editable-decoration-overlay { display: none; }
+}
+
+/* v7 invitation readability: preserve the supplied floral art as an outer
+   frame while keeping every line of invitation copy on a quiet centre field. */
+#invitation::before {
+  inset: 0;
+  background-image: url("/wedding/decor/lace-ribbon-white.webp");
+  background-position: center -18vh;
+  background-size: min(960px, 76vw) auto;
+  opacity: .22;
+  transform: translate3d(0, calc(var(--scene-progress) * -3vh), 0) scale(calc(.96 + var(--scene-progress) * .08));
+}
+
+.scene--invitation {
+  min-height: 150svh;
+  background: radial-gradient(circle at 50% 44%, var(--fairy) 0 26%, rgba(239,211,203,.88) 44%, rgba(221,168,165,.44) 74%, rgba(239,211,203,.72) 100%);
+}
+
+.scene-art--floral {
+  inset: 50% auto auto 50%;
+  width: min(1260px, 88vw);
+  height: min(1040px, 94vh);
+  object-fit: contain;
+  object-position: center;
+  opacity: .48;
+  mix-blend-mode: multiply;
+  filter: saturate(.78) contrast(.9);
+  -webkit-mask-image: radial-gradient(ellipse 43% 55% at 50% 51%, transparent 0 38%, rgba(0,0,0,.14) 52%, #000 76%);
+  mask-image: radial-gradient(ellipse 43% 55% at 50% 51%, transparent 0 38%, rgba(0,0,0,.14) 52%, #000 76%);
+  transform: translate3d(calc(-50% + var(--pointer-x) * -8px), calc(-50% + var(--pointer-y) * -6px), 0) scale(calc(.9 + var(--scene-progress) * .12));
+}
+
+.scene--invitation .floating-bloom {
+  opacity: calc(.07 + var(--scene-progress) * .08);
+  filter: blur(2px) saturate(.7);
+}
+
+.invitation-card {
+  width: min(760px, 88vw);
+  min-height: min(82vh, 820px);
+  padding: clamp(3rem, 7vh, 5.2rem) clamp(1.5rem, 6vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.invitation-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -3% -7%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(239,211,203,.98) 0 46%, rgba(239,211,203,.9) 62%, rgba(239,211,203,.48) 75%, transparent 88%);
+  filter: blur(5px);
+}
+
+.invitation-card .eyebrow,
+.invitation-line,
+.invitation-card h2,
+.invitation-card .ribbon-divider,
+.event-details,
+.invitation-card .primary-button {
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-card h2 {
+  font-size: clamp(3.6rem, 7vw, 6.8rem);
+  line-height: .82;
+  text-shadow: 0 2px 22px rgba(239,211,203,.95);
+}
+
+.invitation-card h2 span { margin: .25rem 0 .18rem; }
+.invitation-line { max-width: 30rem; color: var(--ink); }
+.event-details { width: min(590px, 100%); background: rgba(239,211,203,.4); }
+.invitation-card .primary-button { width: min(100%, 540px); }
+
+@media (max-width: 720px) {
+  #invitation::before {
+    background-position: center -5vh;
+    background-size: 120vw auto;
+    opacity: .16;
+  }
+
+  .scene--invitation { min-height: 125svh; }
+
+  .scene-art--floral {
+    inset: 50% auto auto 50%;
+    left: 50%;
+    width: 124vw;
+    height: 94vh;
+    object-fit: contain;
+    opacity: .34;
+    -webkit-mask-image: radial-gradient(ellipse 54% 58% at 50% 52%, transparent 0 42%, rgba(0,0,0,.12) 57%, #000 84%);
+    mask-image: radial-gradient(ellipse 54% 58% at 50% 52%, transparent 0 42%, rgba(0,0,0,.12) 57%, #000 84%);
+    transform: translate3d(-50%, -50%, 0) scale(calc(.94 + var(--scene-progress) * .08));
+  }
+
+  .invitation-card {
+    width: min(94vw, 620px);
+    min-height: 88vh;
+    padding: 4.5rem 1.1rem 3rem;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .invitation-card::before {
+    inset: 1% -2%;
+    background: radial-gradient(ellipse at center, rgba(239,211,203,.98) 0 50%, rgba(239,211,203,.84) 70%, transparent 90%);
+  }
+
+  .invitation-card h2 { font-size: clamp(3.7rem, 18vw, 5.7rem); }
+  .invitation-line { max-width: 19rem; }
+  .event-details { width: min(280px, 92%); background: rgba(239,211,203,.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #invitation::before,
+  .scene-art--floral { transform: translate3d(-50%, -50%, 0); }
+  #invitation::before { transform: none; }
+}

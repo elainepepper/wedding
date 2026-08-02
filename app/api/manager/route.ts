@@ -1,5 +1,6 @@
 import { nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { requireAdmin } from "../../../lib/manager-auth";
+import { normaliseSiteDesign } from "../../../lib/site-design";
 
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const integer = (value: unknown) => Number.isInteger(Number(value)) ? Number(value) : null;
@@ -156,6 +157,13 @@ export async function POST(request: Request) {
         await batch.commit();
       }
       await addActivity(admin.displayName, action === "regenerateLink" ? "Invitation link regenerated" : "Invitation marked sent", "household", householdId, "Invitation status updated");
+      return Response.json({ ok: true });
+    }
+
+    if (action === "saveWebsiteDesign") {
+      const siteDesign = normaliseSiteDesign(payload.siteDesign);
+      await weddingRef.set({ site_design: siteDesign, updated_at: serverTimestamp() }, { merge: true });
+      await addActivity(admin.displayName, "Website design published", "settings", "elaine-haykal-2026", `${siteDesign.decorations.length} editable illustrations saved`);
       return Response.json({ ok: true });
     }
 
