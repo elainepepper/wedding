@@ -2,40 +2,61 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-const root = new URL("../", import.meta.url);
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+const exists = (path) => access(new URL(`../${path}`, import.meta.url));
 
-test("builds the finished wedding invitation", async () => {
+test("renders the finished wedding invitation content", async () => {
   const [experience, layout] = await Promise.all([
-    readFile(new URL("../app/WeddingExperience.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    read("app/WeddingExperience.tsx"),
+    read("app/layout.tsx"),
   ]);
   assert.match(experience, /Elaine &amp; Haykal/);
   assert.match(experience, /7 November 2026/);
   assert.match(experience, /Grand Hyatt/);
   assert.match(experience, /Skip the cinematic introduction/);
+  assert.match(experience, /Village Park/);
+  assert.match(experience, /Super Kitchen Chilli Pan Mee/);
   assert.match(layout, /og-wedding\.png/);
+  // No leftover build-scaffolding markers.
   assert.doesNotMatch(`${experience}${layout}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
-  await access(new URL("../dist/server/index.js", import.meta.url));
 });
 
-test("ships the private after-party gate", async () => {
+test("uses the exact required meal wording", async () => {
+  const experience = await read("app/WeddingExperience.tsx");
+  assert.match(experience, /Seared Alaskan salmon with Peruvian asparagus/);
+  assert.match(experience, /Almond dukkha-crusted lamb with potato pav/);
+});
+
+test("ships the private, server-enforced after-party gate", async () => {
   const [experience, route] = await Promise.all([
-    readFile(new URL("../app/after-party/AfterPartyExperience.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/after-party/route.ts", import.meta.url), "utf8"),
+    read("app/after-party/AfterPartyExperience.tsx"),
+    read("app/api/after-party/route.ts"),
   ]);
   assert.match(experience, /A little secret/);
   assert.match(experience, /selected guests/i);
-  assert.match(route, /after_party_invited = 1/);
+  assert.match(experience, /favourite spice/i);
+  // Eligibility is enforced server-side against the invitation token.
+  assert.match(route, /after_party_invited/);
+  assert.match(route, /invitation_token/);
   assert.match(route, /pepper/i);
 });
 
-test("includes the complete manager and security handoff", async () => {
-  const manager = await readFile(new URL("../app/manager/ManagerApp.tsx", import.meta.url), "utf8");
+test("includes the complete manager and locked-down Firestore rules", async () => {
+  const manager = await read("app/manager/ManagerApp.tsx");
   for (const section of ["Overview", "Guests", "Households", "RSVPs", "Seating plan", "After-party", "Imports", "Exports", "Settings"]) {
     assert.match(manager, new RegExp(section, "i"));
   }
-  const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
+  const rules = await read("firestore.rules");
   assert.match(rules, /allow read, write: if false/);
-  await access(new URL("../drizzle/0001_wedding_guest_manager.sql", import.meta.url));
-  await access(new URL("../public/og-wedding.png", import.meta.url));
+  await exists("public/og-wedding.png");
+  await exists("firestore.indexes.json");
+});
+
+test("does not leak secrets into the repository", async () => {
+  const env = await read(".env.example");
+  // The service-account JSON and Cloudinary secret must never be filled in here.
+  assert.match(env, /^FIREBASE_SERVICE_ACCOUNT_JSON=\s*$/m);
+  assert.match(env, /^CLOUDINARY_API_SECRET=\s*$/m);
+  const privateKeyMarker = new RegExp(["BEGIN", "PRIVATE", "KEY"].join(" "));
+  assert.doesNotMatch(env, privateKeyMarker);
 });

@@ -53,7 +53,7 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
   const updateDecoration = (id: string, patch: Partial<SiteDecoration>) => setDesign((current) => ({ ...current, decorations: current.decorations.map((item) => item.id === id ? { ...item, ...patch } : item) }));
 
   const placeDecoration = (src: string, name: string, x = 50, y = 50) => {
-    const item: SiteDecoration = { id: `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, scene, src, x, y, width: 34, opacity: .82, rotation: 0, depth: 0, visible: true };
+    const item: SiteDecoration = { id: `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, scene, src, x, y, width: 34, opacity: .82, rotation: 0, depth: 0, visible: true, motion: "none", motionStrength: .5 };
     setDesign((current) => ({ ...current, decorations: [...current.decorations, item] }));
     setSelectedId(item.id);
   };
@@ -154,7 +154,8 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
         </div></details>
         <details open><summary>Typography</summary><div className="font-pair-list">{fontPairs.map((pair) => <article key={pair.id} className={design.fontPair === pair.id ? "is-active" : ""} style={{ "--pair-header": pair.headerFamily, "--pair-body": pair.bodyFamily } as React.CSSProperties}><button type="button" onClick={() => setDesign((current) => ({ ...current, fontPair: pair.id }))}><strong>{pair.name}</strong><b>Elaine &amp; Haykal</b><span>{pair.header} + {pair.body}</span></button><p><a href={pair.headerUrl} target="_blank" rel="noreferrer">Download {pair.header} ↗</a><a href={pair.bodyUrl} target="_blank" rel="noreferrer">Download {pair.body} ↗</a></p></article>)}</div></details>
         <details><summary>Original artwork</summary><div className="editor-builtins">{builtInArtwork.map((item) => { const shown = !design.hiddenBuiltIns.includes(item.id); return <label key={item.id}><span>{item.label}</span><button type="button" className={shown ? "is-on" : ""} role="switch" aria-checked={shown} onClick={() => setDesign((current) => ({ ...current, hiddenBuiltIns: shown ? [...current.hiddenBuiltIns, item.id] : current.hiddenBuiltIns.filter((id) => id !== item.id) }))}><i /></button></label>; })}</div></details>
-        <details><summary>Motion</summary><div className="editor-fields"><label><span>Scroll smoothness</span><input type="range" min="0.05" max="0.2" step="0.01" value={design.motionDamping} onChange={(event) => setDesign({ ...design, motionDamping: Number(event.target.value) })} /><small>Lower is softer and more cinematic; 0.10 is recommended for phones.</small></label></div></details>
+        <details><summary>Motion</summary><div className="editor-fields"><label><span>Scroll smoothness</span><input type="range" min="0.05" max="0.2" step="0.01" value={design.motionDamping} onChange={(event) => setDesign({ ...design, motionDamping: Number(event.target.value) })} /><small>Lower is softer and more cinematic; 0.10 is recommended for phones.</small></label>
+          <label className="element-visible"><input type="checkbox" checked={design.cursorMotion} onChange={(event) => setDesign({ ...design, cursorMotion: event.target.checked })} /><span>Cursor parallax — artwork drifts gently with the pointer (desktop only; never on touch or reduced-motion)</span></label></div></details>
       </aside>
 
       <section className="editor-stage-panel">
@@ -179,6 +180,8 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
           <label><span>Opacity · {Math.round(selected.opacity * 100)}%</span><input type="range" min="0" max="1" step="0.05" value={selected.opacity} onChange={(event) => updateDecoration(selected.id, { opacity: Number(event.target.value) })} /></label>
           <label><span>Rotation · {Math.round(selected.rotation)}°</span><input type="range" min="-180" max="180" value={selected.rotation} onChange={(event) => updateDecoration(selected.id, { rotation: Number(event.target.value) })} /></label>
           <label><span>Layer · {selected.depth}</span><input type="range" min="-3" max="3" value={selected.depth} onChange={(event) => updateDecoration(selected.id, { depth: Number(event.target.value) })} /></label>
+          <label><span>Movement</span><select value={selected.motion} onChange={(event) => updateDecoration(selected.id, { motion: event.target.value as SiteDecoration["motion"] })}><option value="none">Still</option><option value="float">Float — gentle rise and fall</option><option value="sway">Sway — soft pendulum</option><option value="drift">Drift — slow side to side</option><option value="shimmer">Shimmer — breathing opacity</option><option value="cursor">Follow cursor — leans toward the pointer</option></select></label>
+          <label><span>Movement strength · {Math.round(selected.motionStrength * 100)}%</span><input type="range" min="0" max="1" step="0.05" value={selected.motionStrength} onChange={(event) => updateDecoration(selected.id, { motionStrength: Number(event.target.value) })} disabled={selected.motion === "none"} /></label>
           <label className="element-visible"><input type="checkbox" checked={selected.visible} onChange={(event) => updateDecoration(selected.id, { visible: event.target.checked })} /><span>Show this illustration</span></label>
         </div></section> : null}
       </section>

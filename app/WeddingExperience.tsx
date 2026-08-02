@@ -121,8 +121,17 @@ function RibbonDivider() {
 function EditableDecorationOverlay({ design, activeScene }: { design: SiteDesign; activeScene: string }) {
   return <div className="editable-decoration-overlay" aria-hidden="true">{design.decorations.map((item) => {
     const active = item.visible && item.scene === activeScene;
-    const drift = item.depth * 9;
-    return <img key={item.id} src={item.src} alt="" className={active ? "is-active" : ""} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: active ? item.opacity : 0, zIndex: item.depth + 4, transform: `translate3d(calc(-50% + var(--pointer-x) * ${drift}px), calc(-50% + var(--pointer-y) * ${drift * .7}px), 0) rotate(${item.rotation}deg)` }} />;
+    // Pointer drift: depth-based parallax obeys the editor's master cursor
+    // toggle; the "cursor" preset adds a stronger, per-element follow.
+    const drift = (design.cursorMotion ? item.depth * 9 : 0) + (item.motion === "cursor" ? 26 * item.motionStrength : 0);
+    const motionVars = {
+      "--m-amp": `${(4 + item.motionStrength * 14).toFixed(1)}px`,
+      "--m-deg": `${(1.5 + item.motionStrength * 5).toFixed(1)}deg`,
+      "--m-dur": `${(11 - item.motionStrength * 6).toFixed(1)}s`,
+    } as CSSProperties;
+    return <span key={item.id} className={`deco-wrap${active ? " is-active" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: active ? item.opacity : 0, zIndex: item.depth + 4, transform: `translate3d(calc(-50% + var(--pointer-x) * ${drift}px), calc(-50% + var(--pointer-y) * ${drift * .7}px), 0) rotate(${item.rotation}deg)` }}>
+      <img src={item.src} alt="" className={item.motion !== "none" && item.motion !== "cursor" ? `deco-anim deco-anim--${item.motion}` : undefined} style={motionVars} />
+    </span>;
   })}</div>;
 }
 
@@ -145,6 +154,29 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   const [siteDesign, setSiteDesign] = useState<SiteDesign>(defaultSiteDesign);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const filmRef = useRef<HTMLVideoElement | null>(null);
+
+  // The landing film is a muted visual layer only — it pauses for
+  // prefers-reduced-motion and while the tab is hidden. Music stays opt-in.
+  useEffect(() => {
+    const film = filmRef.current;
+    if (!film) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncFilm = () => {
+      if (reduceMotion.matches || document.hidden) {
+        film.pause();
+        return;
+      }
+      void film.play().catch(() => undefined);
+    };
+    syncFilm();
+    reduceMotion.addEventListener("change", syncFilm);
+    document.addEventListener("visibilitychange", syncFilm);
+    return () => {
+      reduceMotion.removeEventListener("change", syncFilm);
+      document.removeEventListener("visibilitychange", syncFilm);
+    };
+  }, [inviteLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -426,6 +458,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
     <section id="welcome" className="scene scene--welcome scene--cinematic is-visible" data-scene aria-label="Wedding invitation introduction">
       <div className="cinematic-stage">
+        <video ref={filmRef} className="cinematic-film" src="/wedding/landing-film.mp4" muted loop playsInline preload="metadata" aria-hidden="true" />
         <div className="cinematic-film-wash" aria-hidden="true" />
         <img className="cinematic-layer cinematic-layer--far" src="/wedding/decor/lace-ribbon-white.webp" alt="" aria-hidden="true" />
         <img className="cinematic-layer cinematic-layer--mid" src="/wedding/decor/lace-tape-white.webp" alt="" aria-hidden="true" />

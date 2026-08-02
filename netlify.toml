@@ -19,3 +19,8 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Next.js on Netlify needs the Next Runtime to serve the App Router + API routes.
+# Without it, Netlify serves .next as static files and every route 404s.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

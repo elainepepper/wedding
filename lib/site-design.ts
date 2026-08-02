@@ -1,6 +1,9 @@
 export const editableScenes = ["welcome", "invitation", "venue", "rsvp", "dress", "meal", "travel", "recommendations", "wishes", "confirmation"] as const;
 export type EditableScene = (typeof editableScenes)[number];
 
+export const decorationMotions = ["none", "float", "sway", "drift", "shimmer", "cursor"] as const;
+export type DecorationMotion = (typeof decorationMotions)[number];
+
 export type SiteDecoration = {
   id: string;
   name: string;
@@ -13,6 +16,8 @@ export type SiteDecoration = {
   rotation: number;
   depth: number;
   visible: boolean;
+  motion: DecorationMotion;
+  motionStrength: number;
 };
 
 export type SiteContent = {
@@ -40,49 +45,42 @@ export type SiteDesign = {
   decorations: SiteDecoration[];
   hiddenBuiltIns: string[];
   motionDamping: number;
+  cursorMotion: boolean;
   fontPair: string;
 };
 
+// Locked design system: Cormorant Garamond + Montserrat, Playfair Display for
+// hero display. No script fonts.
 export const fontPairs = [
   {
-    id: "luxurious-fraunces",
-    name: "Romantic Editorial",
-    header: "Luxurious Script",
-    body: "Fraunces",
-    headerFamily: '"Luxurious Script", "Brush Script MT", cursive',
-    bodyFamily: '"Fraunces", Georgia, serif',
-    headerUrl: "https://fonts.google.com/specimen/Luxurious+Script",
-    bodyUrl: "https://fonts.google.com/specimen/Fraunces",
-  },
-  {
-    id: "windsong-cormorant",
-    name: "Storybook Romance",
-    header: "WindSong",
+    id: "playfair-cormorant",
+    name: "French Editorial",
+    header: "Playfair Display",
     body: "Cormorant Garamond",
-    headerFamily: '"WindSong", "Brush Script MT", cursive',
+    headerFamily: '"Playfair Display", Georgia, serif',
     bodyFamily: '"Cormorant Garamond", Georgia, serif',
-    headerUrl: "https://fonts.google.com/specimen/WindSong",
+    headerUrl: "https://fonts.google.com/specimen/Playfair+Display",
     bodyUrl: "https://fonts.google.com/specimen/Cormorant+Garamond",
   },
   {
-    id: "montecarlo-newsreader",
-    name: "Modern Fairytale",
-    header: "MonteCarlo",
-    body: "Newsreader",
-    headerFamily: '"MonteCarlo", "Brush Script MT", cursive',
-    bodyFamily: '"Newsreader", Georgia, serif',
-    headerUrl: "https://fonts.google.com/specimen/MonteCarlo",
-    bodyUrl: "https://fonts.google.com/specimen/Newsreader",
+    id: "cormorant-montserrat",
+    name: "Quiet Gallery",
+    header: "Cormorant Garamond",
+    body: "Montserrat",
+    headerFamily: '"Cormorant Garamond", Georgia, serif',
+    bodyFamily: '"Montserrat", "Segoe UI", sans-serif',
+    headerUrl: "https://fonts.google.com/specimen/Cormorant+Garamond",
+    bodyUrl: "https://fonts.google.com/specimen/Montserrat",
   },
   {
-    id: "allura-lora",
-    name: "Soft Calligraphy",
-    header: "Allura",
-    body: "Lora",
-    headerFamily: '"Allura", "Brush Script MT", cursive',
-    bodyFamily: '"Lora", Georgia, serif',
-    headerUrl: "https://fonts.google.com/specimen/Allura",
-    bodyUrl: "https://fonts.google.com/specimen/Lora",
+    id: "playfair-montserrat",
+    name: "Poster House",
+    header: "Playfair Display",
+    body: "Montserrat",
+    headerFamily: '"Playfair Display", Georgia, serif',
+    bodyFamily: '"Montserrat", "Segoe UI", sans-serif',
+    headerUrl: "https://fonts.google.com/specimen/Playfair+Display",
+    bodyUrl: "https://fonts.google.com/specimen/Montserrat",
   },
 ] as const;
 
@@ -129,11 +127,12 @@ export const defaultSiteDesign: SiteDesign = {
     wishesHeading: "Your wishes for our next chapter",
   },
   decorations: [
-    { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true },
+    { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true, motion: "float", motionStrength: .35 },
   ],
   hiddenBuiltIns: ["invitation-frame"],
   motionDamping: .1,
-  fontPair: "luxurious-fraunces",
+  cursorMotion: true,
+  fontPair: "playfair-cormorant",
 };
 
 const legacyCopy: Partial<Record<keyof SiteContent, string>> = {
@@ -173,10 +172,12 @@ export function normaliseSiteDesign(value: unknown): SiteDesign {
       x: number(decoration.x, 50, -20, 120), y: number(decoration.y, 50, -20, 120), width: number(decoration.width, 35, 5, 140),
       opacity: number(decoration.opacity, .5, 0, 1), rotation: number(decoration.rotation, 0, -180, 180), depth: number(decoration.depth, 0, -3, 3),
       visible: decoration.visible !== false,
+      motion: decorationMotions.includes(decoration.motion as DecorationMotion) ? decoration.motion as DecorationMotion : "none",
+      motionStrength: number(decoration.motionStrength, .5, 0, 1),
     }];
   }) : defaultSiteDesign.decorations;
   const allowedBuiltIns = new Set(builtInArtwork.map((item) => item.id));
   const hiddenBuiltIns = Array.isArray(source.hiddenBuiltIns) ? source.hiddenBuiltIns.filter((item): item is string => typeof item === "string" && allowedBuiltIns.has(item as never)) : defaultSiteDesign.hiddenBuiltIns;
   const fontPair = fontPairs.some((pair) => pair.id === source.fontPair) ? source.fontPair as string : defaultSiteDesign.fontPair;
-  return { content, decorations, hiddenBuiltIns, motionDamping: number(source.motionDamping, .1, .05, .24), fontPair };
+  return { content, decorations, hiddenBuiltIns, motionDamping: number(source.motionDamping, .1, .05, .24), cursorMotion: source.cursorMotion !== false, fontPair };
 }
