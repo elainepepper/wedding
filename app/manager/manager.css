@@ -398,3 +398,23 @@
   .stat-grid > button, .manager-panel { transition: none; }
   .stat-grid > button:hover { transform: none; }
 }
+
+/* v13: discoverable invitation links and Canva-like artwork positioning. */
+.invitation-links-page .section-intro-row > a { display: inline-flex; align-items: center; justify-content: center; padding: .7rem 1rem; border-radius: 999px; text-decoration: none; font-size: .68rem; font-weight: 750; }
+.invitation-link-studio { min-height: 420px; padding: clamp(1.2rem, 3vw, 2.5rem); display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(250px, .65fr); gap: clamp(1.2rem, 4vw, 4rem); align-items: center; background: radial-gradient(circle at 12% 10%, rgba(239,211,203,.7), transparent 38%), var(--m-paper); }
+.invitation-link-copy h3, .invitation-link-steps h3, .invitation-link-empty h3 { margin: .25rem 0; color: var(--m-wine); font-family: Georgia, serif; font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 400; }
+.invitation-link-copy > p:not(.panel-kicker) { margin: .25rem 0 1.2rem; color: var(--m-muted); font-family: Georgia, serif; font-style: italic; }
+.invitation-link-copy > label { max-width: 480px; display: grid; gap: .35rem; }.invitation-link-copy > label span { color: var(--m-muted); font-size: .58rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }.invitation-link-copy select { width: 100%; }
+.secure-link-field { max-width: 680px; margin: .8rem 0; border: 1px solid var(--m-line); border-radius: 10px; padding: .8rem; overflow: hidden; background: #fff; }.secure-link-field span { display: block; overflow: hidden; color: var(--m-muted); font: .65rem/1.4 ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.invitation-link-buttons { display: flex; flex-wrap: wrap; gap: .55rem; }.invitation-link-buttons a, .invitation-link-buttons button, .invitation-link-empty button { border: 1px solid var(--m-wine); border-radius: 999px; padding: .75rem 1rem; color: #fff; background: var(--m-wine); font-size: .68rem; font-weight: 750; text-decoration: none; }.invitation-link-buttons a { color: var(--m-wine); background: #fff; }
+.invitation-link-copy > small { max-width: 650px; margin-top: 1rem; display: block; color: var(--m-muted); font-size: .62rem; line-height: 1.55; }
+.invitation-link-steps { border-left: 1px solid var(--m-line); padding-left: clamp(1rem, 3vw, 2.5rem); }.invitation-link-steps h3 { font-size: 1.35rem; }.invitation-link-steps ol { margin: 1rem 0 0; padding: 0; display: grid; gap: 1rem; list-style: none; }.invitation-link-steps li { display: grid; grid-template-columns: 2rem 1fr; align-items: center; gap: .7rem; color: var(--m-muted); font-size: .68rem; }.invitation-link-steps b { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; background: #efd3cb; color: var(--m-wine); }
+.invitation-link-empty { min-height: 390px; padding: 2rem; display: grid; place-items: center; align-content: center; gap: .7rem; text-align: center; }.invitation-link-empty > span { color: var(--m-rose); font-size: 2rem; }.invitation-link-empty p { max-width: 440px; margin: 0; color: var(--m-muted); }.invitation-link-empty a { color: var(--m-rose); font-size: .68rem; }
+.editor-canvas-help { width: min(760px, calc(100% - 1rem)); margin: 0 auto .7rem; border: 1px solid rgba(190,106,121,.28); border-radius: 10px; padding: .65rem .8rem; display: flex; align-items: baseline; gap: .7rem; color: var(--m-wine); background: rgba(255,253,249,.92); }.editor-canvas-help strong { flex: 0 0 auto; font: 400 .82rem Georgia, serif; }.editor-canvas-help span { color: var(--m-muted); font-size: .58rem; line-height: 1.45; }
+
+@media (max-width: 760px) {
+  .invitation-link-studio { min-height: 0; grid-template-columns: 1fr; }
+  .invitation-link-steps { border-top: 1px solid var(--m-line); border-left: 0; padding: 1.2rem 0 0; }
+  .invitation-link-buttons > * { min-height: 44px; flex: 1 1 150px; text-align: center; }
+  .editor-canvas-help { align-items: flex-start; flex-direction: column; }
+}

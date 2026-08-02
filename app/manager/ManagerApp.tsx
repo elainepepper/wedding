@@ -34,9 +34,10 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "rsvps" | "seating" | "afterparty" | "imports" | "exports" | "website" | "settings";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "imports" | "exports" | "website" | "settings";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
+  { id: "links", label: "Invitation links", glyph: "↗" },
   { id: "overview", label: "Overview", glyph: "◫" }, { id: "guests", label: "Guests", glyph: "♙" },
   { id: "households", label: "Households", glyph: "⌂" }, { id: "rsvps", label: "RSVPs", glyph: "✓" },
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
@@ -184,6 +185,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
           />
         ) : null}
         {tab === "households" ? <Households households={data.households} guests={data.guests} act={act} notify={notify} /> : null}
+        {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "imports" ? <Imports act={act} /> : null}
@@ -266,6 +268,22 @@ function Households({ households, guests, act, notify }: { households: Household
     const afterParty = members.some((guest) => guest.after_party_invited);
     return <article className="household-card" key={household.id}><header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="member-stack">{members.map((guest) => <p key={guest.id}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></p>)}</div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button>{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
   })}</section></div>;
+}
+
+function InvitationLinks({ households, guests, notify, setTab }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void }) {
+  const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
+  const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
+  const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
+  const invitationUrl = selected ? `${typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin}/invite/${selected.invitation_token}` : "";
+  const copy = async () => {
+    if (!invitationUrl) return;
+    await navigator.clipboard.writeText(invitationUrl);
+    notify("Personal invitation link copied");
+  };
+  return <div className="manager-page invitation-links-page">
+    <div className="section-intro-row"><div><p className="panel-kicker">Private invitations</p><h2>Personal link generator</h2><span>Preview each guest journey, then copy its secure link for WhatsApp or text.</span></div><a className="secondary-button" href="/invitation-preview" target="_blank" rel="noreferrer">Preview every page ↗</a></div>
+    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => <option key={household.id} value={household.id}>{household.name}</option>)}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy guest link</button></div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Paste it into WhatsApp or a text message to that household.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
+  </div>;
 }
 
 function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: SeatingTable[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {

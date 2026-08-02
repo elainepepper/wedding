@@ -44,6 +44,7 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [fileHover, setFileHover] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [uploadError, setUploadError] = useState("");
   const selected = design.decorations.find((item) => item.id === selectedId) ?? null;
   const selectedFont = fontPairs.find((pair) => pair.id === design.fontPair) ?? fontPairs[0];
@@ -68,25 +69,30 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
     setSelectedId(copy.id);
   };
 
-  const addFile = async (file: File, x = 50, y = 50) => {
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-      setUploadError("Please choose a PNG, JPG or WebP illustration.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError("That file is larger than 10 MB. Please compress it first.");
+  const addFiles = async (files: File[], x = 50, y = 50) => {
+    const requested = files.slice(0, 24);
+    const accepted = requested.filter((file) => /^image\/(png|jpeg|webp)$/.test(file.type) && file.size <= 10 * 1024 * 1024);
+    if (!accepted.length) {
+      setUploadError("Choose PNG, JPG or WebP illustrations up to 10 MB each.");
       return;
     }
     setUploading(true);
     setUploadError("");
     try {
-      const src = demo ? URL.createObjectURL(file) : upload ? await upload(file) : "";
-      if (!src) throw new Error("Cloudinary upload is not configured yet.");
-      placeDecoration(src, file.name.replace(/\.[^.]+$/, ""), x, y);
+      for (let index = 0; index < accepted.length; index += 1) {
+        const file = accepted[index];
+        setUploadProgress(`Uploading ${index + 1} of ${accepted.length}…`);
+        const src = demo ? URL.createObjectURL(file) : upload ? await upload(file) : "";
+        if (!src) throw new Error("Cloudinary upload is not configured yet.");
+        const offset = (index % 6) * 3;
+        placeDecoration(src, file.name.replace(/\.[^.]+$/, ""), Math.min(110, x + offset), Math.min(110, y + offset));
+      }
+      if (accepted.length !== requested.length) setUploadError("Some files were skipped. Use PNG, JPG or WebP files no larger than 10 MB.");
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "The illustration could not be uploaded.");
     } finally {
       setUploading(false);
+      setUploadProgress("");
     }
   };
 
@@ -102,10 +108,14 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
   const dropFile = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setFileHover(false);
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.dataTransfer.files ?? []);
+    if (!files.length) return;
     const point = pointOnCanvas(event, event.currentTarget);
-    void addFile(file, point.x, point.y);
+    void addFiles(files, point.x, point.y);
+  };
+  const nudgeSelected = (x: number, y: number) => {
+    if (!selected) return;
+    updateDecoration(selected.id, { x: Math.max(-20, Math.min(120, selected.x + x)), y: Math.max(-20, Math.min(120, selected.y + y)) });
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -150,16 +160,17 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
       <section className="editor-stage-panel">
         <div className="editor-stage-toolbar"><nav className="editor-scenes" aria-label="Preview a website chapter">{editableScenes.map((item) => <button type="button" key={item} className={scene === item ? "is-active" : ""} onClick={() => { setScene(item); setSelectedId(design.decorations.find((element) => element.scene === item)?.id ?? null); }}>{sceneNames[item]}</button>)}</nav><div className="editor-preview-mode" aria-label="Preview size"><button type="button" className={previewMode === "desktop" ? "is-active" : ""} onClick={() => setPreviewMode("desktop")}>▰ Desktop</button><button type="button" className={previewMode === "mobile" ? "is-active" : ""} onClick={() => setPreviewMode("mobile")}>▯ Mobile</button></div></div>
         <div className={`editor-canvas-viewport is-${previewMode}`}>
+          <div className="editor-canvas-help"><strong>Position your artwork</strong><span>Drag it directly on the canvas. Select it for exact size, rotation and layer controls. Arrow keys nudge one step; Shift + arrow nudges five.</span></div>
           <div className={`editor-canvas editor-canvas--${scene}${fileHover ? " is-file-hover" : ""}`} style={{ "--preview-header": selectedFont.headerFamily, "--preview-body": selectedFont.bodyFamily } as React.CSSProperties} onPointerMove={moveElement} onPointerUp={() => setDraggingId(null)} onPointerCancel={() => setDraggingId(null)} onDragEnter={(event) => { event.preventDefault(); setFileHover(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFileHover(false); }} onDrop={dropFile}>
-            {sceneDecorations.filter((item) => item.visible).sort((a, b) => a.depth - b.depth).map((item) => <button type="button" key={item.id} className={`editor-canvas-element${selectedId === item.id ? " is-selected" : ""}${draggingId === item.id ? " is-dragging" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: item.opacity, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, zIndex: item.depth + 4 }} onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDraggingId(item.id); setSelectedId(item.id); }} onClick={() => setSelectedId(item.id)} aria-label={`Move and edit ${item.name}`}><img src={item.src} alt="" /></button>)}
+            {sceneDecorations.filter((item) => item.visible).sort((a, b) => a.depth - b.depth).map((item) => <button type="button" key={item.id} className={`editor-canvas-element${selectedId === item.id ? " is-selected" : ""}${draggingId === item.id ? " is-dragging" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: item.opacity, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, zIndex: item.depth + 4 }} onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDraggingId(item.id); setSelectedId(item.id); }} onKeyDown={(event) => { const step = event.shiftKey ? 5 : 1; const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }; const move = moves[event.key]; if (move) { event.preventDefault(); updateDecoration(item.id, { x: Math.max(-20, Math.min(120, item.x + move[0])), y: Math.max(-20, Math.min(120, item.y + move[1])) }); } }} onClick={() => setSelectedId(item.id)} aria-label={`Move and edit ${item.name}`}><img src={item.src} alt="" /></button>)}
             <div className="editor-preview-copy"><PreviewCopy design={design} scene={scene} /></div>
             {fileHover ? <div className="editor-drop-overlay"><strong>Drop your illustration here</strong><span>It will be placed exactly at your pointer.</span></div> : null}
           </div>
         </div>
-        <div className="element-toolbar"><div><h3>{sceneNames[scene]} illustrations</h3><span>{sceneDecorations.length} editable element{sceneDecorations.length === 1 ? "" : "s"} · drag directly on the canvas</span></div><div><label className={`editor-upload-button${uploading ? " is-loading" : ""}`}><input type="file" accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void addFile(file); event.currentTarget.value = ""; }} />{uploading ? "Uploading…" : "↑ Upload artwork"}</label><button type="button" onClick={addDecoration}>＋ Add supplied art</button></div></div>
+        <div className="element-toolbar"><div><h3>{sceneNames[scene]} illustrations</h3><span>{sceneDecorations.length} editable element{sceneDecorations.length === 1 ? "" : "s"} · drag directly on the canvas</span></div><div><label className={`editor-upload-button${uploading ? " is-loading" : ""}`}><input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void addFiles(files); event.currentTarget.value = ""; }} />{uploading ? uploadProgress || "Uploading…" : "↑ Upload illustrations"}</label><button type="button" onClick={addDecoration}>＋ Add supplied art</button></div></div>
         {uploadError ? <p className="editor-upload-error" role="alert">{uploadError}</p> : null}
         <div className="element-chips">{sceneDecorations.map((item) => <button type="button" key={item.id} className={selectedId === item.id ? "is-active" : ""} onClick={() => setSelectedId(item.id)}><img src={item.src} alt="" /><span>{item.name}</span></button>)}{!sceneDecorations.length ? <p>Drag a PNG, JPG or WebP onto the canvas, or choose “Add supplied art”.</p> : null}</div>
-        {selected ? <section className="element-inspector"><header><input aria-label="Element name" value={selected.name} onChange={(event) => updateDecoration(selected.id, { name: event.target.value })} /><div><button type="button" onClick={() => duplicateDecoration(selected)}>Duplicate</button><button type="button" onClick={() => removeDecoration(selected.id)}>Remove</button></div></header><div className="element-quick-actions"><button type="button" onClick={() => updateDecoration(selected.id, { x: 50, y: 50 })}>Centre</button><button type="button" onClick={() => updateDecoration(selected.id, { rotation: 0 })}>Straighten</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.max(-3, selected.depth - 1) })}>Send backward</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.min(3, selected.depth + 1) })}>Bring forward</button></div><div className="element-control-grid">
+        {selected ? <section className="element-inspector"><header><input aria-label="Element name" value={selected.name} onChange={(event) => updateDecoration(selected.id, { name: event.target.value })} /><div><button type="button" onClick={() => duplicateDecoration(selected)}>Duplicate</button><button type="button" onClick={() => removeDecoration(selected.id)}>Remove</button></div></header><div className="element-quick-actions"><button type="button" onClick={() => nudgeSelected(-2, 0)}>← Left</button><button type="button" onClick={() => nudgeSelected(0, -2)}>↑ Up</button><button type="button" onClick={() => nudgeSelected(0, 2)}>↓ Down</button><button type="button" onClick={() => nudgeSelected(2, 0)}>Right →</button><button type="button" onClick={() => updateDecoration(selected.id, { x: 50, y: 50 })}>Centre</button><button type="button" onClick={() => updateDecoration(selected.id, { rotation: 0 })}>Straighten</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.max(-3, selected.depth - 1) })}>Send backward</button><button type="button" onClick={() => updateDecoration(selected.id, { depth: Math.min(3, selected.depth + 1) })}>Bring forward</button></div><div className="element-control-grid">
           <label><span>Artwork</span><select value={decorationLibrary.some((item) => item.src === selected.src) ? selected.src : "custom"} onChange={(event) => { if (event.target.value !== "custom") updateDecoration(selected.id, { src: event.target.value }); }}><option value="custom">Uploaded / Cloudinary</option>{decorationLibrary.map((item) => <option key={item.src} value={item.src}>{item.name}</option>)}</select></label>
           <label className="wide"><span>Image URL</span><input value={selected.src} onChange={(event) => updateDecoration(selected.id, { src: event.target.value })} /></label>
           <label><span>Horizontal · {Math.round(selected.x)}%</span><input type="range" min="-20" max="120" value={selected.x} onChange={(event) => updateDecoration(selected.id, { x: Number(event.target.value) })} /></label>
