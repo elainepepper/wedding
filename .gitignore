@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.netlify/
+.env
+.env.local
+.env.*.local
+!.env.example
+*.log
+*.tsbuildinfo
