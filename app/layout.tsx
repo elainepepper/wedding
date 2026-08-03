@@ -16,6 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · Elaine & Haykal",
     },
     description,
+    // Locked privacy spec: the invitation is shared by private link only —
+    // never indexed, and guest tokens never leak through the Referer header.
+    robots: { index: false, follow: false },
+    referrer: "no-referrer",
     openGraph: {
       title: "Elaine & Haykal — 7 November 2026",
       description,
@@ -41,6 +45,8 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preload" as="image" href="/wedding/story/gen-floral-arch-with-blue-lace-accents.webp" fetchPriority="high" />
+        <link rel="preload" as="image" href="/wedding/story/gen-whimsical-canopy-wedding-sticker.webp" fetchPriority="high" />
         <link
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Montserrat:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
           rel="stylesheet"

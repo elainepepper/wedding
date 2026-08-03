@@ -47,6 +47,15 @@ const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
 ];
 
 const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim();
+// The wedding evening begins 6:00pm in Kuala Lumpur; fall back to the known date if settings are blank.
+const daysUntilWedding = (weddingDate: string | null | undefined) => {
+  const target = Date.parse(`${/^\d{4}-\d{2}-\d{2}$/.test(weddingDate || "") ? weddingDate : "2026-11-07"}T18:00:00+08:00`);
+  return Math.max(0, Math.ceil((target - Date.now()) / 86_400_000));
+};
+const greetingForNow = () => {
+  const hour = new Date().getHours();
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+};
 const dateLabel = (value: string | null | undefined) => value ? new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Perth" }).format(new Date(`${value.replace(" ", "T")}Z`)) : "—";
 
 function downloadFile(filename: string, content: string, type = "text/csv;charset=utf-8") {
@@ -223,7 +232,7 @@ function Overview({ data, stats, jump, setTab }: { data: ManagerData; stats: Rec
     ["Need a room", stats.accommodation, "Accommodation requests", "All"], ["Unassigned", stats.unassigned, "Confirmed without a table", "Confirmed"],
   ];
   return <div className="manager-page overview-page">
-    <section className="welcome-strip"><div><p>Good evening</p><h2>Your celebration is taking shape.</h2><span>{stats.confirmed} of {stats.total} guests are confirmed · {stats.meals} meals selected</span></div><div className="countdown"><strong>98</strong><span>days to go</span></div></section>
+    <section className="welcome-strip"><div><p>{greetingForNow()}</p><h2>Your celebration is taking shape.</h2><span>{stats.confirmed} of {stats.total} guests are confirmed · {stats.meals} meals selected</span></div><div className="countdown"><strong>{daysUntilWedding(data.settings.wedding_date)}</strong><span>days to go</span></div></section>
     <section className="stat-grid">{cards.map(([label, value, note, filter]) => <button key={String(label)} onClick={() => jump(String(filter))}><span>{label}</span><strong>{value}</strong><small>{note}</small><i>↗</i></button>)}</section>
     <div className="overview-grid">
       <section className="manager-panel response-panel"><div className="panel-head"><div><p className="panel-kicker">Response pulse</p><h3>RSVP progress</h3></div><button onClick={() => setTab("rsvps")}>View RSVPs</button></div>
@@ -299,10 +308,11 @@ function InvitationLinks({ households, guests, notify, setTab }: { households: H
 
 function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: SeatingTable[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [newTable, setNewTable] = useState(false);
+  const [seatSearch, setSeatSearch] = useState("");
   const confirmed = guests.filter((guest) => guest.rsvp_status === "Confirmed");
-  const unassigned = confirmed.filter((guest) => !guest.table_id);
+  const unassigned = confirmed.filter((guest) => !guest.table_id && (!seatSearch || displayName(guest).toLowerCase().includes(seatSearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(seatSearch.toLowerCase())));
   const drop = (event: DragEvent, tableId: number | null) => { event.preventDefault(); const guestId = Number(event.dataTransfer.getData("text/guest-id")); if (guestId) void act({ action: "moveGuest", guestId, tableId }, tableId ? "Guest assigned to table" : "Guest returned to unassigned"); };
-  return <div className="manager-page seating-page"><div className="section-intro-row"><div><p className="panel-kicker">Visual floor plan</p><h2>{tables.length} tables · {unassigned.length} unassigned</h2><span>Drag confirmed guests between the panel and tables.</span></div><button onClick={() => setNewTable(true)}>＋ Create table</button></div><div className="seating-layout"><aside className="unassigned-panel" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, null)}><header><h3>Unassigned guests</h3><span>{unassigned.length}</span></header><label><span>⌕</span><input placeholder="Search unassigned" /></label><div>{unassigned.map((guest) => <GuestPill key={guest.id} guest={guest} />)}{!unassigned.length ? <p className="mini-empty">Every confirmed guest has a table. Beautiful.</p> : null}</div></aside><section className="floor-plan"><div className="floor-label"><span>Grand Hyatt · Ballroom</span><small>Stage</small></div>{tables.map((table) => {
+  return <div className="manager-page seating-page"><div className="section-intro-row"><div><p className="panel-kicker">Visual floor plan</p><h2>{tables.length} tables · {unassigned.length} unassigned</h2><span>Drag confirmed guests between the panel and tables.</span></div><button onClick={() => setNewTable(true)}>＋ Create table</button></div><div className="seating-layout"><aside className="unassigned-panel" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, null)}><header><h3>Unassigned guests</h3><span>{unassigned.length}</span></header><label><span>⌕</span><input value={seatSearch} onChange={(event) => setSeatSearch(event.target.value)} placeholder="Search unassigned" aria-label="Search unassigned guests" /></label><div>{unassigned.map((guest) => <GuestPill key={guest.id} guest={guest} />)}{!unassigned.length ? <p className="mini-empty">Every confirmed guest has a table. Beautiful.</p> : null}</div></aside><section className="floor-plan"><div className="floor-label"><span>Grand Hyatt · Ballroom</span><small>Stage</small></div>{tables.map((table) => {
     const seated = confirmed.filter((guest) => guest.table_id === table.id);
     return <article key={table.id} className={`floor-table floor-table--${table.shape}${seated.length >= table.capacity ? " is-full" : ""}`} style={{ left: `${table.x}%`, top: `${table.y}%` }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, table.id)}><div className="table-object"><span>{table.name}</span><strong>{seated.length}/{table.capacity}</strong></div><div className="table-guests">{seated.map((guest) => <GuestPill key={guest.id} guest={guest} compact />)}</div>{seated.length > table.capacity ? <em>Capacity exceeded</em> : null}</article>;
   })}</section></div>{newTable ? <NewTableModal close={() => setNewTable(false)} act={act} /> : null}</div>;
@@ -313,8 +323,10 @@ function GuestPill({ guest, compact = false }: { guest: Guest; compact?: boolean
 }
 
 function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; selected: number[]; setSelected: (ids: number[]) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
-  const eligible = guests.filter((guest) => guest.after_party_eligible);
-  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{eligible.filter((g) => g.after_party_invited).length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{eligible.filter((g) => g.after_party_invited).length}</strong></p><p><span>Attending</span><strong>{eligible.filter((g) => g.after_party_attending === "Yes").length}</strong></p><p><span>Pending</span><strong>{eligible.filter((g) => g.after_party_attending === "Pending").length}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input placeholder="Search eligible guests" /></label>{selected.length ? <button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span><Status value={guest.after_party_attending} /><button type="button" className={guest.after_party_invited ? "is-on" : ""} onClick={() => act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`Toggle after-party invitation for ${displayName(guest)}`}><span /></button></label>)}</div></section></div>;
+  const [partySearch, setPartySearch] = useState("");
+  const allEligible = guests.filter((guest) => guest.after_party_eligible);
+  const eligible = allEligible.filter((guest) => !partySearch || displayName(guest).toLowerCase().includes(partySearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(partySearch.toLowerCase()));
+  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{allEligible.filter((g) => g.after_party_invited).length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{allEligible.filter((g) => g.after_party_invited).length}</strong></p><p><span>Attending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Yes").length}</strong></p><p><span>Pending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Pending").length}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span><Status value={guest.after_party_attending} /><button type="button" className={guest.after_party_invited ? "is-on" : ""} onClick={() => act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`Toggle after-party invitation for ${displayName(guest)}`}><span /></button></label>)}</div></section></div>;
 }
 
 function Imports({ act }: { act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
@@ -385,6 +397,10 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
     formspreeFormId: settings.formspree_form_id || "",
     musicUrl: settings.music_url || "",
     musicTitle: settings.music_title || "",
+    afterPartyWhen: (settings.after_party_when as string) || "",
+    afterPartyWhere: (settings.after_party_where as string) || "",
+    afterPartyDress: (settings.after_party_dress as string) || "",
+    afterPartyEntry: (settings.after_party_entry as string) || "",
   });
   const [managerForm, setManagerForm] = useState({ name: "", email: "", role: "partner" as "partner" | "planner" });
   return <div className="manager-page settings-page">
@@ -405,6 +421,14 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
         <label><span>Cloudinary cloud name</span><input value={form.cloudinaryCloudName} onChange={(event) => setForm({ ...form, cloudinaryCloudName: event.target.value })} placeholder="Optional" /></label>
         <label><span>Formspree form ID</span><input value={form.formspreeFormId} onChange={(event) => setForm({ ...form, formspreeFormId: event.target.value })} placeholder="Optional" /></label>
       </div>
+      <div className="panel-head"><div><p className="panel-kicker">The private chapter</p><h3>After-party details</h3></div></div>
+      <div className="settings-grid">
+        <label><span>When</span><input value={form.afterPartyWhen} onChange={(event) => setForm({ ...form, afterPartyWhen: event.target.value })} placeholder="After the final toast" /></label>
+        <label><span>Where</span><input value={form.afterPartyWhere} onChange={(event) => setForm({ ...form, afterPartyWhere: event.target.value })} placeholder="Revealed at the reception" /></label>
+        <label className="wide"><span>To wear</span><input value={form.afterPartyDress} onChange={(event) => setForm({ ...form, afterPartyDress: event.target.value })} placeholder="Come exactly as you are" /></label>
+        <label className="wide"><span>At the door</span><input value={form.afterPartyEntry} onChange={(event) => setForm({ ...form, afterPartyEntry: event.target.value })} placeholder="Give your name quietly at the door" /></label>
+      </div>
+      <p className="security-note"><span>✦</span><strong>Invitation-key access</strong> These details appear only to guests whose invitation includes the after-party. Everyone else never sees the page exists.</p>
       <p className="security-note"><span>◇</span><strong>Music is consent-based</strong> Add an MP3 delivery URL here. Guests choose whether to play it; audio never autoplays.</p>
     </form>
     <section className="manager-panel access-panel">

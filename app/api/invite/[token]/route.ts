@@ -1,4 +1,5 @@
 import { serverTimestamp, weddingRef } from "../../../../lib/firebase-admin";
+import { rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
 
 type InvitePermission = { id: number; ceremony_invited: number; reception_invited: number; after_party_invited: number };
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -6,6 +7,34 @@ const clean = (value: unknown, max = 500) => typeof value === "string" ? value.t
 async function householdForToken(token: string) {
   const snapshot = await weddingRef.collection("households").where("invitation_token", "==", token).where("invitation_enabled", "==", true).limit(1).get();
   return snapshot.empty ? null : snapshot.docs[0];
+}
+
+// Only the fields the invitation experience needs ever leave the server.
+// Internal notes, seating, categories and send-tracking stay private.
+function publicGuest(guest: Record<string, unknown>) {
+  return {
+    id: guest.id,
+    first_name: guest.first_name ?? "",
+    last_name: guest.last_name ?? "",
+    preferred_name: guest.preferred_name ?? null,
+    rsvp_status: guest.rsvp_status ?? "Pending",
+    ceremony_invited: guest.ceremony_invited ?? 0,
+    reception_invited: guest.reception_invited ?? 0,
+    after_party_invited: guest.after_party_invited ?? 0,
+    after_party_attending: guest.after_party_attending ?? "Pending",
+    meal_selection: guest.meal_selection ?? null,
+    dietary_requirements: guest.dietary_requirements ?? null,
+    allergies: guest.allergies ?? null,
+    accessibility: guest.accessibility ?? null,
+    transport_required: guest.transport_required ?? 0,
+    accommodation_required: guest.accommodation_required ?? 0,
+    travel_arrival: guest.travel_arrival ?? null,
+    travel_departure: guest.travel_departure ?? null,
+    accommodation_name: guest.accommodation_name ?? null,
+    song_request: guest.song_request ?? null,
+    wishes: guest.wishes ?? null,
+    mobile: guest.mobile ?? null,
+  };
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ token: string }> }) {
@@ -20,14 +49,25 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     weddingRef.get(),
   ]);
   const guests = guestSnapshot.docs.map((doc) => doc.data()).filter((guest) => guest.age_group === "Adult").sort((a, b) => Number(a.id) - Number(b.id));
-  const events = eventSnapshot.docs.map((doc) => doc.data()).sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
+  const afterPartyInvited = guests.some((guest) => Boolean(guest.after_party_invited));
+  const events = eventSnapshot.docs.map((doc) => doc.data())
+    // The private after-party must not exist at all for guests who are not
+    // invited to it — it is never sent to the browser, not merely hidden.
+    .filter((event) => afterPartyInvited || !/after[\s-]?party/i.test(String(event.name ?? "")))
+    .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
+    .map((event) => ({ id: event.id, name: event.name ?? "", event_date: event.event_date ?? null, event_time: event.event_time ?? null, venue: event.venue ?? null, sort_order: event.sort_order ?? 0 }));
   const settings = settingsSnapshot.data() ?? {};
   return Response.json({
     household: { id: household.id, name: household.name, maxGuests: guests.length },
-    guests,
+    guests: guests.map(publicGuest),
     events,
-    settings,
-    afterPartyInvited: guests.some((guest) => Boolean(guest.after_party_invited)),
+    settings: {
+      rsvp_deadline: settings.rsvp_deadline ?? null,
+      confirmation_message: settings.confirmation_message ?? null,
+      music_url: settings.music_url ?? null,
+      music_title: settings.music_title ?? null,
+    },
+    afterPartyInvited,
   });
 }
 
@@ -40,6 +80,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const mobile = clean(payload.mobile, 60);
   const responses = Array.isArray(payload.guests) ? payload.guests.slice(0, 30) as Array<Record<string, unknown>> : [];
   if (!/^\+[0-9]{8,15}$/.test(mobile)) return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
+  const settingsBefore = (await weddingRef.get()).data() ?? {};
+  if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
+    return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
+  }
   const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "==", Number(household.id)).where("archived", "==", 0).get();
   const allowedDocs = allowedSnapshot.docs.filter((doc) => doc.data().age_group === "Adult");
   const allowedById = new Map<number, { doc: FirebaseFirestore.QueryDocumentSnapshot; permission: InvitePermission }>(allowedDocs.map((doc) => [Number(doc.data().id), { doc, permission: doc.data() as InvitePermission }]));
@@ -80,8 +124,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const activity = weddingRef.collection("activityLogs").doc();
   batch.set(activity, { admin_name: "Guest RSVP", action: "RSVP updated", record_type: "household", record_id: String(household.id), detail: `${household.name} ${anyAttending ? "submitted attendance details" : "declined the invitation"}`, created_at: serverTimestamp() });
   await batch.commit();
-  const settings = (await weddingRef.get()).data() ?? {};
-  const formId = process.env.FORMSPREE_FORM_ID || settings.formspree_form_id;
+  const formId = process.env.FORMSPREE_FORM_ID || settingsBefore.formspree_form_id;
   if (formId) {
     try { await fetch(`https://formspree.io/f/${encodeURIComponent(formId)}`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ household: household.name, mobile, attending: anyAttending ? "Yes" : "No", namedGuests: allowedDocs.length, message: "A new personalised wedding RSVP was submitted." }) }); } catch { /* Firestore remains authoritative. */ }
   }
