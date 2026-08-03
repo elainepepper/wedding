@@ -425,3 +425,21 @@
 .custom-page-editor .danger-link { justify-self: start; }
 .editor-add-page { min-height: 44px; border: 1px dashed #CDBA9A; border-radius: 8px; background: transparent; color: #8E4258; font-weight: 600; cursor: pointer; }
 .editor-add-page:hover { background: #FDF9F6; }
+
+/* Wishes & advice */
+.wish-list { display: grid; gap: .75rem; margin: 0 0 1.4rem; }
+.wish-list blockquote {
+  margin: 0;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(142, 66, 88, .18);
+  border-left: 3px solid rgba(142, 66, 88, .45);
+  border-radius: 0 10px 10px 0;
+  background: #fff;
+}
+.wish-list--private blockquote { border-left-color: #A05066; background: rgba(216, 192, 180, .14); }
+.wish-list blockquote p { margin: 0; font-size: .95rem; line-height: 1.55; white-space: pre-wrap; }
+.wish-list blockquote cite {
+  display: block; margin-top: .45rem; font-style: normal;
+  font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: #8E4258;
+}
+.empty-note { margin: 0 0 1.4rem; font-size: .88rem; opacity: .65; }

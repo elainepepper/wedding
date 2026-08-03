@@ -56,6 +56,8 @@ export type SiteDesign = {
   content: SiteContent;
   decorations: SiteDecoration[];
   hiddenBuiltIns: string[];
+  // Where the words sit on each scene, and how large they are.
+  textLayout: Record<string, { x: number; y: number; size: number }>;
   hiddenScenes: string[];
   customPages: CustomPage[];
   motionDamping: number;
@@ -136,7 +138,7 @@ export const defaultSiteDesign: SiteDesign = {
   content: {
     heroKicker: "Elaine & Haykal · 07.11.26",
     heroGreeting: "Hello,",
-    heroNote: "A beautiful evening awaits, and it would mean the world to share it with you.",
+    heroNote: "An evening of love and laughter awaits — it would be lovelier still with you in it.",
     familyLine: "With the love and blessing of their families",
     invitationLine: "request the pleasure of your company at their wedding reception",
     brideName: "Elaine",
@@ -146,9 +148,9 @@ export const defaultSiteDesign: SiteDesign = {
     venueName: "The Grand Salon",
     venueAddress: "Level 1, Grand Hyatt Kuala Lumpur\n12 Jalan Pinang, 50450 Kuala Lumpur",
     dressKicker: "An evening in your finest",
-    dressCode: "Black tie, in colour",
-    dressNote: "We invite you to arrive in formal eveningwear, with colour and a touch of romance. Think graceful silhouettes, polished tailoring and shoes made for dancing.",
-    dressRestriction: "Kindly avoid white, ivory, cream and beige — these shades are reserved for the bride.",
+    dressCode: "Formal",
+    dressNote: "Gentlemen in suits, with a tie or bow tie. Ladies in your most elegant dress, or in traditional dress — a qipao, baju kurung or sari would be beautiful.",
+    dressRestriction: "We kindly ask that white, ivory, cream and beige be left to the bride.",
     wishesKicker: "A few words for our forever",
     wishesHeading: "Your wishes for our next chapter",
   },
@@ -156,6 +158,7 @@ export const defaultSiteDesign: SiteDesign = {
     { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true, motion: "float", motionStrength: .35 },
   ],
   hiddenBuiltIns: ["invitation-frame"],
+  textLayout: {},
   hiddenScenes: [],
   customPages: [],
   motionDamping: .1,
@@ -222,5 +225,16 @@ export function normaliseSiteDesign(value: unknown): SiteDesign {
   const allowedBuiltIns = new Set(builtInArtwork.map((item) => item.id));
   const hiddenBuiltIns = Array.isArray(source.hiddenBuiltIns) ? source.hiddenBuiltIns.filter((item): item is string => typeof item === "string" && allowedBuiltIns.has(item as never)) : defaultSiteDesign.hiddenBuiltIns;
   const fontPair = fontPairs.some((pair) => pair.id === source.fontPair) ? source.fontPair as string : defaultSiteDesign.fontPair;
-  return { content, decorations, hiddenBuiltIns, hiddenScenes, customPages, motionDamping: number(source.motionDamping, .1, .05, .24), cursorMotion: source.cursorMotion !== false, fontPair };
+  const rawLayout = source.textLayout && typeof source.textLayout === "object" ? source.textLayout as Record<string, unknown> : {};
+  const textLayout: SiteDesign["textLayout"] = {};
+  Object.keys(rawLayout).slice(0, 40).forEach((scene) => {
+    const entry = rawLayout[scene] as Record<string, unknown> | null;
+    if (!entry || typeof entry !== "object") return;
+    textLayout[scene] = {
+      x: number(entry.x, 0, -40, 40),
+      y: number(entry.y, 0, -40, 40),
+      size: number(entry.size, 1, 0.6, 1.8),
+    };
+  });
+  return { content, decorations, hiddenBuiltIns, hiddenScenes, customPages, textLayout, motionDamping: number(source.motionDamping, .1, .05, .24), cursorMotion: source.cursorMotion !== false, fontPair };
 }

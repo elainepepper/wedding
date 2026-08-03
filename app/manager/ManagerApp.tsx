@@ -14,6 +14,7 @@ type Guest = {
   allergies: string | null; child_meal: number; accessibility: string | null; transport_required: number;
   accommodation_required: number; table_id: number | null; seat_number: number | null; invitation_sent: number;
   invitation_sent_at: string | null; rsvp_submitted_at: string | null; internal_notes: string | null;
+  wishes?: string | null; marriage_advice?: string | null; bed_preference?: string | null; room_nights?: number | null;
   household_name: string | null; invitation_slug: string | null; invitation_token: string | null;
   invitation_enabled: number; opened_at: string | null; last_activity_at: string | null; table_name: string | null;
   updated_at: string;
@@ -21,7 +22,7 @@ type Guest = {
 
 type Household = {
   id: number; name: string; email: string | null; mobile: string | null; max_guests: number; invitation_slug: string;
-  invitation_token: string; invitation_enabled: number; opened_at: string | null; last_activity_at: string | null;
+  invitation_token: string; invitation_enabled: number; opened_at: string | null; last_activity_at: string | null; table_seen_at: string | null;
   guest_count: number; confirmed_count: number; declined_count: number; notes: string | null;
 };
 
@@ -34,13 +35,14 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "imports" | "exports" | "website" | "settings";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "website" | "settings";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "links", label: "Invitation links", glyph: "↗" },
   { id: "overview", label: "Overview", glyph: "◫" }, { id: "guests", label: "Guests", glyph: "♙" },
   { id: "households", label: "Households", glyph: "⌂" }, { id: "rsvps", label: "RSVPs", glyph: "✓" },
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
+  { id: "wishes", label: "Wishes & advice", glyph: "♡" },
   { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
   { id: "website", label: "Website editor", glyph: "✎" },
   { id: "settings", label: "Settings", glyph: "◇" },
@@ -197,6 +199,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
+        {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "imports" ? <Imports act={act} /> : null}
         {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
         {tab === "website" ? <WebsiteEditor
@@ -266,6 +269,28 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
   </div>;
 }
 
+// The guest names travel inside the link itself, so a link pasted into the
+// wrong WhatsApp chat is obvious at a glance to both sides.
+function nameSlug(names: string) {
+  return names.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+function inviteLink(origin: string, token: string | null, names: string) {
+  const slug = nameSlug(names);
+  return `${origin}/invite/${token}${slug ? `?for=${slug}` : ""}`;
+}
+// wa.me opens WhatsApp with the message already written. If we hold a mobile
+// number it opens that chat directly; otherwise WhatsApp asks who to send to.
+function waLink(mobile: string | null, message: string) {
+  const digits = (mobile || "").replace(/[^0-9]/g, "");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+function tableMessage(names: string, tables: string, link: string) {
+  return `Dear ${names},\n\nElaine and Haykal have assigned your seat for 7 November — you are at ${tables}.\n\nYou can see it on your invitation here:\n${link}\n\nWith love,\nElaine & Haykal`;
+}
+function invitationMessage(names: string, link: string) {
+  return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
+}
+
 function Households({ households, guests, act, notify }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void }) {
   const copyLink = async (household: Household, afterParty = false) => {
     const path = afterParty ? `/after-party?token=${household.invitation_token}` : `/invite/${household.invitation_token}`;
@@ -275,7 +300,7 @@ function Households({ households, guests, act, notify }: { households: Household
   return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>Couples, families and friends can reply together.</span></div></div><section className="household-grid">{households.map((household) => {
     const members = guests.filter((guest) => guest.household_id === household.id);
     const afterParty = members.some((guest) => guest.after_party_invited);
-    return <article className="household-card" key={household.id}><header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="member-stack">{members.map((guest) => <p key={guest.id}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></p>)}</div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button>{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
+    return <article className="household-card" key={household.id}><header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="member-stack">{members.map((guest) => <p key={guest.id}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></p>)}</div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
   })}</section></div>;
 }
 
@@ -283,8 +308,9 @@ function InvitationLinks({ households, guests, notify, setTab }: { households: H
   const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
   const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
-  const invitationUrl = selected ? `${typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin}/invite/${selected.invitation_token}` : "";
   const memberNames = members.map(displayName).join(" & ");
+  const origin = typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin;
+  const invitationUrl = selected ? inviteLink(origin, selected.invitation_token, memberNames || selected.name) : "";
   const copy = async () => {
     if (!invitationUrl || !selected) return;
     // Names travel with the link so pasting into the wrong chat is obvious.
@@ -292,17 +318,16 @@ function InvitationLinks({ households, guests, notify, setTab }: { households: H
     notify(`Link copied with names: ${memberNames || selected.name}`);
   };
   const copyAll = async () => {
-    const origin = window.location.origin;
     const lines = households.map((household) => {
       const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & ") || household.name;
-      return `${names} — ${origin}/invite/${household.invitation_token}`;
+      return `${names} — ${inviteLink(origin, household.invitation_token, names)}`;
     });
     await navigator.clipboard.writeText(lines.join("\n"));
     notify(`${lines.length} labelled links copied — one per household`);
   };
   return <div className="manager-page invitation-links-page">
     <div className="section-intro-row"><div><p className="panel-kicker">Private invitations</p><h2>Personal link generator</h2><span>Preview each guest journey, then copy its secure link for WhatsApp or text.</span></div><a className="secondary-button" href="/invitation-preview" target="_blank" rel="noreferrer">Preview every page ↗</a></div>
-    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => { const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & "); return <option key={household.id} value={household.id}>{household.name}{names && names !== household.name ? ` — ${names}` : ""}</option>; })}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy link + names</button><button type="button" className="secondary-button" onClick={() => void copyAll()}>Copy all links</button></div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Paste it into WhatsApp or a text message to that household.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
+    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => { const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & "); return <option key={household.id} value={household.id}>{household.name}{names && names !== household.name ? ` — ${names}` : ""}</option>; })}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy link + names</button><button type="button" className="secondary-button" onClick={() => void copyAll()}>Copy all links</button>{selected ? <a className="wa-button" href={waLink(selected.mobile, invitationMessage(memberNames || selected.name, invitationUrl))} target="_blank" rel="noreferrer">Send on WhatsApp ↗</a> : null}</div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Press <b>Send on WhatsApp</b>. The message is written for you — you only press send.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
   </div>;
 }
 
@@ -357,6 +382,39 @@ function Imports({ act }: { act: (payload: Record<string, unknown>, success: str
   };
   const template = "First Name,Last Name,Preferred Name,Household,Mobile,Guest Category,Bride or Groom Side,RSVP Status,Ceremony Invited,Reception Invited,After-Party Invited,Dietary Requirements,Allergies,Table,Notes\n";
   return <div className="manager-page imports-page"><div className="section-intro-row"><div><p className="panel-kicker">Bring your list</p><h2>Import adult guests</h2><span>Use a CSV exported from Google Sheets. A mobile number with country code is required for every guest.</span></div><button className="secondary-button" onClick={() => downloadFile("elaine-haykal-guest-template.csv", template)}>Download template</button></div><section className="manager-panel import-panel"><label className="drop-zone"><input type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (file) parse(file); }} /><span>↓</span><h3>{fileName || "Drop your guest list here"}</h3><p>CSV exported from Google Sheets · up to 2,000 rows</p><button type="button">Choose CSV file</button></label>{rows.length ? <div className="import-preview"><header><div><h3>Preview {rows.length} rows</h3><p>Review names, households and required mobile numbers.</p></div><select value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value)}><option value="skip">Skip duplicates</option><option value="update">Update duplicates</option></select></header><div className="table-scroll"><table><thead><tr><th>First name</th><th>Last name</th><th>Household</th><th>Mobile</th><th>Group</th><th>Status</th></tr></thead><tbody>{rows.slice(0, 8).map((row, index) => <tr key={index}><td>{String(row.firstName || "Missing")}</td><td>{String(row.lastName || "")}</td><td>{String(row.household || "")}</td><td>{String(row.mobile || "Required")}</td><td>{String(row.category || "Friends")}</td><td>{String(row.rsvpStatus || "Pending")}</td></tr>)}</tbody></table></div><footer><span>{rows.length > 8 ? `Showing first 8 of ${rows.length} rows` : `${rows.length} rows ready`}</span><button onClick={() => act({ action: "importGuests", rows, duplicateMode }, "Guest list imported")}>Confirm import</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Check duplicates</h3><p>Skip or update matching mobile and name records.</p></article></section></div>;
+}
+
+function WishesAndAdvice({ guests }: { guests: Guest[] }) {
+  const named = (guest: Guest) => guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim();
+  const wishes = guests.filter((guest) => (guest.wishes || "").trim());
+  const advice = guests.filter((guest) => (guest.marriage_advice || "").trim());
+  const rooms = guests.filter((guest) => (guest.bed_preference || "").trim() || guest.room_nights);
+  const copyAll = (items: Guest[], field: "wishes" | "marriage_advice") => {
+    const text = items.map((guest) => `${named(guest)}\n${(guest[field] || "").trim()}`).join("\n\n");
+    navigator.clipboard.writeText(text).catch(() => undefined);
+  };
+  return <>
+    <div className="panel-head">
+      <div><p className="panel-kicker">Shared on the night</p><h3>Warm wishes ({wishes.length})</h3></div>
+      {wishes.length ? <button className="secondary-button" onClick={() => copyAll(wishes, "wishes")}>Copy all</button> : null}
+    </div>
+    {wishes.length
+      ? <div className="wish-list">{wishes.map((guest) => <blockquote key={`wish-${guest.id}`}><p>{guest.wishes}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      : <p className="empty-note">No wishes have been left yet.</p>}
+
+    <div className="panel-head">
+      <div><p className="panel-kicker">Private — only the two of you</p><h3>Marriage advice ({advice.length})</h3></div>
+      {advice.length ? <button className="secondary-button" onClick={() => copyAll(advice, "marriage_advice")}>Copy all</button> : null}
+    </div>
+    {advice.length
+      ? <div className="wish-list wish-list--private">{advice.map((guest) => <blockquote key={`advice-${guest.id}`}><p>{guest.marriage_advice}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      : <p className="empty-note">No advice has been left yet.</p>}
+
+    <div className="panel-head"><div><p className="panel-kicker">Grand Hyatt</p><h3>Room requests ({rooms.length})</h3></div></div>
+    {rooms.length
+      ? <div className="wish-list">{rooms.map((guest) => <blockquote key={`room-${guest.id}`}><p>{guest.bed_preference === "Twin" ? "Two singles" : guest.bed_preference === "King" ? "One king" : "Bed not stated"}{guest.room_nights ? ` · ${guest.room_nights} night${guest.room_nights > 1 ? "s" : ""}` : ""}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      : <p className="empty-note">No rooms have been requested yet.</p>}
+  </>;
 }
 
 function Exports({ guests, tables }: { guests: Guest[]; tables: SeatingTable[] }) {

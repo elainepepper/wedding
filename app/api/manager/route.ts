@@ -21,7 +21,9 @@ export async function GET(request: Request) {
     const admin = await requireAdmin(request);
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
     const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
-      weddingRef.collection("guests").where("archived", "==", 0).get(),
+      // No "where" on archived: Firestore drops documents missing the field,
+      // which silently hid imported guests from the manager as well.
+      weddingRef.collection("guests").get(),
       weddingRef.collection("households").get(),
       weddingRef.collection("tables").get(),
       weddingRef.collection("events").where("is_enabled", "==", 1).get(),
@@ -33,10 +35,13 @@ export async function GET(request: Request) {
     const tables = tableSnapshot.docs.map(plainDoc);
     const householdById = new Map(households.map((item) => [Number(item.id), item]));
     const tableById = new Map(tables.map((item) => [Number(item.id), item]));
-    const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc).filter((item) => item.age_group === "Adult").map((guest): Record<string, unknown> => {
+    const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc)
+      .filter((item) => !Number(item.archived ?? 0))
+      .filter((item) => !/^(child|infant|baby|kid)$/i.test(String(item.age_group ?? "Adult").trim()))
+      .map((guest): Record<string, unknown> => {
       const household = householdById.get(Number(guest.household_id));
       const table = tableById.get(Number(guest.table_id));
-      return { ...guest, household_name: household?.name ?? null, invitation_slug: household?.invitation_slug ?? null, invitation_token: household?.invitation_token ?? null, invitation_enabled: household?.invitation_enabled ?? 0, opened_at: household?.opened_at ?? null, last_activity_at: household?.last_activity_at ?? null, table_name: table?.name ?? null };
+      return { ...guest, household_name: household?.name ?? null, invitation_slug: household?.invitation_slug ?? null, invitation_token: household?.invitation_token ?? null, invitation_enabled: household?.invitation_enabled ?? 0, opened_at: household?.opened_at ?? null, last_activity_at: household?.last_activity_at ?? null, table_seen_at: household?.table_seen_at ?? null, table_name: table?.name ?? null };
     }).sort((a, b) => String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")));
     const householdRows: Array<Record<string, unknown>> = households.map((household): Record<string, unknown> => {
       const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));

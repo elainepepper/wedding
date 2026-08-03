@@ -31,7 +31,9 @@ function publicGuest(guest: Record<string, unknown>) {
     travel_arrival: guest.travel_arrival ?? null,
     travel_departure: guest.travel_departure ?? null,
     accommodation_name: guest.accommodation_name ?? null,
-    song_request: guest.song_request ?? null,
+    bed_preference: guest.bed_preference ?? null,
+    table_name: guest.table_name ?? null,
+    room_nights: typeof guest.room_nights === "number" ? guest.room_nights : null,
     wishes: guest.wishes ?? null,
     mobile: guest.mobile ?? null,
   };
@@ -44,11 +46,31 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
   const household = householdDoc.data();
   await householdDoc.ref.set({ opened_at: household.opened_at || serverTimestamp(), last_activity_at: serverTimestamp() }, { merge: true });
   const [guestSnapshot, eventSnapshot, settingsSnapshot] = await Promise.all([
-    weddingRef.collection("guests").where("household_id", "==", Number(household.id)).where("archived", "==", 0).get(),
+    // household_id and archived are matched loosely on purpose. A Firestore
+    // "where" clause silently excludes any document that lacks the field, and
+    // an imported guest whose household_id is stored as text would never match
+    // a numeric comparison. Either case returned an empty guest list, which
+    // left the RSVP page impossible to complete.
+    weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get(),
     weddingRef.collection("events").where("is_enabled", "==", 1).get(),
     weddingRef.get(),
   ]);
-  const guests = guestSnapshot.docs.map((doc) => doc.data()).filter((guest) => guest.age_group === "Adult").sort((a, b) => Number(a.id) - Number(b.id));
+  const guests = guestSnapshot.docs.map((doc) => doc.data())
+    // Treat a guest as an adult unless they are explicitly marked otherwise,
+    // and as active unless explicitly archived, so that a missing field can
+    // never hide someone from their own invitation.
+    .filter((guest) => !/^(child|infant|baby|kid)$/i.test(String(guest.age_group ?? "Adult").trim()))
+    .filter((guest) => !Number(guest.archived ?? 0))
+    .sort((a, b) => Number(a.id) - Number(b.id));
+  // The seating plan lives in its own collection; guests only ever learn the
+  // name of their own table, and only once it has been assigned.
+  const tableIds = [...new Set(guests.map((guest) => Number(guest.table_id)).filter((id) => Number.isFinite(id) && id > 0))];
+  const tableNames = new Map<number, string>();
+  if (tableIds.length) {
+    const tableDocs = await Promise.all(tableIds.slice(0, 30).map((id) => weddingRef.collection("tables").doc(String(id)).get()));
+    tableDocs.forEach((doc) => { if (doc.exists) tableNames.set(Number(doc.data()?.id), String(doc.data()?.name ?? "")); });
+  }
+  guests.forEach((guest) => { guest.table_name = tableNames.get(Number(guest.table_id)) ?? null; });
   const afterPartyInvited = guests.some((guest) => Boolean(guest.after_party_invited));
   const events = eventSnapshot.docs.map((doc) => doc.data())
     // The private after-party must not exist at all for guests who are not
@@ -76,7 +98,13 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const householdDoc = await householdForToken(token);
   if (!householdDoc) return Response.json({ error: "This invitation link is no longer available." }, { status: 404 });
   const household = householdDoc.data();
-  const payload = await request.json() as { guests?: unknown; mobile?: unknown };
+  const payload = await request.json() as { guests?: unknown; mobile?: unknown; action?: unknown };
+  // Recorded when the table panel is actually shown to a guest, so the couple
+  // can see who still does not know where they are sitting.
+  if (payload.action === "tableSeen") {
+    await householdDoc.ref.set({ table_seen_at: serverTimestamp(), last_activity_at: serverTimestamp() }, { merge: true });
+    return Response.json({ ok: true });
+  }
   const mobile = clean(payload.mobile, 60);
   const responses = Array.isArray(payload.guests) ? payload.guests.slice(0, 30) as Array<Record<string, unknown>> : [];
   if (!/^\+[0-9]{8,15}$/.test(mobile)) return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
@@ -84,8 +112,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
     return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
   }
-  const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "==", Number(household.id)).where("archived", "==", 0).get();
-  const allowedDocs = allowedSnapshot.docs.filter((doc) => doc.data().age_group === "Adult");
+  const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get();
+  const allowedDocs = allowedSnapshot.docs
+    .filter((doc) => !/^(child|infant|baby|kid)$/i.test(String(doc.data().age_group ?? "Adult").trim()))
+    .filter((doc) => !Number(doc.data().archived ?? 0));
   const allowedById = new Map<number, { doc: FirebaseFirestore.QueryDocumentSnapshot; permission: InvitePermission }>(allowedDocs.map((doc) => [Number(doc.data().id), { doc, permission: doc.data() as InvitePermission }]));
   const responseIds = new Set(responses.map((guest) => Number(guest.id)));
   if (!responses.length || responses.length !== allowedDocs.length || responseIds.size !== allowedDocs.length || responses.some((guest) => !allowedById.has(Number(guest.id)))) {
@@ -114,7 +144,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       travel_arrival: clean(response.travelArrival, 20) || null,
       travel_departure: clean(response.travelDeparture, 20) || null,
       accommodation_name: clean(response.accommodationName, 240) || null,
-      song_request: clean(response.songRequest, 240) || null,
+      bed_preference: response.bedPreference === "King" || response.bedPreference === "Twin" ? response.bedPreference : null,
+      room_nights: [1, 2, 3].includes(Number(response.roomNights)) ? Number(response.roomNights) : null,
+      // Marriage advice is stored but never returned by GET — it is for the couple alone.
+      marriage_advice: clean(response.advice, 1500) || null,
       wishes: clean(response.wishes, 1500) || null,
       mobile,
       rsvp_submitted_at: serverTimestamp(), updated_at: serverTimestamp(),

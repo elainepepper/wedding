@@ -50,6 +50,14 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("mobile");
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [draggingText, setDraggingText] = useState<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const layoutFor = (name: string) => design.textLayout?.[name] ?? { x: 0, y: 0, size: 1 };
+  const updateLayout = (patch: Partial<{ x: number; y: number; size: number }>) => {
+    setDesign((current) => {
+      const existing = current.textLayout?.[scene] ?? { x: 0, y: 0, size: 1 };
+      return { ...current, textLayout: { ...(current.textLayout ?? {}), [scene]: { ...existing, ...patch } } };
+    });
+  };
   const [fileHover, setFileHover] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
@@ -182,11 +190,33 @@ export function WebsiteEditor({ initialDesign, save, upload, demo = false }: Pro
         <div className="editor-stage-toolbar"><nav className="editor-scenes" aria-label="Preview a website chapter">{[...editableScenes, ...design.customPages.map((page) => page.id)].map((item) => <button type="button" key={item} className={scene === item ? "is-active" : ""} onClick={() => { setScene(item); setSelectedId(design.decorations.find((element) => element.scene === item)?.id ?? null); }}>{sceneLabel(design, item)}</button>)}</nav><div className="editor-preview-mode" aria-label="Preview size"><button type="button" className={previewMode === "desktop" ? "is-active" : ""} onClick={() => setPreviewMode("desktop")}>▰ Desktop</button><button type="button" className={previewMode === "mobile" ? "is-active" : ""} onClick={() => setPreviewMode("mobile")}>▯ Mobile</button></div></div>
         <div className={`editor-canvas-viewport is-${previewMode}`}>
           <div className="editor-canvas-help"><strong>Position your artwork</strong><span>Drag it directly on the canvas. Select it for exact size, rotation and layer controls. Arrow keys nudge one step; Shift + arrow nudges five.</span></div>
-          <div className={`editor-canvas editor-canvas--${scene}${fileHover ? " is-file-hover" : ""}`} style={{ "--preview-header": selectedFont.headerFamily, "--preview-body": selectedFont.bodyFamily } as React.CSSProperties} onPointerMove={moveElement} onPointerUp={() => setDraggingId(null)} onPointerCancel={() => setDraggingId(null)} onDragEnter={(event) => { event.preventDefault(); setFileHover(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFileHover(false); }} onDrop={dropFile}>
+          <div className={`editor-canvas editor-canvas--${scene}${fileHover ? " is-file-hover" : ""}`} style={{ "--preview-header": selectedFont.headerFamily, "--preview-body": selectedFont.bodyFamily } as React.CSSProperties} onPointerMove={(event) => {
+              moveElement(event);
+              if (!draggingText) return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              updateLayout({
+                x: Math.max(-40, Math.min(40, draggingText.ox + ((event.clientX - draggingText.x) / rect.width) * 100)),
+                y: Math.max(-40, Math.min(40, draggingText.oy + ((event.clientY - draggingText.y) / rect.height) * 100)),
+              });
+            }} onPointerUp={() => { setDraggingId(null); setDraggingText(null); }} onPointerCancel={() => { setDraggingId(null); setDraggingText(null); }} onDragEnter={(event) => { event.preventDefault(); setFileHover(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFileHover(false); }} onDrop={dropFile}>
             {sceneDecorations.filter((item) => item.visible).sort((a, b) => a.depth - b.depth).map((item) => <button type="button" key={item.id} className={`editor-canvas-element${selectedId === item.id ? " is-selected" : ""}${draggingId === item.id ? " is-dragging" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: item.opacity, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, zIndex: item.depth + 4 }} onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDraggingId(item.id); setSelectedId(item.id); }} onKeyDown={(event) => { const step = event.shiftKey ? 5 : 1; const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }; const move = moves[event.key]; if (move) { event.preventDefault(); updateDecoration(item.id, { x: Math.max(-20, Math.min(120, item.x + move[0])), y: Math.max(-20, Math.min(120, item.y + move[1])) }); } }} onClick={() => setSelectedId(item.id)} aria-label={`Move and edit ${item.name}`}><img src={item.src} alt="" /></button>)}
-            <div className="editor-preview-copy"><PreviewCopy design={design} scene={scene} /></div>
+            <div
+              className={`editor-preview-copy${draggingText ? " is-dragging" : ""}`}
+              style={{ transform: `translate(${layoutFor(scene).x}%, ${layoutFor(scene).y}%)`, fontSize: `calc(1em * ${layoutFor(scene).size})` }}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                const current = layoutFor(scene);
+                setDraggingText({ x: event.clientX, y: event.clientY, ox: current.x, oy: current.y });
+              }}
+              title="Drag to move these words"
+            ><PreviewCopy design={design} scene={scene} /></div>
             {fileHover ? <div className="editor-drop-overlay"><strong>Drop your illustration here</strong><span>It will be placed exactly at your pointer.</span></div> : null}
           </div>
+        </div>
+        <div className="text-toolbar">
+          <div><h3>Words on this page</h3><span>Drag them on the canvas to move them</span></div>
+          <label><span>Text size</span><input type="range" min="0.6" max="1.8" step="0.02" value={layoutFor(scene).size} onChange={(event) => updateLayout({ size: Number(event.target.value) })} /></label>
+          <button type="button" onClick={() => updateLayout({ x: 0, y: 0, size: 1 })}>Reset</button>
         </div>
         <div className="element-toolbar"><div><h3>{sceneLabel(design, scene)} illustrations</h3><span>{sceneDecorations.length} editable element{sceneDecorations.length === 1 ? "" : "s"} · drag directly on the canvas</span></div><div><label className={`editor-upload-button${uploading ? " is-loading" : ""}`}><input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void addFiles(files); event.currentTarget.value = ""; }} />{uploading ? uploadProgress || "Uploading…" : "↑ Upload illustrations"}</label><button type="button" onClick={addDecoration}>＋ Add supplied art</button></div></div>
         {uploadError ? <p className="editor-upload-error" role="alert">{uploadError}</p> : null}

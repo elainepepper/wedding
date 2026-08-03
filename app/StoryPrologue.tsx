@@ -20,8 +20,10 @@ type PlaneCfg = {
   opacity?: number;
 };
 
+type CaptionCfg = { x?: number; y?: number; size?: number };
 type ChapterCfg = {
   id: string;
+  cap?: CaptionCfg;
   kind?: "title" | "finale";
   blue?: boolean;
   border?: string;
@@ -44,6 +46,10 @@ type WebkitAudioWindow = Window & typeof globalThis & {
 };
 
 const asset = (name: string) => `/wedding/story/${name}`;
+// A plane may name its artwork with or without a file extension, so a new
+// sticker can simply be dropped into public/wedding/story/ as a .png, .webp
+// or .jpg without anything here needing to change.
+const artwork = (name: string) => asset(/\.[a-z0-9]+$/i.test(name) ? name : `${name}.webp`);
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const lerp = (a: number, b: number, amount: number) => a + (b - a) * amount;
 const smoothstep = (edge0: number, edge1: number, value: number) => {
@@ -292,6 +298,13 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
     void audioContextRef.current?.close().catch(() => undefined);
   }, []);
 
+  // Caption nudges and sizing, authored in Story Studio.
+  const capStyle = (chapter: ChapterCfg): CSSProperties => ({
+    "--cap-x": `${chapter.cap?.x ?? 0}%`,
+    "--cap-y": `${chapter.cap?.y ?? 0}%`,
+    "--cap-size": chapter.cap?.size ?? 1,
+  } as CSSProperties);
+
   const renderTitleHeading = (heading: string) => {
     const parts = heading.split("&");
     if (parts.length !== 2) return <h1>{heading}</h1>;
@@ -346,7 +359,7 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
                       <div className="story-slot"><span>{plane.slot}</span></div>
                     ) : (
                       <img
-                        src={asset(`${plane.art}.webp`)}
+                        src={artwork(plane.art as string)}
                         alt={plane.alt ?? ""}
                         aria-hidden={plane.alt ? undefined : true}
                         loading={chapterIndex > 1 ? "lazy" : "eager"}
@@ -360,7 +373,7 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
               })}
 
               {chapter.kind === "title" ? (
-                <div className="story-title">
+                <div className="story-title" style={capStyle(chapter)}>
                   <p className="overline">{chapter.overline}</p>
                   {renderTitleHeading(chapter.heading)}
                   <p className="line">
@@ -370,7 +383,7 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
                   </p>
                 </div>
               ) : chapter.kind === "finale" ? null : (
-                <div className={`story-caption${chapter.blue ? " story-caption--blue" : ""}`}>
+                <div className={`story-caption${chapter.blue ? " story-caption--blue" : ""}`} style={capStyle(chapter)}>
                   <p className="overline">{chapter.overline}</p>
                   <h2>{chapter.heading}</h2>
                   {chapter.line ? <p className="line">{chapter.line}</p> : null}
@@ -378,7 +391,7 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
               )}
 
               {chapter.kind === "finale" && chapter.finale ? (
-                <div className="story-finale">
+                <div className="story-finale" style={capStyle(chapter)}>
                   <p className="overline">{chapter.finale.overline}</p>
                   <h2>{chapter.finale.heading}</h2>
                   <p className="line">
@@ -402,7 +415,7 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
           <div>
             <small>{String(activeChapter + 1).padStart(2, "0")} / {String(cfg.chapters.length).padStart(2, "0")}</small>
             <strong>{currentChapter?.kind === "title" ? "Our story" : currentChapter?.overline.replace(/^Chapter\s+[^·]+·\s*/i, "")}</strong>
-            <i aria-hidden="true"><span style={{ width: `${((activeChapter + 1) / cfg.chapters.length) * 100}%` }} /></i>
+            <i aria-hidden="true" style={{ "--story-heart": `${((activeChapter + 1) / cfg.chapters.length) * 100}%` } as CSSProperties}><span style={{ width: `${((activeChapter + 1) / cfg.chapters.length) * 100}%` }} /></i>
           </div>
           <button type="button" onClick={() => goToChapter(activeChapter + 1)} disabled={activeChapter === cfg.chapters.length - 1} aria-label="Next story chapter">→</button>
         </div>
