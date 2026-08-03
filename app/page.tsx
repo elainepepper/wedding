@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
-import { WeddingExperience } from "./WeddingExperience";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Elaine & Haykal — 7 November 2026",
-  description:
-    "You are invited to celebrate Elaine and Haykal at Grand Hyatt Kuala Lumpur.",
-};
-
+// The front door is the invitation itself.
 export default function Home() {
-  return <WeddingExperience />;
+  redirect("/welcome");
 }

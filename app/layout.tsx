@@ -49,7 +49,7 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/wedding/story/gen-floral-arch-with-blue-lace-accents.webp" fetchPriority="high" />
         <link rel="preload" as="image" href="/wedding/story/gen-whimsical-canopy-wedding-sticker.webp" fetchPriority="high" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Montserrat:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
           rel="stylesheet"
         />
       </head>

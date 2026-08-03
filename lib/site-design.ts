@@ -69,6 +69,19 @@ export type SiteDesign = {
 // hero display. No script fonts.
 export const fontPairs = [
   {
+    // Ogg is a licensed typeface, so this is the closest free stand-in: the
+    // same tall, high-contrast, bookish serif, set against Inter for anything
+    // a guest types.
+    id: "bodoni-cormorant",
+    name: "Editorial Didone",
+    header: "Bodoni Moda",
+    body: "Cormorant Garamond",
+    headerFamily: '"Bodoni Moda", "Playfair Display", Georgia, serif',
+    bodyFamily: '"Cormorant Garamond", Georgia, serif',
+    headerUrl: "https://fonts.google.com/specimen/Bodoni+Moda",
+    bodyUrl: "https://fonts.google.com/specimen/Cormorant+Garamond",
+  },
+  {
     id: "playfair-cormorant",
     name: "French Editorial",
     header: "Playfair Display",
@@ -163,7 +176,7 @@ export const defaultSiteDesign: SiteDesign = {
   customPages: [],
   motionDamping: .1,
   cursorMotion: true,
-  fontPair: "playfair-cormorant",
+  fontPair: "bodoni-cormorant",
 };
 
 const legacyCopy: Partial<Record<keyof SiteContent, string>> = {

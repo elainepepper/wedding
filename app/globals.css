@@ -16,8 +16,9 @@
   --pointer-x: 0;
   --pointer-y: 0;
   --font-body: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --font-sans: "Montserrat", "Segoe UI", system-ui, sans-serif;
-  --font-header: "Playfair Display", Georgia, serif;
+  /* Inter for anything a guest types or taps; the serif carries the voice. */
+  --font-sans: "Inter", "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-header: "Bodoni Moda", "Playfair Display", Georgia, serif;
   --motion-quick: 150ms;
   --motion-standard: 300ms;
   --motion-slow: 600ms;
@@ -3050,61 +3051,19 @@ html { scroll-snap-type: none; }
   pointer-events: none;
 }
 .scene-nav button:hover b,
-.scene-nav button:focus-visible b { opacity: 1; transform: translate3d(0,-50%,0); }
-
-.mobile-chapter-dock { display: none; }
-.scene-content :where(.primary-button, .text-button, .choice-card) { transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, background-color .28s ease, border-color .28s ease; }
+.scene-nav button:focus-visible b { opacity: 1; transform: translate3d(0,-50%,0); }.scene-content :where(.primary-button, .text-button, .choice-card) { transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, background-color .28s ease, border-color .28s ease; }
 .scene-content .primary-button:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(190,106,121,.26); }
 .scene-content :where(input, select, textarea):focus-visible { outline: 2px solid var(--manhattan); outline-offset: 3px; box-shadow: 0 0 0 7px rgba(190,106,121,.1); }
 .form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 30px 90px rgba(190,106,121,.1); }
 
 @media (max-width: 760px) {
-  .wedding-shell { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .wedding-shell { padding-bottom: env(safe-area-inset-bottom); }
   .wedding-shell::after { opacity: .028; }
-  .scene-nav, .scroll-progress { display: none; }
-  .mobile-chapter-dock {
-    position: fixed;
-    z-index: 92;
-    right: max(.7rem, env(safe-area-inset-right));
-    bottom: max(.65rem, env(safe-area-inset-bottom));
-    left: max(.7rem, env(safe-area-inset-left));
-    min-height: 64px;
-    border: 1px solid rgba(190,106,121,.34);
-    border-radius: 22px;
-    padding: .45rem;
-    display: grid;
-    grid-template-columns: 48px minmax(0,1fr) 48px;
-    align-items: center;
-    gap: .55rem;
-    color: var(--ink);
-    background: rgba(239,211,203,.86);
-    box-shadow: 0 18px 50px rgba(87,45,57,.18);
-    backdrop-filter: blur(18px) saturate(1.15);
-  }
-  .mobile-chapter-dock > button {
-    width: 48px;
-    height: 48px;
-    border: 1px solid rgba(190,106,121,.36);
-    border-radius: 16px;
-    display: grid;
-    place-items: center;
-    color: var(--ink);
-    background: rgba(255,255,255,.34);
-    font-size: 1.05rem;
-  }
-  .mobile-chapter-dock > button:disabled { opacity: .28; }
-  .mobile-chapter-dock > div { min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: end; gap: .12rem .6rem; }
-  .mobile-chapter-dock small { color: var(--manhattan); font-size: .55rem; font-weight: 700; letter-spacing: .12em; }
-  .mobile-chapter-dock strong { min-width: 0; overflow: hidden; font: italic 500 .76rem/1.2 var(--font-body, "Cormorant Garamond", serif); text-overflow: ellipsis; white-space: nowrap; }
-  .mobile-chapter-dock i { grid-column: 1 / -1; height: 2px; margin-top: .28rem; overflow: hidden; background: rgba(190,106,121,.2); }
-  .mobile-chapter-dock i span { height: 100%; display: block; background: linear-gradient(90deg,var(--coral),var(--manhattan)); transition: width .5s cubic-bezier(.2,.8,.2,1); }
-  .scene-content :where(.primary-button, .text-button, .choice-card):active { transform: scale(.985); }
+  .scene-nav, .scroll-progress { display: none; }.scene-content :where(.primary-button, .text-button, .choice-card):active { transform: scale(.985); }
   .form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 20px 55px rgba(190,106,121,.08); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .scene-content :where(.primary-button, .text-button, .choice-card),
-  .mobile-chapter-dock i span { transition: none; }
+@media (hover: none) {
   .scene-content .primary-button:hover { transform: none; }
 }
 
@@ -3825,7 +3784,6 @@ html { scroll-snap-type: none; }
 /* The photograph anyone without their own invitation link meets first.  */
 /* They may step past it and wander, but the RSVP stays closed to them.  */
 /* ==================================================================== */
-.wedding-shell.is-gated { max-height: 100svh; overflow: hidden; }
 .photo-gate {
   position: fixed;
   inset: 0;
@@ -4103,3 +4061,554 @@ canvas { pointer-events: none; }
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
 }
+
+/* ==================================================================== */
+/* One guide page, four lists, opened by tapping. Shorter pages.        */
+/* ==================================================================== */
+.guide { display: grid; gap: .5rem; margin-top: 1.2rem; text-align: left; }
+.guide-group { border-radius: 14px; background: rgba(255, 252, 249, .46); overflow: hidden; }
+.guide-group > button {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: 54px; padding: 0 1.1rem;
+  border: 0; background: none; cursor: pointer;
+  font: 500 1.06rem/1.3 var(--font-header); color: var(--ink);
+  text-align: left;
+}
+.guide-group > button i { font: 300 1.4rem/1 var(--font-sans); color: var(--wine); font-style: normal; }
+.guide-group.is-open > button { color: var(--wine); }
+.guide-group ul { margin: 0; padding: 0 .8rem 1rem; list-style: none; display: grid; gap: .5rem; }
+.guide-group li a {
+  display: grid; gap: .12rem; padding: .7rem .8rem;
+  border-radius: 10px; background: rgba(255, 255, 255, .5); text-decoration: none;
+}
+.guide-group li strong { font: 500 .98rem/1.3 var(--font-header); color: var(--ink); }
+.guide-group li span { font: italic 500 .88rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+.guide-group li em {
+  font: 600 .55rem/1 var(--font-sans); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--wine); font-style: normal;
+}
+
+/* The apps page, pared back to three names and two links each */
+.app-list { margin: 1.3rem 0 0; padding: 0; list-style: none; display: grid; gap: .7rem; text-align: left; }
+.app-list li { display: grid; gap: .2rem; padding: .85rem 1rem; border-radius: 14px; background: rgba(255, 252, 249, .46); }
+.app-list strong { font: 500 1.06rem/1.2 var(--font-header); color: var(--ink); }
+.app-list > li > span { font: italic 500 .9rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+.app-links { display: flex; gap: .9rem; margin-top: .3rem; }
+.app-links a {
+  font: 600 .56rem/1 var(--font-sans); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--wine); text-decoration: none;
+}
+
+/* The map was taking most of a phone screen */
+.venue-map { height: 34svh !important; max-height: 300px; border-radius: 18px; overflow: hidden; }
+@media (min-width: 900px) { .venue-map { height: 42svh !important; max-height: 420px; } }
+.field-grid--single { grid-template-columns: 1fr !important; }
+
+/* The programme is two lines now — centre it rather than stretching it */
+.evening-timeline { display: grid; gap: 1.6rem; max-width: 26rem; margin: 2rem auto 0; }
+.evening-timeline li { display: grid; gap: .3rem; text-align: center; }
+.evening-timeline .timeline-time {
+  font: 500 clamp(1.6rem, 6vw, 2.1rem)/1.1 var(--font-header);
+  color: var(--wine);
+}
+.evening-timeline h3 {
+  margin: 0;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.2rem)/1.45 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.party-rsvp-list legend.is-quiet {
+  font: italic 500 1.02rem/1.4 var(--font-body);
+  color: rgba(74, 58, 60, .8);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The palette note was nearly invisible against the painting */
+.palette-note {
+  color: rgba(74, 58, 60, .82) !important;
+  font: italic 500 .92rem/1.5 var(--font-body) !important;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+  opacity: 1 !important;
+}
+.guide-answer {
+  margin: 0;
+  padding: 0 1.1rem 1.1rem;
+  font: italic 500 .96rem/1.55 var(--font-body);
+  color: rgba(74, 58, 60, .85);
+  text-align: left;
+}
+.guide-app { display: grid; gap: .18rem; padding: .7rem .8rem; border-radius: 10px; background: rgba(255, 255, 255, .5); }
+.guide-app strong { font: 500 .98rem/1.3 var(--font-header); color: var(--ink); }
+.guide-app > span { font: italic 500 .88rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+
+/* ==================================================================== */
+/* THE WELCOME — the invitation, and nothing else.                      */
+/* ==================================================================== */
+.welcome { position: relative; z-index: 0; }
+.welcome-track { position: relative; z-index: 1; }
+.welcome-page {
+  box-sizing: border-box;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 12svh 1.6rem;
+  opacity: 0;
+  will-change: opacity;
+}
+.welcome-words {
+  width: min(90vw, 620px);
+  text-align: center;
+  color: #4a3a3c;
+  transform: translateY(var(--rise, 0px));
+}
+.welcome-words .overline {
+  margin: 0 0 1.4rem;
+  font: 600 .58rem/1.7 var(--font-sans);
+  letter-spacing: .4em;
+  text-transform: uppercase;
+  color: #8e4258;
+}
+.welcome-words .script {
+  margin: 0;
+  font: 400 clamp(3.6rem, 17vw, 6.6rem)/1 var(--font-header);
+  font-style: italic;
+  color: #3f3235;
+  text-shadow: 0 1px 28px rgba(255, 250, 248, .92);
+}
+.welcome-words h1 {
+  margin: 0;
+  font: 500 clamp(2.1rem, 8.4vw, 3.4rem)/1.14 var(--font-header);
+  letter-spacing: -.015em;
+  color: #3f3235;
+  text-shadow: 0 1px 26px rgba(255, 250, 248, .92);
+}
+.welcome-words .line {
+  margin: 1.1rem auto 0;
+  max-width: 30ch;
+  font: italic 500 clamp(1.06rem, 4vw, 1.32rem)/1.7 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  text-shadow: 0 1px 20px rgba(255, 250, 248, .95);
+}
+.welcome-cta {
+  display: inline-block;
+  margin-top: 2.6rem;
+  padding: 1.05rem 2.2rem;
+  border: 1px solid rgba(142, 66, 88, .5);
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .64rem/1 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform .25s ease-out, background .25s ease-out, border-color .25s ease-out;
+}
+.welcome-cta:hover { background: rgba(255, 246, 244, .9); border-color: #8e4258; }
+.welcome-cta:active { transform: translateY(1px); }
+.welcome-cue {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  transform: translateX(-50%);
+  font: 600 .55rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-shadow: 0 0 12px rgba(255, 250, 248, .95);
+  pointer-events: none;
+}
+.welcome-cue i {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(#8e4258, transparent);
+  animation: story-cue 2s ease-in-out infinite;
+}
+
+/* ==================================================================== */
+/* THE FORM AS WRITING                                                  */
+/*                                                                      */
+/* No boxes anywhere. A field is a pencil line a guest writes on, and a */
+/* label is the beginning of a sentence they finish. Choices are set in */
+/* the same type as the page, marked by a thin blush rule rather than a */
+/* filled pill.                                                         */
+/* ==================================================================== */
+
+.scene label {
+  display: block;
+  margin: 0 0 2.2rem;
+  text-align: left;
+}
+.scene label > span {
+  display: block;
+  margin: 0 0 .35rem;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.18rem)/1.5 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(74, 58, 60, .82);
+}
+
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  width: 100%;
+  padding: .45rem 0 .6rem;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(142, 66, 88, .3) !important;
+  border-radius: 0 !important;
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  color: #3f3235;
+  font: 400 clamp(1.06rem, 4.2vw, 1.22rem)/1.75 var(--font-body);
+  transition: border-color .25s ease-out, box-shadow .25s ease-out;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.scene textarea { min-height: 7.5rem; resize: none; line-height: 2.4; }
+.scene input:not([type="checkbox"]):not([type="radio"]):focus,
+.scene select:focus,
+.scene textarea:focus {
+  outline: none;
+  border-bottom-color: #c9788f !important;
+  box-shadow: 0 1px 0 0 #c9788f !important;   /* the second pixel of the line */
+}
+.scene ::placeholder { color: rgba(74, 58, 60, .34); font-style: italic; transition: opacity .25s ease-out; }
+.scene input:focus::placeholder, .scene textarea:focus::placeholder { opacity: .45; }
+.scene select {
+  background-image: linear-gradient(45deg, transparent 49%, rgba(142,66,88,.6) 50%),
+                    linear-gradient(-45deg, transparent 49%, rgba(142,66,88,.6) 50%) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-position: right 6px center, right 1px center !important;
+  background-repeat: no-repeat !important;
+  padding-right: 1.6rem;
+}
+
+/* choices: editorial, not buttons */
+.scene .segmented-control,
+.scene .choice-grid {
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  gap: .2rem;
+}
+.scene .segmented-control button {
+  position: relative;
+  min-height: 56px;
+  padding: .5rem .2rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  color: rgba(74, 58, 60, .6);
+  font: 400 clamp(1.04rem, 4vw, 1.2rem)/1.5 var(--font-body) !important;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color .25s ease-out;
+}
+.scene .segmented-control button::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: .55rem;
+  height: 1px;
+  background: #c9788f;
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform .25s ease-out, opacity .25s ease-out;
+  opacity: 0;
+}
+.scene .segmented-control button.is-selected {
+  color: #8e4258;
+  background: none !important;
+  box-shadow: none !important;
+}
+.scene .segmented-control button.is-selected::after { transform: scaleX(1); opacity: 1; }
+
+/* the dinner cards keep their descriptions but lose the box */
+.scene .choice-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(142, 66, 88, .16) !important;
+  transition: opacity .25s ease-out;
+}
+.scene .choice-card.is-selected { background: none !important; opacity: 1; }
+.scene .choice-card:not(.is-selected) { opacity: .62; }
+
+/* fieldsets are pages of writing, not panels */
+.scene fieldset {
+  margin: 0 0 2.4rem;
+  padding: 0;
+  border: 0 !important;
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.scene legend {
+  margin-bottom: .3rem;
+  padding: 0;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.18rem)/1.5 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(74, 58, 60, .82);
+}
+
+/* room to breathe */
+.scene .form-card,
+.scene .wishes-card { padding: 2.4rem 1.4rem 2.8rem; }
+.scene .field-grid { display: grid; gap: 0; }
+@media (min-width: 720px) {
+  .scene .field-grid { grid-template-columns: 1fr 1fr; gap: 0 2.4rem; }
+  .scene .field-grid--single { grid-template-columns: 1fr !important; }
+}
+
+/* the send button, cut like an invitation card */
+.primary-button {
+  min-height: 58px;
+  padding: 0 2.4rem;
+  border: 1px solid rgba(142, 66, 88, .5) !important;
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .7) !important;
+  color: #8e4258 !important;
+  font: 600 .64rem/1 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 22px rgba(142, 66, 88, .1);
+  transition: transform .2s ease-out, background .25s ease-out, border-color .25s ease-out;
+}
+.primary-button:hover { background: rgba(255, 246, 244, .92) !important; border-color: #8e4258 !important; }
+.primary-button:active { transform: translateY(1px); }
+
+
+/* Bodoni is a high-contrast face: it wants a little more room and slightly
+   tighter tracking at display sizes than Playfair did. */
+.welcome-words h1,
+.welcome-words .script,
+.scene h2,
+.dream-words h1,
+.dream-words h2 { letter-spacing: -.012em; }
+.scene h2 { line-height: 1.12; }
+.welcome-words .script { font-weight: 400; }
+
+/* What guests write is Inter, comfortably sized, as the brief asks */
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  font-family: var(--font-sans) !important;
+  font-size: clamp(1.02rem, 4.1vw, 1.16rem) !important;
+  font-weight: 400;
+  letter-spacing: -.005em;
+}
+.scene ::placeholder { font-family: var(--font-sans); font-style: normal; }
+
+/* ==================================================================== */
+/* Fixed chrome: the menu, its overlay, and the RSVP always in reach.   */
+/* ==================================================================== */
+.heart-cursor, .heart-cursor a, .heart-cursor button,
+.heart-cursor input, .heart-cursor textarea, .heart-cursor select { cursor: none !important; }
+
+.site-menu-button {
+  position: fixed;
+  z-index: 260;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(142, 66, 88, .45);
+  border-radius: 50%;
+  background: rgba(255, 252, 250, .55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .56rem/1 var(--font-sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .25s ease-out, transform .2s ease-out;
+}
+.site-menu-button:hover { background: rgba(255, 246, 244, .9); }
+.site-menu-button:active { transform: scale(.94); }
+.site-menu-button.is-open { font-size: 1rem; }
+
+.site-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-content: center;
+  gap: 1.6rem;
+  background: rgba(250, 240, 238, .82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .45s ease-out;
+}
+.site-menu-overlay.is-open { opacity: 1; pointer-events: auto; }
+.site-menu-overlay a {
+  opacity: 0;
+  transform: translateY(14px);
+  text-align: center;
+  font: 500 clamp(1.7rem, 7vw, 2.5rem)/1.25 var(--font-header);
+  letter-spacing: -.01em;
+  color: #4a3a3c;
+  text-decoration: none;
+  transition: color .25s ease-out;
+}
+.site-menu-overlay.is-open a {
+  animation: menu-link-in .5s ease-out both;
+  animation-delay: calc(.06s + var(--i, 0) * .07s);
+}
+.site-menu-overlay a:hover { color: #8e4258; }
+@keyframes menu-link-in { to { opacity: 1; transform: translateY(0); } }
+
+.fixed-rsvp {
+  position: fixed;
+  z-index: 240;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.7rem;
+  border: 1px solid rgba(142, 66, 88, .5);
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .62rem/1 var(--font-sans);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 10px 26px rgba(142, 66, 88, .14);
+  transition: background .25s ease-out, transform .2s ease-out;
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.fixed-rsvp:hover { background: rgba(255, 246, 244, .92); }
+.fixed-rsvp:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-overlay a { animation: none; opacity: 1; transform: none; }
+  .fixed-rsvp { animation: none; }
+}
+
+/* ==================================================================== */
+/* THE WIZARD — the journey as a few full-screen pages.                 */
+/* ==================================================================== */
+.scene[hidden] { display: none !important; }
+.wizard { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+.wizard .scene { min-height: 100dvh; }
+.wizard .scroll-on { display: none; }        /* Continue replaces the cue */
+.wizard #wishes .primary-button { display: inline-flex; }  /* wishes submits itself */
+
+/* arriving on a step: a light fade-and-rise, never a scroll hijack */
+.step-enter .scene:not([hidden]) { animation: step-in .5s cubic-bezier(.25, 1, .5, 1) both; }
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-enter .scene:not([hidden]) { animation: none; }
+}
+
+/* the questions as pull-quotes: Bodoni floating over the paintings */
+.wizard .scene legend,
+.wizard .scene label > span {
+  font: 500 clamp(1.3rem, 5.4vw, 1.75rem)/1.3 var(--font-header);
+  font-style: normal;
+  letter-spacing: -.01em;
+  color: #3f3235;
+  text-shadow: 0 1px 18px rgba(255, 250, 248, .9);
+}
+.wizard .party-rsvp-list legend.is-quiet {
+  font: 500 clamp(1.5rem, 6.4vw, 2.1rem)/1.25 var(--font-header);
+  color: #3f3235;
+}
+.wizard .scene input:not([type="checkbox"]):not([type="radio"]),
+.wizard .scene select,
+.wizard .scene textarea {
+  font-size: clamp(1.2rem, 5vw, 1.5rem) !important;
+  padding-top: .55rem;
+}
+
+/* choices float on frosted glass, chosen by a glow and the blush rule */
+.wizard .scene .choice-card,
+.wizard .scene .segmented-control {
+  background: rgba(255, 255, 255, .15) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 18px;
+  padding: .5rem .9rem;
+}
+.wizard .scene .choice-card { padding: 1.1rem 1rem; border-bottom: 0 !important; margin-bottom: .7rem; }
+.wizard .scene .choice-card.is-selected {
+  /* the earlier borderless pass sets box-shadow: none !important, so this
+     must carry the same weight to win */
+  box-shadow: 0 0 0 1px rgba(201, 120, 143, .5), 0 14px 40px rgba(201, 120, 143, .18) !important;
+  background: rgba(255, 250, 250, .3) !important;
+}
+
+/* the wizard's own navigation */
+.wizard-nav {
+  position: fixed;
+  z-index: 120;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: none;
+}
+.wizard-nav > * { pointer-events: auto; }
+.wizard-back {
+  min-height: 52px;
+  padding: 0 1.2rem;
+  border: 0;
+  background: none;
+  color: rgba(74, 58, 60, .7);
+  font: 500 .95rem/1 var(--font-body);
+  font-style: italic;
+  cursor: pointer;
+  text-shadow: 0 1px 12px rgba(255, 250, 248, .9);
+}
+.wizard-next {
+  min-height: 56px;
+  padding: 0 2.3rem;
+  border: 1px solid rgba(142, 66, 88, .5);
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #8e4258;
+  font: 600 .64rem/1 var(--font-sans);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 28px rgba(142, 66, 88, .16);
+  cursor: pointer;
+  transition: opacity .3s ease-out, transform .2s ease-out, background .25s ease-out;
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.wizard-next:hover { background: rgba(255, 246, 244, .95); }
+.wizard-next:active { transform: translateY(1px); }
+.wizard-next:disabled {
+  opacity: .3;
+  animation: none;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) { .wizard-next { animation: none; } }

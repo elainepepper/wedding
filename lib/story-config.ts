@@ -92,7 +92,7 @@ export const defaultStoryConfig = {
       "finale": {
         "overline": "You are warmly invited",
         "heading": "7 November 2026",
-        "line": "The Grand Salon · Grand Hyatt Kuala Lumpur\nDoors from 6:00pm · the celebration from 6:45pm",
+        "line": "The Grand Salon · Grand Hyatt Kuala Lumpur\nDoors from 6:00pm · the celebration from 7:00pm",
         "cta": "Step into our celebration ↓"
       },
       "planes": [],

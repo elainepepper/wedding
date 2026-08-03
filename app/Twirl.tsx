@@ -18,6 +18,11 @@ const POSTER = "/wedding/story/twirl-poster.webp";
 
 export function TwirlLoader() {
   const [gone, setGone] = useState(false);
+  // Rendered only once JavaScript is running. If a script ever fails, the
+  // visitor gets an ordinary scrollable page rather than a full-screen cover
+  // with nothing behind it to dismiss it.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     let timer = 0;
@@ -37,14 +42,7 @@ export function TwirlLoader() {
     };
   }, []);
 
-  useEffect(() => {
-    if (gone) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
-  }, [gone]);
-
-  if (gone) return null;
+  if (gone || !mounted) return null;
   return (
     <div className="twirl-loader" aria-hidden="true">
       <video src={TWIRL} poster={POSTER} autoPlay muted loop playsInline preload="auto" />

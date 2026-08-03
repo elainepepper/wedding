@@ -81,6 +81,7 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
     let height = window.innerHeight;
 
     const element = wrapperElement || document.body;
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
 
     const onWindowResize = () => {
       width = window.innerWidth;
@@ -119,9 +120,29 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
       addParticle(cursorRef.current.x, cursorRef.current.y);
     };
 
+    // a small solid white heart standing in for the pointer
+    const drawHeart = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(size / 24, size / 24);
+      ctx.beginPath();
+      ctx.moveTo(12, 21);
+      ctx.bezierCurveTo(7, 17.5, 4, 14.2, 4, 10.6);
+      ctx.bezierCurveTo(4, 7.8, 6.2, 6, 8.4, 6);
+      ctx.bezierCurveTo(9.9, 6, 11.2, 6.8, 12, 8);
+      ctx.bezierCurveTo(12.8, 6.8, 14.1, 6, 15.6, 6);
+      ctx.bezierCurveTo(17.8, 6, 20, 7.8, 20, 10.6);
+      ctx.bezierCurveTo(20, 14.2, 17, 17.5, 12, 21);
+      ctx.closePath();
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(120, 70, 85, .45)";
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.restore();
+    };
+
     const updateParticles = () => {
       if (!canvas || !context) return;
-      if (particlesRef.current.length === 0) return;
       context.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = 0; i < particlesRef.current.length; i++) {
         particlesRef.current[i].update(context);
@@ -129,7 +150,10 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
       for (let i = particlesRef.current.length - 1; i >= 0; i--) {
         if (particlesRef.current[i].lifeSpan < 0) particlesRef.current.splice(i, 1);
       }
-      if (particlesRef.current.length === 0) context.clearRect(0, 0, canvas.width, canvas.height);
+      // touch screens have no resting pointer, so no heart is drawn there
+      if (finePointer && (cursorRef.current.x || cursorRef.current.y)) {
+        drawHeart(context, cursorRef.current.x, cursorRef.current.y - 2, 20);
+      }
     };
 
     const loop = () => {
@@ -168,6 +192,8 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
         canvas.height = height;
       }
 
+      // the heart replaces the arrow on mouse devices
+      if (finePointer) document.documentElement.classList.add("heart-cursor");
       bindEvents();
       loop();
     };
@@ -175,6 +201,7 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
     init();
 
     return () => {
+      document.documentElement.classList.remove("heart-cursor");
       if (canvas) canvas.remove();
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       element.removeEventListener("mousemove", onMouseMove);
