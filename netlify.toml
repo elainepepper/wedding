@@ -24,3 +24,15 @@
 # Without it, Netlify serves .next as static files and every route 404s.
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# The illustrated story is reused across every guest link. Cache its heavy
+# artwork aggressively; keep the editable layout JSON fresh.
+[[headers]]
+  for = "/wedding/story/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/wedding/story/config.json"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
