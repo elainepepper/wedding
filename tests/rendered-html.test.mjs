@@ -13,7 +13,7 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(experience, /Elaine &amp; Haykal/);
   assert.match(experience, /7 November 2026/);
   assert.match(experience, /Grand Hyatt/);
-  assert.match(experience, /Skip the cinematic introduction/);
+  assert.match(experience, /Skip our story and go to the RSVP/);
   assert.match(experience, /Village Park/);
   assert.match(experience, /Super Kitchen Chilli Pan Mee/);
   assert.match(layout, /og-wedding\.png/);
@@ -32,13 +32,13 @@ test("ships the private, server-enforced after-party gate", async () => {
     read("app/after-party/AfterPartyExperience.tsx"),
     read("app/api/after-party/route.ts"),
   ]);
-  assert.match(experience, /A little secret/);
-  assert.match(experience, /selected guests/i);
-  assert.match(experience, /favourite spice/i);
+  assert.match(experience, /For your eyes only/);
+  assert.match(experience, /invitation only/i);
+  assert.match(experience, /invitation itself is the key/i);
   // Eligibility is enforced server-side against the invitation token.
   assert.match(route, /after_party_invited/);
   assert.match(route, /invitation_token/);
-  assert.match(route, /pepper/i);
+  assert.match(route, /invitation_enabled/);
 });
 
 test("includes the complete manager and locked-down Firestore rules", async () => {
