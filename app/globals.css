@@ -3929,3 +3929,100 @@ html:has(.dream) { scroll-snap-type: y proximity; }
 @media (prefers-reduced-motion: reduce) {
   .photo-gate, .photo-gate-enter { animation: none; }
 }
+
+/* ==================================================================== */
+/* The paintings sit behind the entire invitation, not only the story,  */
+/* so every scene has to let them through while keeping its words       */
+/* perfectly readable.                                                  */
+/* ==================================================================== */
+
+.wedding-shell,
+.wedding-shell--storybook,
+body { background: transparent; }
+body { background-color: #f2e2e2; }
+
+.wedding-shell .scene,
+.wedding-shell--storybook .scene,
+.wedding-shell--storybook .scene--welcome,
+.scene, .scene--blush, .scene--cinematic, .scene--confirmation, .scene--custom,
+.scene--faq, .scene--invitation, .scene--paper, .scene--pearl,
+.scene--recommendations, .scene--story, .scene--venue, .scene--welcome,
+.scene--wishes { background: transparent; }
+/* the painted textures and gradients each scene used to carry */
+.scene::before { opacity: .12; }
+
+/* a soft veil under each scene so text never fights the painting */
+.scene:not(.scene--story)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 92% 62% at 50% 50%, rgba(255, 250, 247, .82) 0%, rgba(255, 249, 246, .58) 52%, rgba(255, 248, 245, .18) 78%, transparent 100%);
+}
+
+/* the cards lift a little so they read against a busy painting */
+.scene .form-card,
+.scene .wishes-card,
+.scene .venue-card,
+.scene .dress-card,
+.scene .recommendations-card,
+.scene .faq-card,
+.scene .schedule-card,
+.scene .invitation-card,
+.scene .confirmation-card,
+.scene .custom-page-card,
+.scene .table-card {
+  background: rgba(255, 252, 249, .74);
+  box-shadow: 0 22px 56px rgba(104, 63, 76, .14);
+}
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  background: rgba(255, 253, 251, .72);
+}
+.scene .segmented-control,
+.scene fieldset,
+.scene .choice-card,
+.scene .table-plaques article,
+.scene .room-offer,
+.scene .hotel-list a,
+.scene .recommendation-grid a {
+  background: rgba(255, 253, 250, .68);
+}
+
+/* the story chapters stay bare — the painting is the picture there */
+.scene--story::after { content: none; }
+
+/* ==================================================================== */
+/* The painted world sits behind the whole site, not just the landing.  */
+/* Scenes go transparent so it shows through; their content panes are   */
+/* already frosted, which keeps every word legible over the paintings.  */
+/* ==================================================================== */
+.dream-skies--site { position: fixed; inset: 0; z-index: -2; }
+
+.wedding-shell { background: transparent; }
+.wedding-shell .scene { background: transparent !important; }
+/* the paper textures and washes that used to be the background become a
+   whisper on top of the painting instead of hiding it */
+.wedding-shell .scene::before { opacity: .18; }
+.wedding-shell .scene::after { opacity: .3; }
+
+/* a soft breath directly behind each scene's words */
+.wedding-shell .scene > .scene-content {
+  position: relative;
+  isolation: isolate;
+}
+.wedding-shell .scene > .scene-content::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8% -6%;
+  border-radius: 32px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 250, 247, .72) 0 46%, rgba(255, 250, 247, .34) 72%, transparent 88%);
+  pointer-events: none;
+}
+
+/* the bubbles drift above the page but never intercept a tap */
+canvas { pointer-events: none; }

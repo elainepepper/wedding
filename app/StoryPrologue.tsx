@@ -72,7 +72,6 @@ const smoothstep = (edge0: number, edge1: number, value: number) => {
 export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEnter: () => void }) {
   const [cfg, setCfg] = useState<StoryCfg>(defaultStoryConfig as unknown as StoryCfg);
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const skyRef = useRef<HTMLDivElement | null>(null);
   const cueRef = useRef<HTMLParagraphElement | null>(null);
   const dotsRef = useRef<HTMLDivElement | null>(null);
 
@@ -87,21 +86,15 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
     return () => { cancelled = true; };
   }, []);
 
-  // the distinct paintings, in the order they first appear
-  const skies = Array.from(new Set(cfg.chapters.map((chapter) => chapter.bg ?? "dream-1")));
-
   useEffect(() => {
     const track = trackRef.current;
-    const sky = skyRef.current;
-    if (!track || !sky) return;
+    if (!track) return;
 
     const chapterNodes = Array.from(track.querySelectorAll<HTMLElement>(".dream-chapter"));
-    const skyNodes = Array.from(sky.querySelectorAll<HTMLElement>(".dream-sky"));
     const videos = Array.from(track.querySelectorAll<HTMLVideoElement>("video[data-chapter]"));
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let frame = 0;
-    let drift = 0;
     let lastCurrent = -1;
 
     const render = () => {
@@ -131,24 +124,6 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
         node.style.pointerEvents = presence > 0.6 ? "auto" : "none";
       });
 
-      // each painting shows while any of its chapters is near
-      const wanted = new Map<string, number>();
-      chapterNodes.forEach((node, index) => {
-        const name = node.dataset.sky || "";
-        wanted.set(name, Math.max(wanted.get(name) ?? 0, nearness[index]));
-      });
-      skyNodes.forEach((node) => {
-        const value = wanted.get(node.dataset.sky || "") ?? 0;
-        // a gentle curve so two paintings never both sit at half strength
-        node.style.opacity = smoothstep(0.12, 0.62, value).toFixed(3);
-      });
-
-      // the slow swell, shared by every layer
-      const trackBox = track.getBoundingClientRect();
-      const progress = clamp(-trackBox.top / Math.max(1, trackBox.height - height));
-      drift += (progress - drift) * (reduce.matches ? 1 : 0.08);
-      sky.style.setProperty("--drift", drift.toFixed(4));
-
       videos.forEach((video) => {
         if (!isFinite(video.duration) || video.duration <= 0) return;
         const index = Number(video.dataset.chapter);
@@ -164,7 +139,6 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
         dotsRef.current?.querySelectorAll("i").forEach((dot, index) => dot.classList.toggle("is-on", index === current));
       }
       if (cueRef.current) cueRef.current.style.opacity = nearness[0] > 0.75 ? "1" : "0";
-      if (Math.abs(progress - drift) > 0.0005) requestRender();
     };
     const requestRender = () => { if (!frame) frame = requestAnimationFrame(render); };
 
@@ -195,24 +169,6 @@ export function StoryPrologue({ guestName, onEnter }: { guestName?: string; onEn
 
   return (
     <div className="dream" ref={trackRef}>
-      {/* the paintings: one fixed layer each, cross-fading as chapters pass */}
-      <div className="dream-skies" ref={skyRef} aria-hidden="true">
-        {skies.map((name, index) => (
-          <div
-            key={name}
-            className="dream-sky"
-            data-sky={name}
-            style={{ "--layer": index, opacity: index === 0 ? 1 : 0 } as CSSProperties}
-          >
-            <picture>
-              <source media="(max-width: 780px)" srcSet={asset(`bg/${name}-tall.webp`)} />
-              <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} />
-            </picture>
-          </div>
-        ))}
-        <div className="dream-mist" />
-      </div>
-
       <div className="dream-dots" ref={dotsRef} aria-hidden="true">
         {cfg.chapters.map((chapter) => <i key={chapter.id} />)}
       </div>
