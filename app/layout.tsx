@@ -45,6 +45,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preload" as="image" href="/wedding/hero-portrait-small.webp" media="(max-width: 640px)" />
         <link rel="preload" as="image" href="/wedding/story/gen-floral-arch-with-blue-lace-accents.webp" fetchPriority="high" />
         <link rel="preload" as="image" href="/wedding/story/gen-whimsical-canopy-wedding-sticker.webp" fetchPriority="high" />
         <link

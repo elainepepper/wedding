@@ -266,6 +266,9 @@ function ChoiceButton({ selected, title, detail, onClick }: { selected: boolean;
 
 export function WeddingExperience({ invitationToken, previewMode = false }: { invitationToken?: string; previewMode?: boolean }) {
   const personalised = Boolean(invitationToken) || previewMode;
+  // Anyone arriving without their own invitation link meets the photograph
+  // first. They may step past it and look around, but the RSVP stays closed.
+  const [photoGate, setPhotoGate] = useState(!personalised);
   const [rsvp, setRsvp] = useState<RsvpState>(() => previewMode ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" } : initialRsvp);
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
   const [guestResponses, setGuestResponses] = useState<GuestResponse[]>(() => previewMode ? [{ id: -1, name: "Your name", rsvpStatus: "Pending", ceremonyAttending: true, receptionAttending: true, afterPartyInvited: false, afterPartyAttending: "Pending", mealSelection: "", dietaryRequirements: "", allergies: "", accessibility: "", transportRequired: false, accommodationRequired: false, travelArrival: "", travelDeparture: "", accommodationName: "", bedPreference: "", roomNights: null, tableName: "", wishes: "", advice: "" }] : []);
@@ -502,6 +505,21 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     return () => window.clearTimeout(timer);
   }, [tablesAssigned, invitationToken, previewMode]);
 
+  useEffect(() => {
+    if (!photoGate) return;
+    // Locking body alone is not enough — Safari keeps scrolling the root
+    // element, so both are held while the photograph is up.
+    const previousBody = document.body.style.overflow;
+    const previousRoot = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    window.scrollTo(0, 0);
+    return () => {
+      document.body.style.overflow = previousBody;
+      document.documentElement.style.overflow = previousRoot;
+    };
+  }, [photoGate]);
+
   const update = <K extends keyof RsvpState>(key: K, value: RsvpState[K]) => {
     setRsvp((current) => ({ ...current, [key]: value }));
     setError("");
@@ -603,7 +621,23 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   const selectedFont = fontPairs.find((pair) => pair.id === siteDesign.fontPair) ?? fontPairs[0];
   const typography = { "--font-header": selectedFont.headerFamily, "--font-body": selectedFont.bodyFamily } as CSSProperties;
 
-  return <main className={`wedding-shell wedding-shell--storybook ${designClasses}`} style={typography}>
+  return <main className={`wedding-shell wedding-shell--storybook ${designClasses}${photoGate ? " is-gated" : ""}`} style={typography}>
+    {photoGate ? <div className="photo-gate" role="dialog" aria-label="Elaine and Haykal">
+      <picture>
+        <source media="(max-width: 640px)" srcSet="/wedding/hero-portrait-small.webp" />
+        <img src="/wedding/hero-portrait.webp" alt="Elaine and Haykal, forehead to forehead" fetchPriority="high" />
+      </picture>
+      <div className="photo-gate-veil" aria-hidden="true" />
+      <div className="photo-gate-words">
+        <p className="overline">{content.eventDate}</p>
+        <h1>{content.brideName}<span>&amp;</span>{content.groomName}</h1>
+        <p className="line">{content.venueName}</p>
+      </div>
+      <button type="button" className="photo-gate-enter" onClick={() => setPhotoGate(false)}>
+        Look inside <span aria-hidden="true">↓</span>
+      </button>
+      <p className="photo-gate-note">Replies are by personal invitation only.</p>
+    </div> : null}
     <a className="skip-experience" href="#rsvp">Skip our story and go to the RSVP</a>
     {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
     {activeSection !== "welcome" ? <>

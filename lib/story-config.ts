@@ -1,6 +1,6 @@
-// Auto-generated from public/wedding/story/config.json — the default story layout.
-// Arrange it visually in Story-Studio.html, download config.json, and replace
-// public/wedding/story/config.json.
+// Auto-generated from public/wedding/story/config.json — the landing page.
+// Chapter words, which dreamscape each stands in, and its accent artwork.
+// Arrange it in Story-Studio.html, download config.json, and replace the file.
 export const defaultStoryConfig = {
   "version": 3,
   "depth": 1500,
@@ -38,329 +38,146 @@ export const defaultStoryConfig = {
     {
       "id": "title",
       "kind": "title",
-      "border": "frame-blossom",
       "overline": "Elaine & Haykal · 07 · 11 · 2026",
       "heading": "Our Story & Yours",
       "line": "a hand-painted journey to our wedding day",
       "planes": [
         {
-          "art": "gen-floral-arch-with-blue-lace-accents",
-          "x": 0,
-          "y": -4.2,
-          "z": -260,
-          "w": 62,
-          "opacity": 0.62
-        },
-        {
           "art": "gen-whimsical-canopy-wedding-sticker",
           "x": 0,
-          "y": 28.8,
-          "z": -70,
-          "w": 22.4
-        },
-        {
-          "art": "gen-creamy-watercolor-crown-sticker",
-          "x": 0,
-          "y": -33.2,
-          "z": 40,
-          "w": 17,
-          "float": "slow"
-        },
-        {
-          "art": "gen-cream-bow-with-pink-outline",
-          "x": -34,
           "y": 30,
-          "z": 55,
-          "w": 15,
-          "float": "fast"
-        },
-        {
-          "art": "gen-watercolor-heartburst-sticker",
-          "x": 35,
-          "y": 27,
-          "z": 70,
-          "w": 18,
+          "w": 26,
+          "z": 80,
           "float": "slow"
-        },
-        {
-          "art": "gen-curved-watercolour-pearl-garland",
-          "x": 0,
-          "y": 20,
-          "z": -260,
-          "w": 42,
-          "float": "slow",
-          "opacity": 0.62
         }
-      ]
+      ],
+      "bg": "dream-1"
     },
     {
       "id": "kuching",
-      "border": "frame-sketch",
       "overline": "Chapter one · Kuching, Sarawak",
       "heading": "A girl from the city of cats",
       "line": "Elaine grew up in Kuching, among old streets, warm rain and stories waiting to be told.",
       "planes": [
         {
-          "art": "gen-blue-cottage-with-pink-door",
-          "x": 18,
-          "y": -22,
-          "z": -150,
-          "w": 39
-        },
-        {
-          "art": "gen-pastel-watercolour-girl-sticker",
-          "x": -20,
-          "y": -15.7,
-          "z": -10,
-          "w": 34
-        },
-        {
           "art": "cat-under-flower-arch",
-          "x": 28,
-          "y": -8.2,
-          "z": 20,
-          "w": 29
-        },
-        {
-          "art": "gen-blue-watercolour-leafy-sprig-sticker",
-          "x": -36,
-          "y": -23,
-          "z": -70,
-          "w": 18,
+          "x": -27,
+          "y": 24,
+          "w": 26,
+          "z": 90,
           "float": "slow"
         },
         {
-          "art": "pink-flower-03",
-          "x": 37,
-          "y": -8,
-          "z": 75,
-          "w": 12,
-          "float": "fast"
-        },
-        {
-          "art": "gen-watercolor-heartburst-sticker",
-          "x": -31,
-          "y": 4.4,
-          "z": 55,
-          "w": 14,
-          "float": "slow"
+          "art": "blue-house-with-heart",
+          "x": 29,
+          "y": 22,
+          "w": 24,
+          "z": 40
         }
-      ]
+      ],
+      "bg": "dream-2"
     },
     {
       "id": "georgetown",
       "blue": true,
-      "border": "frame-sketch",
       "overline": "Chapter two · George Town, Penang",
       "heading": "A boy from the island",
       "line": "Haykal grew up among painted shophouses, sea air and the generous bustle of George Town.",
       "planes": [
         {
-          "art": "gen-pastel-baroque-heritage-building-sticker",
-          "x": -19,
-          "y": -19,
-          "z": -150,
-          "w": 38
-        },
-        {
-          "art": "ornate-heritage-house",
-          "x": 27,
-          "y": -10.8,
-          "z": -100,
-          "w": 30
+          "art": "heritage-shophouse",
+          "x": -26,
+          "y": 24,
+          "w": 30,
+          "z": 60
         },
         {
           "art": "gen-watercolour-young-man-in-armchair",
-          "x": 10,
-          "y": -13.2,
-          "z": 5,
-          "w": 31
-        },
-        {
-          "art": "gen-blue-watercolour-sprig-sticker",
-          "x": -36,
-          "y": -1.0,
-          "z": 45,
-          "w": 16,
-          "float": "slow"
-        },
-        {
-          "art": "gen-pastel-three-leaf-watercolour-sticker",
-          "x": 35,
-          "y": -1.0,
-          "z": 65,
-          "w": 16,
+          "x": 28,
+          "y": 26,
+          "w": 20,
+          "z": 95,
           "float": "fast"
         }
-      ]
+      ],
+      "bg": "dream-3"
     },
     {
       "id": "perth",
-      "border": "frame-calla",
       "overline": "Chapter three · Perth, 2016",
       "heading": "Of all the cities in the world",
       "line": "Two strangers crossed different oceans to the same quiet city, and did not yet know it.",
       "planes": [
         {
-          "art": "gen-pastel-cherry-blossom-lane-sticker",
-          "x": 0,
-          "y": -16,
-          "z": -230,
-          "w": 51.3
-        },
-        {
           "art": "gen-watercolour-young-man-in-armchair",
           "x": -25,
-          "y": -8.4,
-          "z": -20,
-          "w": 25
+          "y": 27,
+          "w": 18,
+          "z": 70
         },
         {
           "art": "gen-pastel-watercolour-seated-woman-sticker",
           "x": 25,
-          "y": -11.6,
-          "z": -20,
-          "w": 29
-        },
-        {
-          "art": "gen-watercolour-double-headed-arrow-sticker",
-          "x": 0,
-          "y": -2.7,
-          "z": 55,
-          "w": 18,
-          "float": "slow"
-        },
-        {
-          "art": "gen-pastel-pink-pearl-strand-sticker",
-          "x": 0,
-          "y": -18.2,
-          "z": 20,
-          "w": 34.2,
-          "float": "slow"
-        },
-        {
-          "art": "gen-watercolor-heartburst-sticker",
-          "x": 0,
-          "y": 4.9,
+          "y": 26,
+          "w": 20,
           "z": 70,
-          "w": 13,
-          "float": "fast"
+          "flip": true
         }
-      ]
+      ],
+      "bg": "dream-1"
     },
     {
       "id": "together",
-      "border": "frame-calla",
       "overline": "Chapter four · Perth, 2020",
       "heading": "The year the world stood still",
       "line": "Somewhere between ordinary days and long conversations, friendship quietly became love.",
       "planes": [
         {
-          "art": "gen-pastel-couple-on-a-blue-armchair",
+          "art": "couple-on-sofa",
           "x": 0,
-          "y": -15.8,
-          "z": -25,
-          "w": 34.2
-        },
-        {
-          "art": "gen-blue-cottage-with-pink-door",
-          "x": -31,
-          "y": -19,
-          "z": -145,
-          "w": 28
-        },
-        {
-          "art": "gen-pink-pearl-garland-sticker",
-          "x": 0,
-          "y": -18.2,
-          "z": -60,
-          "w": 34.2,
+          "y": 27,
+          "w": 30,
+          "z": 90,
           "float": "slow"
         },
         {
           "art": "gen-watercolor-heartburst-sticker",
-          "x": 31,
-          "y": -15,
-          "z": 65,
-          "w": 17,
+          "x": 28,
+          "y": -16,
+          "w": 16,
+          "z": 120,
           "float": "fast"
-        },
-        {
-          "art": "gen-cream-heart-with-pink-scallops",
-          "x": -33,
-          "y": -0.2,
-          "z": 45,
-          "w": 15,
-          "float": "slow"
-        },
-        {
-          "art": "gen-cream-bow-with-pink-outline",
-          "x": 31,
-          "y": 0.6,
-          "z": 55,
-          "w": 14,
-          "float": "slow"
         }
-      ]
+      ],
+      "bg": "dream-2"
     },
     {
       "id": "seoul",
-      "border": "frame-swirl",
       "overline": "Chapter five · Seoul, autumn 2025",
       "heading": "On one knee, under falling leaves",
       "line": "On an autumn afternoon in Seoul, Haykal asked. Elaine said yes.",
       "planes": [
         {
-          "art": "gen-pastel-cherry-blossom-lane-sticker",
-          "x": 0,
-          "y": -18.2,
-          "z": -240,
-          "w": 51.3
+          "art": "gen-kneeling-proposal-with-ring-box",
+          "x": -4,
+          "y": 26,
+          "w": 32,
+          "z": 90
         },
         {
           "art": "gen-autumn-watercolour-leaf-cluster",
-          "x": -33,
-          "y": -26.5,
-          "z": -70,
-          "w": 24,
-          "float": "slow"
-        },
-        {
-          "art": "gen-kneeling-proposal-with-ring-box",
-          "x": -8,
-          "y": -15.8,
-          "z": -10,
-          "w": 34.2
-        },
-        {
-          "art": "gen-pastel-blushing-seated-girl",
-          "x": 24,
-          "y": -10.8,
-          "z": -5,
-          "w": 28
-        },
-        {
-          "art": "gen-open-ring-box-with-diamond",
-          "x": 32,
-          "y": -16,
-          "z": 70,
-          "w": 15,
+          "x": 30,
+          "y": -18,
+          "w": 20,
+          "z": 130,
           "float": "fast"
-        },
-        {
-          "art": "gen-intertwined-rings-on-a-floral-cushion",
-          "x": 28,
-          "y": -2.7,
-          "z": 65,
-          "w": 18,
-          "float": "slow"
         }
-      ]
+      ],
+      "bg": "dream-3"
     },
     {
       "id": "wedding",
       "kind": "finale",
-      "border": "frame-blossom",
       "overline": "Chapter six · Kuala Lumpur",
       "heading": "…and now, forever",
       "finale": {
@@ -371,68 +188,23 @@ export const defaultStoryConfig = {
       },
       "planes": [
         {
-          "art": "bg/pearl-floral",
-          "x": 0,
-          "y": -1.9,
-          "z": -300,
-          "w": 47.8,
-          "opacity": 0.44
-        },
-        {
-          "art": "gen-pink-lace-floral-arch-sticker",
-          "x": 0,
-          "y": -15.8,
-          "z": -180,
-          "w": 24.8
-        },
-        {
-          "art": "gen-pastel-grand-hyatt-watercolour-sticker",
-          "x": -31,
-          "y": -14,
-          "z": -100,
-          "w": 29
-        },
-        {
-          "art": "gen-whimsical-pink-and-blue-pavilion",
-          "x": 32,
-          "y": -16,
-          "z": -110,
-          "w": 25
-        },
-        {
           "video": "twirl-scrub.mp4",
           "poster": "twirl-poster.webp",
+          "blend": "multiply",
           "x": 0,
-          "y": -14.2,
-          "z": -15,
-          "w": 20.9,
-          "blend": "multiply"
+          "y": 22,
+          "w": 30,
+          "z": 100
         },
         {
-          "art": "gen-pastel-birthday-cake-table",
-          "x": -31,
-          "y": -6.2,
-          "z": 55,
-          "w": 15,
-          "float": "fast"
-        },
-        {
-          "art": "gen-creamy-watercolor-crown-sticker",
-          "x": 31,
-          "y": -5.4,
-          "z": 55,
-          "w": 14,
-          "float": "slow"
-        },
-        {
-          "art": "gen-cream-bow-with-pink-outline",
-          "x": 0,
-          "y": -6.2,
-          "z": 75,
-          "w": 15,
-          "float": "slow"
+          "art": "grand-hyatt-facade",
+          "x": -29,
+          "y": 20,
+          "w": 24,
+          "z": 30
         }
-      ]
+      ],
+      "bg": "dream-1"
     }
   ]
 } as const;

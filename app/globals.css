@@ -3321,11 +3321,14 @@ html { scroll-snap-type: none; }
 }
 @media (prefers-reduced-motion: reduce) { .scroll-on i { animation: none; } }
 
-/* ------------------------------------------------------------------ */
-/* Story prologue — Mental-Canvas-style 3D fly-through of the couple's */
-/* story. All artwork supplied by the couple (their sticker pack).      */
-/* Layout config: public/wedding/story/config.json (see Story-Studio).  */
-/* ------------------------------------------------------------------ */
+/* ==================================================================== */
+/* The landing page — a walk through three painted dreamscapes.         */
+/*                                                                      */
+/* The paintings are a fixed stack behind everything; the chapters are  */
+/* ordinary full-height sections that scroll over them and snap gently  */
+/* into place. Nothing here uses a large 3D world, so iOS Safari stays  */
+/* comfortable.                                                         */
+/* ==================================================================== */
 
 .scene--story {
   padding: 0 !important;
@@ -3336,621 +3339,236 @@ html { scroll-snap-type: none; }
 .scene--story::before,
 .scene--story::after { content: none; }
 
-:root {
-  --story-squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16'%3E%3Cpath d='M0 8 Q 15 1 30 8 T 60 8 T 90 8 T 120 8' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
-  --story-heart-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-8-5.1-8-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 3.6C20 15.9 12 21 12 21z' fill='%23000'/%3E%3C/svg%3E");
-  --story-paper: url("/wedding/story/bg/paper-warm.webp");
-  --story-slot-frame: url("/wedding/story/portrait-frame-tall.webp");
-}
-
-.story-track { position: relative; height: 1020svh; }
-.story-stage {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 22% 18%, rgba(217, 139, 163, .14), transparent 42%),
-    radial-gradient(circle at 80% 80%, rgba(169, 195, 228, .16), transparent 44%),
-    var(--fairy);
-}
-.story-stage::before {
-  content: "";
-  position: absolute; inset: 0; z-index: 0;
-  background-image: var(--story-paper);
-  background-size: cover;
-  background-position: center;
-  opacity: .5;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-.story-stage::after {
-  content: "";
-  position: absolute; inset: 0; z-index: 8; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 52%, transparent 60%, rgba(142, 66, 88, .09));
-}
-
-/* her sketched frame artwork as a storybook border around the viewport */
-.story-border {
-  position: absolute; inset: 0; z-index: 7;
-  background-size: 100% 100%;
-  opacity: 0;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-  transition: opacity 1.1s ease;
-}
-.story-border.is-on { opacity: .8; }
-
-.story-camera { position: absolute; inset: 0; perspective: 1000px; perspective-origin: 50% 46%; }
-.story-world { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
-
-.story-chapter {
-  position: absolute; left: 50%; top: 50%;
-  width: min(94vw, 640px); height: min(88svh, 720px);
-  transform-style: preserve-3d;
-  opacity: 0;
-  will-change: opacity, filter;
-  pointer-events: none;
-}
-.story-plane { position: absolute; transform-style: preserve-3d; will-change: transform; }
-.story-plane img, .story-plane video {
-  display: block; width: 100%; height: auto;
-  filter: drop-shadow(0 14px 22px rgba(142, 66, 88, .13));
-}
-.story-plane video { filter: none; }
-
-.story-slot { display: grid; place-items: center; padding: 10%; aspect-ratio: 3/4; text-align: center; background: center / 100% 100% no-repeat var(--story-slot-frame); }
-.story-slot span { font: 600 .52rem/1.7 var(--font-sans); letter-spacing: .18em; text-transform: uppercase; color: rgba(142,66,88,.55); }
-
-.story-caption { position: absolute; left: 50%; bottom: 4%; width: min(88vw, 460px); text-align: center; transform: translateX(-50%) translateZ(160px); }
-.story-caption::before { content: ""; position: absolute; inset: -1.4rem -1.6rem; z-index: -1; border-radius: 22px; background: radial-gradient(ellipse at 50% 60%, rgba(251,243,234,.94) 32%, rgba(251,243,234,0) 78%); }
-.story-caption .overline, .story-title .overline, .story-finale .overline { margin: 0 0 .55rem; font: 600 .6rem/1.6 var(--font-sans); letter-spacing: .3em; text-transform: uppercase; color: var(--wine); }
-.story-caption--blue .overline { color: #5B79A6; }
-.story-caption h2 { margin: 0; font: 500 clamp(1.7rem, 6.4vw, 2.5rem)/1.12 var(--font-header); color: var(--ink); }
-.story-caption .line, .story-title .line { margin: .7rem auto 0; max-width: 34ch; font: italic 500 clamp(1.02rem, 3.6vw, 1.2rem)/1.5 var(--font-body); color: rgba(74,58,60,.85); }
-
-.story-title { position: absolute; left: 50%; top: 47%; width: min(90vw, 480px); text-align: center; transform: translate(-50%,-50%) translateZ(120px); }
-.story-title .overline { letter-spacing: .34em; }
-.story-title h1 { margin: 0; font: 500 clamp(3rem, 13vw, 5.2rem)/.98 var(--font-header); letter-spacing: -.03em; color: var(--ink); }
-.story-title h1 span { color: var(--rhapsodic); font-style: italic; }
-
-.story-cue {
-  position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 20;
-  display: flex; flex-direction: column; align-items: center; gap: .45rem;
-  transform: translateX(-50%);
-  font: 600 .56rem/1 var(--font-sans); letter-spacing: .26em; text-transform: uppercase; color: var(--wine);
-  transition: opacity .5s ease; pointer-events: none;
-}
-.story-cue i { width: 1px; height: 34px; background: linear-gradient(var(--wine), transparent); animation: story-cue 1.8s ease-in-out infinite; }
-@keyframes story-cue { 0%,100% { transform: translateY(0); opacity: 1; } 55% { transform: translateY(9px); opacity: .35; } }
-
-.story-dots { position: sticky; top: 44svh; z-index: 20; float: right; display: grid; gap: 9px; margin-right: max(10px, env(safe-area-inset-right)); }
-.story-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(142,66,88,.25); transition: background .3s, transform .3s; }
-.story-dots i.is-on { background: var(--wine); transform: scale(1.5); }
-
-.story-plane.float { animation: story-float 7s ease-in-out infinite alternate; }
-.story-plane.float--slow { animation-duration: 10s; }
-@keyframes story-float { from { translate: 0 -6px; } to { translate: 0 7px; } }
-
-.story-finale {
-  position: absolute; left: 50%; bottom: 2%;
-  width: min(88vw, 430px); padding: 1.3rem 1.4rem 1.45rem;
-  text-align: center;
-  border: 1px solid rgba(142,66,88,.28); border-radius: 18px;
-  background: rgba(251,243,234,.93);
-  box-shadow: 0 26px 60px rgba(142,66,88,.18);
-  transform: translateX(-50%) translateZ(200px);
-}
-.story-finale h2 { margin: 0; font: 500 clamp(1.8rem, 7vw, 2.4rem)/1.08 var(--font-header); color: var(--ink); }
-.story-finale .line { margin: .55rem 0 0; font: italic 500 1.04rem/1.5 var(--font-body); color: rgba(74,58,60,.85); }
-.story-cta {
-  display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.05rem;
-  min-height: 50px; padding: 0 1.7rem; border: 0; border-radius: 8px;
-  background: var(--wine); color: var(--fairy);
-  font: 600 .74rem/1 var(--font-sans); letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
-}
-.story-cta:hover { background: var(--manhattan); }
-
-@media (prefers-reduced-motion: reduce) {
-  .story-camera { perspective: none; }
-  .story-plane, .story-world { transform: none !important; }
-  .story-plane.float, .story-cue i { animation: none; }
-  .story-chapter { transition: opacity .4s ease; }
-}
-@media (min-width: 900px) {
-  .story-camera { perspective: 1250px; }
-  .story-chapter { width: min(72vw, 860px); height: min(84svh, 780px); }
-  .story-caption { bottom: 6%; }
-}
-
-
-/* ================================================================== */
-/* Story prologue v3 — mobile-Safari-safe illustrated page turning.    */
-/* Keeps the cinematic depth, but never pushes a giant 3D parent       */
-/* through Safari's perspective plane.                                 */
-/* ================================================================== */
-
-/* A vertical overflow value on an ancestor can disable sticky in iOS
-   Safari. Clip only the horizontal axis and leave the story's vertical
-   scrolling chain intact. */
-.wedding-shell {
-  overflow-x: clip;
-  overflow-y: visible;
-}
-
-.scene--story {
-  overflow: visible !important;
-  isolation: auto;
-  contain: none;
-}
-
-.story-track {
+.dream {
   position: relative;
-  min-height: 700svh;
-}
-
-.story-stage {
-  --story-pointer-x: 0px;
-  --story-pointer-y: 0px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  min-height: min(560px, 100svh);
-  overflow: hidden;
-  isolation: isolate;
-  touch-action: pan-y pinch-zoom;
-  background: #f7eee8;
-  transition: background-color 1.1s ease;
-}
-
-.story-stage::before {
-  content: "";
-  position: absolute;
-  inset: -7%;
   z-index: 0;
+}
+/* The page itself is the scroll container, so the snap rule has to live on
+   the root. Only the chapters carry scroll-snap-align, so the invitation
+   below scrolls exactly as it did before — and "proximity" means a guest who
+   wants to fly past always can. */
+html:has(.dream) { scroll-snap-type: y proximity; }
+
+/* ---- the paintings ---- */
+.dream-skies {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #f0dfe0;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(255, 252, 246, .94) 0 19%, rgba(255, 248, 240, .46) 46%, transparent 72%),
-    radial-gradient(circle at 15% 16%, rgba(223, 160, 178, .24), transparent 34%),
-    radial-gradient(circle at 85% 78%, rgba(157, 184, 219, .19), transparent 34%),
-    linear-gradient(145deg, #f8eee8, #efd8d8 58%, #e4dbea);
-  transform: translate3d(var(--story-pointer-x), var(--story-pointer-y), 0) scale(1.08);
-  transition: background 1.2s ease;
 }
-
-.story-stage[data-story-chapter="kuching"]::before {
-  background:
-    radial-gradient(circle at 18% 24%, rgba(225, 151, 176, .32), transparent 32%),
-    radial-gradient(circle at 78% 72%, rgba(137, 181, 216, .2), transparent 34%),
-    linear-gradient(150deg, #fbf1e8, #f0d7df 55%, #dfe8ef);
-}
-
-.story-stage[data-story-chapter="georgetown"]::before,
-.story-stage[data-story-blue="true"]::before {
-  background:
-    radial-gradient(circle at 20% 18%, rgba(137, 181, 216, .32), transparent 34%),
-    radial-gradient(circle at 78% 78%, rgba(225, 151, 176, .2), transparent 36%),
-    linear-gradient(150deg, #f8efe5, #e1e8ef 55%, #edd8de);
-}
-
-.story-stage[data-story-chapter="perth"]::before {
-  background:
-    radial-gradient(ellipse at 50% 54%, rgba(255,255,250,.9), transparent 48%),
-    linear-gradient(155deg, #f8efe6, #eadfe7 48%, #d8e5ec);
-}
-
-.story-stage[data-story-chapter="together"]::before {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255, 249, 242, .96), transparent 42%),
-    linear-gradient(145deg, #f7eae5, #ecd0da 58%, #d9e2ed);
-}
-
-.story-stage[data-story-chapter="seoul"]::before {
-  background:
-    radial-gradient(circle at 20% 22%, rgba(218, 148, 112, .24), transparent 35%),
-    radial-gradient(circle at 80% 74%, rgba(183, 111, 97, .2), transparent 34%),
-    linear-gradient(145deg, #f8eee2, #ead8cf 54%, #d9dce8);
-}
-
-.story-stage[data-story-chapter="wedding"]::before {
-  background:
-    radial-gradient(ellipse at 50% 44%, rgba(255, 251, 245, .96) 0 24%, transparent 64%),
-    radial-gradient(circle at 16% 20%, rgba(214, 148, 171, .28), transparent 34%),
-    radial-gradient(circle at 84% 78%, rgba(139, 179, 218, .22), transparent 34%),
-    linear-gradient(145deg, #f7e9e4, #eecfd8 55%, #dce5f0);
-}
-
-.story-stage::after {
-  content: "";
+.dream-sky {
   position: absolute;
   inset: 0;
-  z-index: 45;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(251,243,234,.18), transparent 20% 76%, rgba(142,66,88,.07)),
-    radial-gradient(ellipse at 50% 48%, transparent 58%, rgba(142,66,88,.09));
-}
-
-.story-grain {
-  position: absolute;
-  inset: 0;
-  z-index: 44;
-  pointer-events: none;
-  opacity: .13;
-  mix-blend-mode: multiply;
-  background-image:
-    radial-gradient(circle at 18% 21%, rgba(74,58,60,.42) 0 .42px, transparent .72px),
-    radial-gradient(circle at 72% 68%, rgba(160,80,102,.34) 0 .38px, transparent .68px);
-  background-size: 8px 11px, 13px 16px;
-}
-
-.story-border {
-  position: absolute;
-  inset: 0;
-  z-index: 42;
-  pointer-events: none;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
   opacity: 0;
-  mix-blend-mode: multiply;
-  transition: opacity .9s ease;
+  transition: opacity 1.25s cubic-bezier(.4, .1, .2, 1);
+  will-change: opacity;
 }
-.story-border.is-on { opacity: .56; }
-
-.story-world {
+.dream-sky picture,
+.dream-sky img {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  /* the slow swell: each layer drifts at a slightly different rate so the
+     depth reads even though every painting is flat */
+  transform:
+    scale(calc(1.06 + var(--drift, 0) * .09))
+    translate3d(0, calc(var(--drift, 0) * -3vh * (1 + var(--layer, 0) * .25)), 0);
+  transition: transform .9s cubic-bezier(.22, .72, .2, 1);
+}
+/* a breath of mist so the words always have something to sit on */
+.dream-mist {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 108%, rgba(255, 245, 243, .78), transparent 62%),
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(255, 248, 245, .5), transparent 60%),
+    linear-gradient(to bottom, rgba(255, 246, 244, .34) 0%, rgba(255, 246, 244, .06) 34%, rgba(252, 236, 236, .3) 100%);
+}
+
+/* ---- the chapters ---- */
+.dream-chapter {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 12svh 1.4rem;
+  scroll-snap-align: center;
+  scroll-snap-stop: normal;
+  opacity: 0;
+  will-change: opacity;
+}
+.dream-words {
+  position: relative;
   z-index: 3;
-}
-
-.story-chapter {
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  /* Sized to the painted window inside the frame artwork, so no sticker or
-     caption can drift onto the border. Art is laid out in the top band of
-     this box; the caption owns the bottom. */
-  width: min(84vw, 660px);
-  height: min(76svh, 700px);
-  opacity: 0;
-  visibility: hidden;
+  width: min(90vw, 620px);
+  text-align: center;
+  color: #4a3a3c;
+  transform:
+    translate(var(--cap-x, 0%), calc(var(--cap-y, 0%) + var(--rise, 0px)))
+    scale(var(--cap-size, 1));
   transform-origin: 50% 50%;
-  backface-visibility: hidden;
 }
-.story-chapter.is-near { will-change: transform, opacity; }
+.dream-words .overline {
+  margin: 0 0 .9rem;
+  font: 600 .58rem/1.7 var(--font-sans);
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  color: #8e4258;
+  opacity: calc(.35 + var(--near, 0) * .65);
+}
+.is-blue .dream-words .overline { color: #5b79a6; }
+.dream-words h1,
+.dream-words h2 {
+  margin: 0;
+  font-family: var(--font-header);
+  font-weight: 500;
+  line-height: 1.06;
+  letter-spacing: -.02em;
+  color: #3f3235;
+  text-shadow: 0 1px 26px rgba(255, 250, 248, .9);
+}
+.dream-words h1 { font-size: clamp(2.9rem, 12vw, 5rem); }
+.dream-words h2 { font-size: clamp(2rem, 7.6vw, 3.1rem); }
+.dream-words h1 span {
+  display: block;
+  margin: .06em 0;
+  font: italic 400 .4em/1 var(--font-header);
+  color: #c9a8a0;
+}
+.dream-words .line {
+  margin: 1rem auto 0;
+  max-width: 32ch;
+  font: italic 500 clamp(1.05rem, 3.9vw, 1.32rem)/1.62 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  text-shadow: 0 1px 20px rgba(255, 250, 248, .95);
+}
 
-.story-plane {
+/* ---- accent artwork from the couple's own pack ---- */
+.dream-accent {
   position: absolute;
-  transform: translate3d(-50%, -50%, 0);
-  transform-origin: center;
+  z-index: 2;
+  transform:
+    translate(-50%, -50%)
+    translate3d(0, calc(var(--rise, 0px) * (.35 + var(--depth, 0) / 260)), 0);
+  will-change: transform;
   pointer-events: none;
 }
-
-.story-plane img,
-.story-plane video {
+.dream-accent img,
+.dream-accent video {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 72svh;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-  filter: drop-shadow(0 11px 14px rgba(104, 63, 76, .09));
+  filter: drop-shadow(0 16px 26px rgba(142, 66, 88, .16));
 }
-.story-plane video { filter: none; }
-
-.story-plane.float img,
-.story-plane.float video { animation: story-art-float 7.5s ease-in-out infinite alternate; }
-.story-plane.float--slow img,
-.story-plane.float--slow video { animation-duration: 11s; }
-.story-plane.float--fast img,
-.story-plane.float--fast video { animation-duration: 5.6s; }
-@keyframes story-art-float {
-  from { transform: translateY(-4px) rotate(-.25deg); }
-  to { transform: translateY(6px) rotate(.25deg); }
+.dream-accent video { filter: none; }
+.dream-accent.float { animation: dream-float 8s ease-in-out infinite alternate; }
+.dream-accent.float--slow { animation-duration: 12s; }
+@keyframes dream-float {
+  from { translate: 0 -7px; }
+  to { translate: 0 8px; }
 }
 
-.story-slot {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 3 / 4;
-  padding: 10%;
-  text-align: center;
-  background: center / 100% 100% no-repeat var(--story-slot-frame);
+/* ---- the invitation at the end of the walk ---- */
+.dream-invite {
+  margin: 2rem auto 0;
+  padding: 1.5rem 1.4rem 1.6rem;
+  width: min(86vw, 430px);
+  border-radius: 20px;
+  background: rgba(255, 251, 248, .58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 22px 60px rgba(142, 66, 88, .16);
 }
-.story-slot span {
-  color: rgba(142,66,88,.55);
-  font: 600 .52rem/1.7 var(--font-sans);
+.dream-invite .date {
+  margin: 0;
+  font: 500 clamp(1.7rem, 6.6vw, 2.3rem)/1.1 var(--font-header);
+  color: #3f3235;
+}
+.dream-invite .line { margin-top: .55rem; font-size: 1.02rem; }
+.dream-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.2rem;
+  min-height: 52px;
+  padding: 0 1.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(142, 66, 88, .92);
+  color: #fdf6f2;
+  font: 600 .7rem/1 var(--font-sans);
   letter-spacing: .18em;
   text-transform: uppercase;
-}
-
-.story-title,
-.story-caption,
-.story-finale {
-  position: absolute;
-  left: 50%;
-  z-index: 20;
-  width: min(88vw, 500px);
-  text-align: center;
-  /* --cap-x / --cap-y / --cap-size are set per chapter from config.json,
-     so the words can be nudged and resized in Story Studio. */
-  transform: translateX(-50%) translate(var(--cap-x, 0%), var(--cap-y, 0%)) scale(var(--cap-size, 1));
-  transform-origin: 50% 50%;
-}
-.story-editing .story-title,
-.story-editing .story-caption,
-.story-editing .story-finale { touch-action: none; cursor: grab; }
-.story-editing .story-plane { touch-action: none; }
-.story-title.is-selected,
-.story-caption.is-selected,
-.story-finale.is-selected { outline: 2px dashed var(--manhattan); outline-offset: 8px; border-radius: 10px; }
-
-.story-title { top: 42%; }
-.story-title::before,
-.story-caption::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -1.6rem -1.8rem;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 52%, rgba(252,246,239,.97) 0 42%, rgba(252,246,239,.82) 66%, transparent 84%);
-}
-
-.story-title .overline,
-.story-caption .overline,
-.story-finale .overline {
-  margin: 0 0 .55rem;
-  color: var(--wine);
-  font: 600 .58rem/1.6 var(--font-sans);
-  letter-spacing: .29em;
-  text-transform: uppercase;
-}
-
-.story-title h1 {
-  margin: 0;
-  color: #382f31;
-  font: 500 clamp(3rem, 12vw, 5.6rem)/.93 var(--font-header);
-  letter-spacing: -.045em;
-}
-.story-title h1 span { color: #b35e79; font-style: italic; }
-
-.story-title .line,
-.story-caption .line {
-  max-width: 34ch;
-  margin: .72rem auto 0;
-  color: rgba(74,58,60,.84);
-  font: italic 500 clamp(1rem, 3.5vw, 1.2rem)/1.48 var(--font-body);
-}
-
-.story-caption { bottom: 4%; width: min(80vw, 460px); }
-.story-caption h2 {
-  margin: 0;
-  color: #403638;
-  font: 500 clamp(1.82rem, 6.8vw, 2.75rem)/1.08 var(--font-header);
-  letter-spacing: -.018em;
-}
-.story-caption--blue .overline { color: #5979a6; }
-
-.story-finale {
-  bottom: 11%;
-  width: min(88vw, 440px);
-  padding: 1.25rem 1.35rem 1.3rem;
-  border: 1px solid rgba(142,66,88,.24);
-  border-radius: 44% 46% 18% 20% / 14% 16% 12% 14%;
-  color: #403638;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(255,255,255,.64), transparent 30%),
-    rgba(251,243,234,.91);
-  box-shadow: 0 18px 45px rgba(104,63,76,.1);
-}
-.story-finale::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px dashed rgba(142,66,88,.18);
-  border-radius: inherit;
-  pointer-events: none;
-}
-.story-finale h2 {
-  margin: 0;
-  color: #403638;
-  font: 500 clamp(1.9rem, 7vw, 2.6rem)/1.06 var(--font-header);
-}
-.story-finale .line {
-  margin: .58rem 0 0;
-  color: rgba(74,58,60,.82);
-  font: italic 500 1.02rem/1.48 var(--font-body);
-}
-.story-cta {
-  position: relative;
-  z-index: 1;
-  min-height: 50px;
-  margin-top: 1rem;
-  padding: 0 1.55rem;
-  border: 1px solid rgba(255,255,255,.55);
-  border-radius: 999px 920px 999px 860px;
-  color: #fff9f2;
-  background: #a05066;
-  box-shadow: 0 10px 22px rgba(142,66,88,.16);
-  font: 600 .7rem/1 var(--font-sans);
-  letter-spacing: .13em;
-  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 246, 240, .55);
   cursor: pointer;
-  transition: transform .22s ease, background .22s ease;
+  animation: onward-breathe 3.6s ease-in-out infinite;
 }
-.story-cta:hover,
-.story-cta:focus-visible { background: #8e4258; transform: translateY(-2px) rotate(-.25deg); }
-.story-cta:active { transform: scale(.98); }
+.dream-cta:hover { background: #a05066; }
 
-.story-cue {
-  position: absolute;
+/* ---- quiet markers ---- */
+.dream-dots {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  top: 50%;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dream-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .55);
+  box-shadow: 0 1px 4px rgba(120, 70, 85, .35);
+  transition: background .4s ease, transform .4s ease;
+}
+.dream-dots i.is-on { background: #fff; transform: scale(1.7); }
+.dream-cue {
+  position: fixed;
   left: 50%;
-  bottom: calc(88px + max(12px, env(safe-area-inset-bottom)));
-  z-index: 50;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .42rem;
-  margin: 0;
-  color: #8e4258;
-  font: 600 .54rem/1 var(--font-sans);
-  letter-spacing: .24em;
-  text-transform: uppercase;
-  transform: translateX(-50%);
-  transition: opacity .35s ease;
-  pointer-events: none;
-  white-space: nowrap;
-}
-.story-cue i {
-  width: 1px;
-  height: 28px;
-  background: linear-gradient(#8e4258, transparent);
-  animation: story-cue 1.8s ease-in-out infinite;
-}
-
-/* A quiet white thread with a heart travelling along it. No box, no border,
-   no chapter caption — the artwork should be the only thing on the page. */
-.story-controls {
-  position: absolute;
-  z-index: 60;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  left: max(18px, env(safe-area-inset-left));
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 34px;
-  align-items: center;
   gap: .5rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
+  margin: 0;
+  transform: translateX(-50%);
+  font: 600 .55rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-shadow: 0 0 12px rgba(255, 250, 248, .95);
+  transition: opacity .6s ease;
+  pointer-events: none;
 }
-.story-controls > button {
-  width: 34px;
+.dream-cue i {
+  width: 1px;
   height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: rgba(255,255,255,.92);
-  font-size: .95rem;
-  text-shadow: 0 1px 5px rgba(104,63,76,.45);
-  cursor: pointer;
+  background: linear-gradient(#8e4258, transparent);
+  animation: story-cue 2s ease-in-out infinite;
 }
-.story-controls > button:active { transform: scale(.92); }
-.story-controls > button:disabled { opacity: .2; cursor: default; }
-.story-controls > div { position: relative; min-width: 0; display: block; }
-.story-controls small,
-.story-controls strong { display: none; }
-.story-controls i {
-  position: relative;
-  display: block;
-  height: 16px;
-  overflow: visible;
-  background: none;
-  /* a softly waving thread, drawn rather than ruled */
-  -webkit-mask-image: var(--story-squiggle);
-  mask-image: var(--story-squiggle);
-  -webkit-mask-size: 120px 16px;
-  mask-size: 120px 16px;
-  -webkit-mask-repeat: repeat-x;
-  mask-repeat: repeat-x;
-  background-color: rgba(255,255,255,.5);
-}
-.story-controls i span {
-  display: block;
-  height: 100%;
-  background: #fff;
-  transition: width .5s cubic-bezier(.22,.72,.2,1);
-}
-/* the heart rides the end of the filled thread */
-.story-controls i::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: var(--story-heart, 0%);
-  width: 13px;
-  height: 13px;
-  margin-left: -6.5px;
-  transform: translateY(-50%);
-  background: #fff;
-  -webkit-mask-image: var(--story-heart-icon);
-  mask-image: var(--story-heart-icon);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  filter: drop-shadow(0 1px 4px rgba(104,63,76,.5));
-  transition: left .5s cubic-bezier(.22,.72,.2,1);
+@keyframes story-cue {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  55% { transform: translateY(9px); opacity: .3; }
 }
 
-/* The global glassy dock belongs to the invitation, not the illustrated
-   prologue. StoryPrologue supplies its own paper-ribbon controls. */
-.scene--story .mobile-chapter-dock,
-.scene--story .scene-nav,
-.scene--story .scroll-progress { display: none !important; }
-
-/* Lighter, paper-like music control; avoids expensive backdrop blur on iOS. */
-.sound-control {
-  border-color: rgba(142,66,88,.24);
-  border-radius: 58% 46% 52% 44% / 48% 56% 44% 52%;
-  background: rgba(251,243,234,.92);
-  box-shadow: 0 9px 22px rgba(104,63,76,.1);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+@media (min-width: 900px) {
+  .dream-words { width: min(70vw, 680px); }
+  .dream-chapter { padding: 14svh 2rem; }
 }
-
-@media (min-width: 760px) {
-  .story-controls {
-    right: auto;
-    left: 50%;
-    width: min(560px, calc(100vw - 48px));
-    transform: translateX(-50%);
-  }
-  .story-caption { bottom: 9%; }
-  .story-finale { bottom: 8%; }
-}
-
-@media (max-width: 759px) {
-  .wedding-shell { padding-bottom: 0; }
-  .story-chapter {
-    top: 46%;
-    width: 100vw;
-    height: min(80svh, 700px);
-  }
-  .story-plane img,
-  .story-plane video { max-height: 62svh; }
-  .story-title { top: 43%; width: min(88vw, 430px); }
-  .story-title h1 { font-size: clamp(3rem, 15vw, 4.8rem); }
-  .story-caption { bottom: 15%; width: min(86vw, 420px); }
-  .story-caption::before { inset: -1.15rem -1rem; }
-  .story-finale { bottom: 14%; padding: 1rem 1.05rem 1.12rem; }
-  .story-cue { bottom: calc(84px + max(10px, env(safe-area-inset-bottom))); }
-}
-
-@media (max-height: 620px) and (orientation: landscape) {
-  .story-chapter { top: 45%; height: 76svh; }
-  .story-title { top: 39%; }
-  .story-caption { bottom: 18%; }
-  .story-caption .line { display: none; }
-  .story-finale { bottom: 16%; transform: translateX(-50%) scale(.86); }
-  .story-controls { min-height: 56px; grid-template-columns: 42px minmax(0,1fr) 42px; }
-  .story-controls > button { width: 40px; height: 40px; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .story-stage::before,
-  .story-chapter,
-  .story-plane,
-  .story-plane img,
-  .story-plane video,
-  .story-border,
-  .story-controls i span { transition: none !important; animation: none !important; }
-  .story-cue i { animation: none; }
+  .dream { scroll-snap-type: none; }
+  .dream-sky img { transform: scale(1.04); transition: none; }
+  .dream-accent.float, .dream-cue i, .dream-cta { animation: none; }
+  .dream-chapter { transition: opacity .4s ease; }
 }
 
 /* Grand Hyatt room offer + venue arrival note */
@@ -4207,3 +3825,107 @@ html { scroll-snap-type: none; }
 .text-toolbar label { display: flex; align-items: center; gap: .5rem; flex: 1; min-width: 180px; font: 600 .6rem/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: rgba(74,58,60,.75); }
 .text-toolbar input[type="range"] { flex: 1; accent-color: var(--wine); }
 .text-toolbar button { min-height: 34px; padding: 0 .9rem; border: 0; border-radius: 8px; background: rgba(255,255,255,.7); color: var(--wine); font: 600 .6rem/1 var(--font-sans); letter-spacing: .07em; text-transform: uppercase; cursor: pointer; }
+
+/* ==================================================================== */
+/* The photograph anyone without their own invitation link meets first.  */
+/* They may step past it and wander, but the RSVP stays closed to them.  */
+/* ==================================================================== */
+.wedding-shell.is-gated { max-height: 100svh; overflow: hidden; }
+.photo-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: #efe4dc;
+  animation: gate-in .9s ease-out both;
+}
+.photo-gate picture,
+.photo-gate img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+.photo-gate-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(60,38,45,.16) 0%, transparent 26%, transparent 44%, rgba(60,38,45,.5) 88%),
+    radial-gradient(ellipse at 50% 96%, rgba(60,38,45,.42), transparent 62%);
+}
+.photo-gate-words {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(7.5rem, 22svh, 12rem);
+  width: min(90vw, 520px);
+  transform: translateX(-50%);
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(50,30,38,.5);
+}
+.photo-gate-words .overline {
+  margin: 0 0 .55rem;
+  font: 600 .6rem/1.6 var(--font-sans);
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  opacity: .92;
+}
+.photo-gate-words h1 {
+  margin: 0;
+  font: 500 clamp(2.6rem, 12vw, 4.2rem)/1.02 var(--font-header);
+  letter-spacing: -.02em;
+}
+.photo-gate-words h1 span {
+  display: block;
+  margin: .1em 0;
+  font: italic 400 .42em/1 var(--font-header);
+  opacity: .85;
+}
+.photo-gate-words .line {
+  margin: .7rem 0 0;
+  font: italic 500 clamp(1rem, 3.6vw, 1.15rem)/1.5 var(--font-body);
+  opacity: .93;
+}
+.photo-gate-enter {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(3.4rem, 11svh, 5.4rem);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 52px;
+  padding: 0 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,.2);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: #fff;
+  font: 600 .68rem/1 var(--font-sans);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255,246,240,.7);
+  cursor: pointer;
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.photo-gate-enter:hover { background: rgba(255,255,255,.32); }
+.photo-gate-note {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgba(255,255,255,.8);
+  font: 500 .58rem/1.5 var(--font-sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 10px rgba(50,30,38,.5);
+}
+@keyframes gate-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .photo-gate, .photo-gate-enter { animation: none; }
+}
