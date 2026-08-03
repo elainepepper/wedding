@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       if (!householdId) {
         householdId = await nextId("households");
         const householdName = clean(payload.householdName, 180) || `${firstName} ${lastName}`.trim();
-        await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, opened_at: null, last_activity_at: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+        await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile: mobile || null, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, opened_at: null, last_activity_at: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       }
       const guestId = await nextId("guests");
       await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile, category: clean(payload.category, 80) || "Friends", side: clean(payload.side, 40) || "Shared", age_group: "Adult", relationship: null, rsvp_status: clean(payload.rsvpStatus, 30) || "Pending", ceremony_invited: payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: payload.afterPartyEligible ? 1 : 0, after_party_invited: payload.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", meal_selection: null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: clean(payload.accessibility, 800) || null, transport_required: payload.transportRequired ? 1 : 0, accommodation_required: payload.accommodationRequired ? 1 : 0, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: clean(payload.internalNotes, 1500) || null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
@@ -217,16 +217,22 @@ export async function POST(request: Request) {
         const row = rows[index];
         const firstName = clean(row.firstName, 100), lastName = clean(row.lastName, 100), mobile = clean(row.mobile, 60);
         if (!firstName) { errors.push(`Row ${index + 1}: missing first name`); continue; }
-        if (!/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) { errors.push(`Row ${index + 1}: mobile with country code is required`); continue; }
-        const byMobile = await weddingRef.collection("guests").where("mobile", "==", mobile).where("archived", "==", 0).limit(1).get();
+        // A mobile is welcome but not required: guests give one themselves
+        // when they reply, and a list exported from a spreadsheet rarely has
+        // every number filled in.
+        if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) { errors.push(`Row ${index + 1}: ${firstName || "guest"} has a number that is missing its country code`); continue; }
+        // match on the number when there is one, otherwise on the name
+        const byMobile = mobile
+          ? await weddingRef.collection("guests").where("mobile", "==", mobile).limit(1).get()
+          : await weddingRef.collection("guests").where("first_name", "==", firstName).where("last_name", "==", lastName).limit(1).get();
         const existing = !byMobile.empty ? byMobile.docs[0] : (await weddingRef.collection("guests").where("first_name", "==", firstName).where("last_name", "==", lastName).where("archived", "==", 0).limit(1).get()).docs[0];
         if (existing && duplicateMode === "skip") { skipped += 1; continue; }
-        const shared = { preferred_name: clean(row.preferredName, 100) || null, mobile, category: clean(row.category, 80) || "Friends", side: clean(row.side, 40) || "Shared", age_group: "Adult", internal_notes: clean(row.notes, 1500) || null, updated_at: serverTimestamp() };
+        const shared = { preferred_name: clean(row.preferredName, 100) || null, mobile: mobile || null, category: clean(row.category, 80) || "Friends", side: clean(row.side, 40) || "Shared", age_group: "Adult", internal_notes: clean(row.notes, 1500) || null, updated_at: serverTimestamp() };
         if (existing) { await existing.ref.set(shared, { merge: true }); updated += 1; continue; }
         const householdName = clean(row.household, 180) || `${firstName} ${lastName}`.trim();
         const householdMatch = await weddingRef.collection("households").where("name", "==", householdName).limit(1).get();
         let householdId: number;
-        if (householdMatch.empty) { householdId = await nextId("households"); await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, created_at: serverTimestamp(), updated_at: serverTimestamp() }); } else householdId = Number(householdMatch.docs[0].data().id);
+        if (householdMatch.empty) { householdId = await nextId("households"); await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile: mobile || null, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, created_at: serverTimestamp(), updated_at: serverTimestamp() }); } else householdId = Number(householdMatch.docs[0].data().id);
         const guestId = await nextId("guests");
         await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, ...shared, relationship: null, rsvp_status: clean(row.rsvpStatus, 30) || "Pending", ceremony_invited: row.ceremonyInvited === false ? 0 : 1, reception_invited: row.receptionInvited === false ? 0 : 1, after_party_eligible: row.afterPartyInvited ? 1 : 0, after_party_invited: row.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", archived: 0, created_at: serverTimestamp() });
         added += 1;

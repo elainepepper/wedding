@@ -357,15 +357,22 @@ function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; s
 function Imports({ act }: { act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [fileName, setFileName] = useState("");
+  const [importError, setImportError] = useState("");
   const [duplicateMode, setDuplicateMode] = useState("skip");
   const parse = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
       const lines = String(reader.result).replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
-      const headers = (lines.shift() || "").split(",").map((header) => header.trim().toLowerCase());
+      // Exported sheets often carry a title or a blank row above the headings,
+      // so look for the line that actually names the columns.
+      const headerIndex = lines.findIndex((line) => /(^|,)\s*"?(first name|name)"?\s*(,|$)/i.test(line));
+      const headerLine = lines.splice(0, Math.max(0, headerIndex) + 1).pop() || "";
+      const headers = headerLine.split(",").map((header) => header.trim().toLowerCase().replace(/^"|"$/g, ""));
       const keyMap: Record<string, string> = {
         "first name": "firstName", "last name": "lastName", "preferred name": "preferredName",
-        household: "household", mobile: "mobile", "guest category": "category",
+        household: "household", mobile: "mobile", phone: "mobile", "phone number": "mobile",
+        "mobile number": "mobile", "contact number": "mobile", partner: "partner", table: "table",
+        name: "fullName", "full name": "fullName", email: "email", "guest category": "category",
         "bride or groom side": "side", "rsvp status": "rsvpStatus", "ceremony invited": "ceremonyInvited",
         "reception invited": "receptionInvited", "after-party invited": "afterPartyInvited",
         "dietary requirements": "dietaryRequirements", allergies: "allergies", notes: "notes",
@@ -374,6 +381,12 @@ function Imports({ act }: { act: (payload: Record<string, unknown>, success: str
         const values = line.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g)?.map((cell) => cell.replace(/,$/, "").replace(/^"|"$/g, "").replaceAll('""', '"')) ?? [];
         const row: Record<string, unknown> = {};
         headers.forEach((header, index) => { const key = keyMap[header]; if (key) row[key] = values[index] ?? ""; });
+        if (!row.firstName && typeof row.fullName === "string" && row.fullName.trim()) {
+          const parts = row.fullName.trim().split(/\s+/);
+          row.firstName = parts.shift();
+          row.lastName = parts.join(" ");
+        }
+        if (!row.household && row.firstName) row.household = `${row.firstName}${row.lastName ? " " + row.lastName : ""} Household`;
         return row;
       }));
       setFileName(file.name);
@@ -381,7 +394,7 @@ function Imports({ act }: { act: (payload: Record<string, unknown>, success: str
     reader.readAsText(file);
   };
   const template = "First Name,Last Name,Preferred Name,Household,Mobile,Guest Category,Bride or Groom Side,RSVP Status,Ceremony Invited,Reception Invited,After-Party Invited,Dietary Requirements,Allergies,Table,Notes\n";
-  return <div className="manager-page imports-page"><div className="section-intro-row"><div><p className="panel-kicker">Bring your list</p><h2>Import adult guests</h2><span>Use a CSV exported from Google Sheets. A mobile number with country code is required for every guest.</span></div><button className="secondary-button" onClick={() => downloadFile("elaine-haykal-guest-template.csv", template)}>Download template</button></div><section className="manager-panel import-panel"><label className="drop-zone"><input type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (file) parse(file); }} /><span>↓</span><h3>{fileName || "Drop your guest list here"}</h3><p>CSV exported from Google Sheets · up to 2,000 rows</p><button type="button">Choose CSV file</button></label>{rows.length ? <div className="import-preview"><header><div><h3>Preview {rows.length} rows</h3><p>Review names, households and required mobile numbers.</p></div><select value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value)}><option value="skip">Skip duplicates</option><option value="update">Update duplicates</option></select></header><div className="table-scroll"><table><thead><tr><th>First name</th><th>Last name</th><th>Household</th><th>Mobile</th><th>Group</th><th>Status</th></tr></thead><tbody>{rows.slice(0, 8).map((row, index) => <tr key={index}><td>{String(row.firstName || "Missing")}</td><td>{String(row.lastName || "")}</td><td>{String(row.household || "")}</td><td>{String(row.mobile || "Required")}</td><td>{String(row.category || "Friends")}</td><td>{String(row.rsvpStatus || "Pending")}</td></tr>)}</tbody></table></div><footer><span>{rows.length > 8 ? `Showing first 8 of ${rows.length} rows` : `${rows.length} rows ready`}</span><button onClick={() => act({ action: "importGuests", rows, duplicateMode }, "Guest list imported")}>Confirm import</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Check duplicates</h3><p>Skip or update matching mobile and name records.</p></article></section></div>;
+  return <div className="manager-page imports-page"><div className="section-intro-row"><div><p className="panel-kicker">Bring your list</p><h2>Import adult guests</h2><span>Use a CSV exported from Google Sheets. A single Name column is fine, and mobile numbers can be added later.</span></div><button className="secondary-button" onClick={() => downloadFile("elaine-haykal-guest-template.csv", template)}>Download template</button></div><section className="manager-panel import-panel"><label className="drop-zone"><input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; if (/\.(xlsx|xls|numbers)$/i.test(file.name)) { setFileName(""); setImportError("That is a spreadsheet, not a CSV. In Excel or Google Sheets choose File → Save as (or Download) → CSV, then drop that file here."); return; } setImportError(""); parse(file); }} /><span>↓</span><h3>{fileName || "Drop your guest list here"}</h3><p>CSV only · Excel files need saving as CSV first · a mobile number is optional · up to 2,000 rows</p><button type="button">Choose CSV file</button></label>{importError ? <p className="form-error" role="alert">{importError}</p> : null}{rows.length ? <div className="import-preview"><header><div><h3>Preview {rows.length} rows</h3><p>Review names, households and required mobile numbers.</p></div><select value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value)}><option value="skip">Skip duplicates</option><option value="update">Update duplicates</option></select></header><div className="table-scroll"><table><thead><tr><th>First name</th><th>Last name</th><th>Household</th><th>Mobile</th><th>Group</th><th>Status</th></tr></thead><tbody>{rows.slice(0, 8).map((row, index) => <tr key={index}><td>{String(row.firstName || "Missing")}</td><td>{String(row.lastName || "")}</td><td>{String(row.household || "")}</td><td>{String(row.mobile || "—")}</td><td>{String(row.category || "Friends")}</td><td>{String(row.rsvpStatus || "Pending")}</td></tr>)}</tbody></table></div><footer><span>{rows.length > 8 ? `Showing first 8 of ${rows.length} rows` : `${rows.length} rows ready`}</span><button onClick={() => act({ action: "importGuests", rows, duplicateMode }, "Guest list imported")}>Confirm import</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Check duplicates</h3><p>Skip or update matching mobile and name records.</p></article></section></div>;
 }
 
 function WishesAndAdvice({ guests }: { guests: Guest[] }) {

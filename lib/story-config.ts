@@ -1,6 +1,5 @@
 // Auto-generated from public/wedding/story/config.json — the landing page.
-// Chapter words, which dreamscape each stands in, and its accent artwork.
-// Arrange it in Story-Studio.html, download config.json, and replace the file.
+// Chapter words and which painting each stands in. Arrange in Story-Studio.
 export const defaultStoryConfig = {
   "version": 3,
   "depth": 1500,
@@ -41,16 +40,7 @@ export const defaultStoryConfig = {
       "overline": "Elaine & Haykal · 07 · 11 · 2026",
       "heading": "Our Story & Yours",
       "line": "a hand-painted journey to our wedding day",
-      "planes": [
-        {
-          "art": "gen-whimsical-canopy-wedding-sticker",
-          "x": 0,
-          "y": 30,
-          "w": 26,
-          "z": 80,
-          "float": "slow"
-        }
-      ],
+      "planes": [],
       "bg": "dream-1"
     },
     {
@@ -58,23 +48,7 @@ export const defaultStoryConfig = {
       "overline": "Chapter one · Kuching, Sarawak",
       "heading": "A girl from the city of cats",
       "line": "Elaine grew up in Kuching, among old streets, warm rain and stories waiting to be told.",
-      "planes": [
-        {
-          "art": "cat-under-flower-arch",
-          "x": -27,
-          "y": 24,
-          "w": 26,
-          "z": 90,
-          "float": "slow"
-        },
-        {
-          "art": "blue-house-with-heart",
-          "x": 29,
-          "y": 22,
-          "w": 24,
-          "z": 40
-        }
-      ],
+      "planes": [],
       "bg": "dream-2"
     },
     {
@@ -83,23 +57,7 @@ export const defaultStoryConfig = {
       "overline": "Chapter two · George Town, Penang",
       "heading": "A boy from the island",
       "line": "Haykal grew up among painted shophouses, sea air and the generous bustle of George Town.",
-      "planes": [
-        {
-          "art": "heritage-shophouse",
-          "x": -26,
-          "y": 24,
-          "w": 30,
-          "z": 60
-        },
-        {
-          "art": "gen-watercolour-young-man-in-armchair",
-          "x": 28,
-          "y": 26,
-          "w": 20,
-          "z": 95,
-          "float": "fast"
-        }
-      ],
+      "planes": [],
       "bg": "dream-3"
     },
     {
@@ -107,23 +65,7 @@ export const defaultStoryConfig = {
       "overline": "Chapter three · Perth, 2016",
       "heading": "Of all the cities in the world",
       "line": "Two strangers crossed different oceans to the same quiet city, and did not yet know it.",
-      "planes": [
-        {
-          "art": "gen-watercolour-young-man-in-armchair",
-          "x": -25,
-          "y": 27,
-          "w": 18,
-          "z": 70
-        },
-        {
-          "art": "gen-pastel-watercolour-seated-woman-sticker",
-          "x": 25,
-          "y": 26,
-          "w": 20,
-          "z": 70,
-          "flip": true
-        }
-      ],
+      "planes": [],
       "bg": "dream-1"
     },
     {
@@ -131,24 +73,7 @@ export const defaultStoryConfig = {
       "overline": "Chapter four · Perth, 2020",
       "heading": "The year the world stood still",
       "line": "Somewhere between ordinary days and long conversations, friendship quietly became love.",
-      "planes": [
-        {
-          "art": "couple-on-sofa",
-          "x": 0,
-          "y": 27,
-          "w": 30,
-          "z": 90,
-          "float": "slow"
-        },
-        {
-          "art": "gen-watercolor-heartburst-sticker",
-          "x": 28,
-          "y": -16,
-          "w": 16,
-          "z": 120,
-          "float": "fast"
-        }
-      ],
+      "planes": [],
       "bg": "dream-2"
     },
     {
@@ -156,23 +81,7 @@ export const defaultStoryConfig = {
       "overline": "Chapter five · Seoul, autumn 2025",
       "heading": "On one knee, under falling leaves",
       "line": "On an autumn afternoon in Seoul, Haykal asked. Elaine said yes.",
-      "planes": [
-        {
-          "art": "gen-kneeling-proposal-with-ring-box",
-          "x": -4,
-          "y": 26,
-          "w": 32,
-          "z": 90
-        },
-        {
-          "art": "gen-autumn-watercolour-leaf-cluster",
-          "x": 30,
-          "y": -18,
-          "w": 20,
-          "z": 130,
-          "float": "fast"
-        }
-      ],
+      "planes": [],
       "bg": "dream-3"
     },
     {
@@ -186,24 +95,7 @@ export const defaultStoryConfig = {
         "line": "The Grand Salon · Grand Hyatt Kuala Lumpur\nDoors from 6:00pm · the celebration from 6:45pm",
         "cta": "Step into our celebration ↓"
       },
-      "planes": [
-        {
-          "video": "twirl-scrub.mp4",
-          "poster": "twirl-poster.webp",
-          "blend": "multiply",
-          "x": 0,
-          "y": 22,
-          "w": 30,
-          "z": 100
-        },
-        {
-          "art": "grand-hyatt-facade",
-          "x": -29,
-          "y": 20,
-          "w": 24,
-          "z": 30
-        }
-      ],
+      "planes": [],
       "bg": "dream-1"
     }
   ]
