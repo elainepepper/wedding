@@ -4075,3 +4075,31 @@ canvas { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .twirl-loader { animation: none; }
 }
+
+/* ==================================================================== */
+/* The paintings are the decoration now. Every sticker, ribbon and      */
+/* pasted illustration steps aside so the artwork carries the page.     */
+/* ==================================================================== */
+.editable-decoration-overlay,
+.scene-art,
+.deco-wrap { display: none !important; }
+
+/* Words sit straight on the painting rather than on a pale slab */
+.wedding-shell .scene > .scene-content {
+  background: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.wedding-shell .scene > .scene-content::before {
+  inset: -6% -8%;
+  border-radius: 40px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 251, 249, .86) 0 38%, rgba(255, 251, 249, .55) 66%, transparent 86%);
+}
+/* the panes guests actually type into keep their frosted fill */
+.wedding-shell .scene .form-card,
+.wedding-shell .scene .wishes-card {
+  background: rgba(255, 252, 249, .5) !important;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}

@@ -454,6 +454,26 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   const flyingIn = travelComplete && rsvp.flyingIn === true;
   const journeyDone = travelComplete || allDeclined;
   const attendingCount = guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed").length;
+
+  // When an answer unlocks the next page, carry the guest to it. Without this
+  // the new section simply appears somewhere below the fold and it feels as
+  // though nothing happened.
+  const unlocked = useRef({ anyYes: false, mealComplete: false, travelComplete: false, journeyDone: false });
+  useEffect(() => {
+    const previous = unlocked.current;
+    const next = { anyYes, mealComplete, travelComplete, journeyDone };
+    const arrivals: Array<[boolean, boolean, string]> = [
+      [previous.anyYes, anyYes, "dress"],
+      [previous.mealComplete, mealComplete, "travel"],
+      [previous.travelComplete, travelComplete, flyingIn ? "airport" : "venue"],
+      [previous.journeyDone, journeyDone, "wishes"],
+    ];
+    const arrival = arrivals.find(([was, now]) => !was && now);
+    unlocked.current = next;
+    if (!arrival) return;
+    const timer = window.setTimeout(() => scrollToSection(arrival[2]), 420);
+    return () => window.clearTimeout(timer);
+  }, [anyYes, mealComplete, travelComplete, journeyDone, flyingIn]);
   const seatedGuests = guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed" && guest.tableName);
   const tablesAssigned = seatedGuests.length > 0;
   useEffect(() => {
