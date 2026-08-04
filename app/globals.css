@@ -2858,7 +2858,9 @@ html { scroll-snap-type: none; }
   .field-grid, .phone-grid { grid-template-columns: 1fr; }
   .scene-nav { right: max(.35rem, env(safe-area-inset-right)); }
   .scene-nav button { width: 34px; height: 34px; display: grid; place-items: center; }
-  .sound-control { top: max(.7rem, env(safe-area-inset-top)); left: max(.7rem, env(safe-area-inset-left)); min-height: 44px; }
+  /* right only — setting left as well stretched it across the whole top,
+     which both broke the top-right placement and sat under the Back button */
+  .sound-control { top: max(.7rem, env(safe-area-inset-top)); left: auto; right: max(.7rem, env(safe-area-inset-right)); min-height: 44px; max-width: 52vw; }
   .editable-decoration-overlay img { max-width: 135vw; }
 }
 
@@ -4452,27 +4454,28 @@ canvas { pointer-events: none; }
 .wizard-nav {
   position: fixed;
   z-index: 120;
-  left: max(14px, env(safe-area-inset-left));
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  inset: 0;
   pointer-events: none;
 }
 .wizard-nav > * { pointer-events: auto; }
+/* top left, opposite the sound control and well clear of the menu button */
 .wizard-back {
-  min-height: 52px;
-  padding: 0 1.2rem;
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  min-height: 44px;
+  padding: 0 .4rem;
   border: 0;
   background: none;
-  color: rgba(74, 58, 60, .7);
-  font: 500 .95rem/1 var(--font-body);
+  color: rgba(74, 58, 60, .72);
+  font: 500 .92rem/1 var(--font-body);
   font-style: italic;
   cursor: pointer;
-  text-shadow: 0 1px 12px rgba(255, 250, 248, .9);
+  text-shadow: 0 1px 12px rgba(255, 250, 248, .95);
+  transition: color .25s ease-out;
 }
+.wizard-back::before { content: "← "; font-style: normal; }
+.wizard-back:hover { color: #8e4258; }
 .wizard-next {
   min-height: 56px;
   padding: 0 2.3rem;
@@ -4705,21 +4708,33 @@ canvas { pointer-events: none; }
 
 /* 4. the blinking arrow replaces the Continue box */
 .wizard-next {
-  min-height: 74px;
-  min-width: 74px;
+  position: absolute;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  width: 54px;
+  height: 54px;
   padding: 0;
   border: 0 !important;
   border-radius: 50%;
   background: none !important;
   box-shadow: none !important;
-  color: #8e4258;
-  font-size: 2rem;
-  line-height: 1;
-  text-indent: 0;
-  animation: arrow-blink 1.5s ease-in-out infinite;
-  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+  font-size: 0;
+  animation: arrow-blink 1.6s ease-in-out infinite;
 }
-.wizard-next::after { content: "↓"; }
+/* a chevron drawn from two hairlines — lighter than any arrow glyph */
+.wizard-next::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 15px;
+  margin: -11px 0 0 -8px;
+  border-right: 1px solid #8e4258;
+  border-bottom: 1px solid #8e4258;
+  transform: rotate(45deg);
+  filter: drop-shadow(0 1px 5px rgba(255, 250, 248, .95));
+}
 .wizard-next:disabled { opacity: .22; animation: none; }
 @keyframes arrow-blink { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
 @media (prefers-reduced-motion: reduce) { .wizard-next { animation: none; } }

@@ -508,7 +508,8 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       { id: "invitation", sections: ["invitation", "table", "schedule"], ready: true, cta: "Begin" },
       { id: "reply", sections: ["rsvp"], ready: rsvpComplete, cta: "Continue" },
     ];
-    if (anyYes) steps.push({ id: "meal", sections: ["dress", "meal"], ready: mealComplete, cta: "Continue" });
+    if (anyYes) steps.push({ id: "dress", sections: ["dress"], ready: true, cta: "Continue" });
+    if (anyYes) steps.push({ id: "meal", sections: ["meal"], ready: mealComplete, cta: "Continue" });
     if (anyYes) steps.push({ id: "travel", sections: ["travel"], ready: travelComplete, cta: "Continue" });
     if (flyingIn) steps.push({ id: "guide", sections: ["recommendations"], ready: true, cta: "Continue" });
     steps.push({ id: "wishes", sections: ["wishes"], ready: journeyDone, cta: "" });
@@ -741,7 +742,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
     {activeSection !== "welcome" ? <>
       <div className="scroll-progress" aria-hidden="true"><i style={{ height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%` }} /></div>
-      <nav className="scene-nav" aria-label="Your progress">{wizardSteps.slice(0, -1).map((entry, index) => <button key={entry.id} type="button" className={index === stepIndex ? "is-active" : ""} onClick={() => { if (index <= stepIndex) setStep(index); }} aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`} aria-current={index === stepIndex ? "step" : undefined}><span /><b>{entry.cta === "Begin" ? "The invitation" : entry.id === "reply" ? "Your reply" : entry.id === "meal" ? "Dinner" : entry.id === "travel" ? "Travel" : entry.id === "guide" ? "Kuala Lumpur" : "Wishes"}</b></button>)}</nav>
+      <nav className="scene-nav" aria-label="Your progress">{wizardSteps.slice(0, -1).map((entry, index) => <button key={entry.id} type="button" className={index === stepIndex ? "is-active" : ""} onClick={() => { if (index <= stepIndex) setStep(index); }} aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`} aria-current={index === stepIndex ? "step" : undefined}><span /><b>{entry.cta === "Begin" ? "The invitation" : entry.id === "reply" ? "Your reply" : entry.id === "dress" ? "Dress code" : entry.id === "meal" ? "Dinner" : entry.id === "travel" ? "Travel" : entry.id === "guide" ? "Kuala Lumpur" : "Wishes"}</b></button>)}</nav>
 
     </> : null}
     <EditableDecorationOverlay design={siteDesign} activeScene={activeSection} />
