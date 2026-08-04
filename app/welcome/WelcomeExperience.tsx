@@ -109,10 +109,10 @@ export function WelcomeExperience() {
       <EtherealLoader ready={filmReady} />
       <Dreamscape onReady={() => setFilmReady(true)} />
       <SiteMenu links={[
-        { href: "/welcome", label: "Welcome" },
-        { href: "/rsvp", label: "RSVP" },
-        { href: "/rsvp#recommendations", label: "Recommendations & FAQ" },
-        { href: "/rsvp#confirmation", label: "Confirmation" },
+        { href: token && token !== "none" ? `/welcome?t=${encodeURIComponent(token)}` : "/welcome", label: "Welcome" },
+        { href: token && token !== "none" ? `/rsvp?t=${encodeURIComponent(token)}` : "/rsvp", label: "RSVP" },
+        { href: token && token !== "none" ? `/rsvp?t=${encodeURIComponent(token)}#recommendations` : "/rsvp#recommendations", label: "Recommendations & FAQ" },
+        { href: token && token !== "none" ? `/rsvp?t=${encodeURIComponent(token)}#confirmation` : "/rsvp#confirmation", label: "Confirmation" },
       ]} />
       <Link className="fixed-rsvp" href="/rsvp" onClick={enter}>RSVP</Link>
       {ready ? <BubbleCursor zIndex={95} /> : null}

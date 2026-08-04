@@ -2,6 +2,11 @@ import { assertFirebaseAdminConfigured, nextId, plainDoc, randomToken, serverTim
 import { requireAdmin } from "../../../lib/manager-auth";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 
+// Never serve a cached copy: the manager must see a change the instant it is
+// made, and an invitation must reflect the latest reply.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const integer = (value: unknown) => Number.isInteger(Number(value)) ? Number(value) : null;
 const ids = (value: unknown) => Array.isArray(value) ? value.map(integer).filter((item): item is number => item !== null) : [];
@@ -135,9 +140,35 @@ export async function POST(request: Request) {
       const name = clean(payload.name, 100);
       if (!name) return Response.json({ error: "Table name is required." }, { status: 400 });
       const id = await nextId("tables");
-      await weddingRef.collection("tables").doc(String(id)).set({ id, name, shape: ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round", capacity: Math.max(2, Math.min(30, integer(payload.capacity) ?? 10)), x: Number(payload.x) || 50, y: Number(payload.y) || 50, locked: 0, notes: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+      await weddingRef.collection("tables").doc(String(id)).set({ id, name, shape: ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round", capacity: Math.max(1, Math.min(200, integer(payload.capacity) ?? 10)), x: Number(payload.x) || 50, y: Number(payload.y) || 50, locked: 0, notes: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Table created", "table", id, name);
       return Response.json({ ok: true });
+    }
+
+    if (action === "editTable") {
+      const tableId = integer(payload.tableId);
+      const tableDoc = tableId ? await docById("tables", tableId) : null;
+      if (!tableDoc) return Response.json({ error: "Table not found." }, { status: 404 });
+      const patch: Record<string, unknown> = { updated_at: serverTimestamp() };
+      const name = clean(payload.name, 100);
+      if (name) patch.name = name;
+      if (payload.capacity !== undefined) patch.capacity = Math.max(1, Math.min(200, integer(payload.capacity) ?? 10));
+      if (payload.shape !== undefined) patch.shape = ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round";
+      await tableDoc.ref.set(patch, { merge: true });
+      await addActivity(admin.displayName, "Table updated", "table", tableId as number, name || "");
+      return Response.json({ ok: true });
+    }
+
+    if (action === "deleteTable") {
+      const tableId = integer(payload.tableId);
+      const tableDoc = tableId ? await docById("tables", tableId) : null;
+      if (!tableDoc) return Response.json({ error: "Table not found." }, { status: 404 });
+      // anyone seated there is returned to the unseated list rather than orphaned
+      const seated = await weddingRef.collection("guests").where("table_id", "==", tableId).get();
+      await Promise.all(seated.docs.map((doc) => doc.ref.set({ table_id: null, updated_at: serverTimestamp() }, { merge: true })));
+      await tableDoc.ref.delete();
+      await addActivity(admin.displayName, "Table removed", "table", tableId as number, String(tableDoc.data().name ?? ""));
+      return Response.json({ ok: true, unseated: seated.size });
     }
 
     if (action === "moveGuest") {

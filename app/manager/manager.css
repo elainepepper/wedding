@@ -443,3 +443,194 @@
   font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: #8E4258;
 }
 .empty-note { margin: 0 0 1.4rem; font-size: .88rem; opacity: .65; }
+
+/* ==================================================================== */
+/* PHONE PASS                                                           */
+/*                                                                      */
+/* A grid column is "auto" wide by default, which means one long word —  */
+/* an invitation link, say — pushes the whole column wider than the      */
+/* screen and everything after it is cut off. minmax(0, …) plus min-width*/
+/* on the children is the fix, and it has to be applied everywhere a     */
+/* grid or flex row holds text.                                         */
+/* ==================================================================== */
+.manager-page, .manager-main { overflow-x: hidden; }
+.manager-main > *,
+.manager-panel,
+.invitation-link-studio > *,
+.invitation-link-copy > *,
+.selected-invitation > *,
+.household-card > *,
+.guest-identity > * { min-width: 0; }
+
+.invitation-link-studio { grid-template-columns: minmax(0, 1.35fr) minmax(250px, .65fr); }
+
+/* the link itself: readable in full, wrapping rather than stretching */
+.secure-link-field { max-width: 100%; overflow: visible; }
+.secure-link-field span {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  line-height: 1.55;
+}
+
+@media (max-width: 620px) {
+  .invitation-link-studio { grid-template-columns: minmax(0, 1fr); padding: 1.15rem 1rem 1.4rem; }
+  .invitation-link-copy, .selected-invitation { max-width: 100%; }
+
+  /* display type at phone size: still editorial, no longer three lines high */
+  .manager-topbar h1 { font-size: 1.35rem; }
+  .invitation-link-copy h2 { font-size: 1.5rem; line-height: 1.18; }
+  .selected-invitation h3 { font-size: 1.5rem; }
+
+  /* one action per row, each a comfortable target */
+  .invitation-link-buttons { display: grid; grid-template-columns: 1fr; gap: .5rem; }
+  .invitation-link-buttons > * { width: 100%; min-height: 48px; display: grid; place-items: center; flex: none; }
+
+  .selected-invitation select,
+  .selected-invitation input { width: 100%; min-height: 46px; }
+
+  /* the aside repeats what the buttons already say — it can wait below */
+  .invitation-link-steps { order: 2; }
+}
+
+@media (max-width: 430px) {
+  .manager-topbar { gap: .5rem; }
+  .manager-topbar h1 { font-size: 1.2rem; }
+  .manager-topbar .primary { padding: .6rem .85rem; font-size: .66rem; }
+}
+
+/* The guest table is six columns wide; on a phone it must be reachable by
+   sliding sideways rather than clipped by the page's overflow guard. */
+.table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.table-scroll .guest-table { min-width: 640px; }
+
+@media (max-width: 620px) {
+  /* the name stays in view while the rest slides under it */
+  .table-scroll .guest-table th:first-child,
+  .table-scroll .guest-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--m-paper, #fffaf5);
+    box-shadow: 1px 0 0 var(--m-line, rgba(90,52,63,.12));
+  }
+  .table-scroll .guest-table th,
+  .table-scroll .guest-table td { white-space: nowrap; }
+}
+
+/* Nothing tappable smaller than a fingertip */
+@media (max-width: 620px) {
+  .manager-main button,
+  .manager-main a.button,
+  .manager-main select,
+  .manager-main input[type="text"],
+  .manager-main input[type="search"],
+  .manager-main input[type="tel"],
+  .household-card .invitation-link-buttons > * { min-height: 44px; }
+  .icon-button { min-width: 44px; min-height: 44px; }
+  .household-card .invitation-link-buttons { grid-template-columns: 1fr 1fr; }
+}
+.bulk-bar .bulk-delete { border-color: #a8324a; color: #a8324a; background: #fff; }
+.bulk-bar .bulk-delete:hover { color: #fff; background: #a8324a; }
+
+/* The invitation links, as a table: every household on one line */
+.link-table td { vertical-align: top; }
+.link-table .link-cell span {
+  display: block;
+  max-width: 30ch;
+  color: var(--m-muted);
+  font: .62rem/1.5 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+.link-table .link-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+.link-table .link-actions button,
+.link-table .link-actions a {
+  min-height: 36px;
+  padding: 0 .7rem;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--m-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--m-wine);
+  font-size: .62rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.link-table-panel { padding: 0; overflow: hidden; }
+@media (max-width: 620px) {
+  .link-table { min-width: 720px; }
+  .link-table .link-actions button,
+  .link-table .link-actions a { min-height: 40px; }
+}
+
+/* ==================================================================== */
+/* Seating: a list, not a floor plan.                                   */
+/* ==================================================================== */
+.seating-new { padding: 1.1rem 1.1rem 1.3rem; display: grid; gap: .9rem; }
+.seating-new h3 { margin: 0; font-size: 1.05rem; }
+.seating-presets { display: flex; flex-wrap: wrap; gap: .5rem; }
+.seating-presets button {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--m-wine);
+  border-radius: 999px;
+  background: var(--m-wine);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 750;
+}
+.seating-custom { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 5.5rem auto; gap: .6rem; align-items: end; }
+.seating-custom label { display: grid; gap: .25rem; min-width: 0; }
+.seating-custom span { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--m-muted); }
+.seating-custom input, .seating-custom select { min-height: 44px; width: 100%; }
+.seating-custom > button { min-height: 44px; padding: 0 1.1rem; border: 1px solid var(--m-line); border-radius: 999px; background: #fff; font-size: .68rem; font-weight: 750; }
+
+.seating-table { padding: 1rem 1.1rem 1.2rem; margin-bottom: .9rem; }
+.seating-table header,
+.seating-unseated header { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; justify-content: space-between; }
+.seating-table h3, .seating-unseated h3 { margin: 0; font-size: 1.05rem; }
+.seating-table header p, .seating-unseated header p { margin: .15rem 0 0; color: var(--m-muted); font-size: .72rem; }
+.seating-table-actions { display: flex; gap: .4rem; }
+.seating-table-actions button {
+  min-height: 40px;
+  padding: 0 .8rem;
+  border: 1px solid var(--m-line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: .64rem;
+  font-weight: 700;
+}
+.seating-list { margin: .9rem 0 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
+.seating-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem .8rem;
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.seating-list li span { display: grid; min-width: 0; font-size: .85rem; }
+.seating-list li small { color: var(--m-muted); font-size: .68rem; }
+.seating-list li button { min-height: 38px; padding: 0 .8rem; border: 1px solid var(--m-line); border-radius: 999px; background: #fff; font-size: .64rem; font-weight: 700; }
+.seating-list li select { min-height: 40px; min-width: 11rem; }
+.seating-unseated { padding: 1rem 1.1rem 1.2rem; }
+.seating-unseated header input { min-height: 44px; min-width: 12rem; }
+
+@media (max-width: 620px) {
+  .seating-custom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .seating-custom > button { grid-column: 1 / -1; }
+  .seating-list li { align-items: stretch; }
+  .seating-list li select, .seating-list li button { width: 100%; }
+  .seating-unseated header input { width: 100%; }
+}

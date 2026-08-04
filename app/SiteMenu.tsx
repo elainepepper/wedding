@@ -3,13 +3,13 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 
-type MenuLink = { href: string; label: string };
-
 /**
- * The fixed MENU button, top right, and the full-screen overlay it opens.
- * The button becomes an ✕ while the overlay is up; tapping a link, the ✕,
- * or the space around the links closes it. Escape works too.
+ * A menu entry is either a real address or an action. Inside the RSVP the
+ * sections of other steps are hidden, so an anchor has nothing to jump to —
+ * those entries carry an onSelect that turns to the right step instead.
  */
+export type MenuLink = { label: string; href?: string; onSelect?: () => void };
+
 export function SiteMenu({ links }: { links: MenuLink[] }) {
   const [open, setOpen] = useState(false);
 
@@ -36,17 +36,31 @@ export function SiteMenu({ links }: { links: MenuLink[] }) {
         aria-hidden={!open}
         onClick={(event) => { if (event.target === event.currentTarget) setOpen(false); }}
       >
-        {links.map((link, index) =>
-          link.href.startsWith("/") ? (
-            <Link key={link.href} href={link.href} style={{ "--i": index } as CSSProperties} onClick={() => setOpen(false)}>
+        {links.map((link, index) => {
+          const style = { "--i": index } as CSSProperties;
+          if (link.onSelect) {
+            return (
+              <button
+                type="button"
+                key={link.label}
+                style={style}
+                onClick={() => { link.onSelect?.(); setOpen(false); }}
+              >
+                {link.label}
+              </button>
+            );
+          }
+          const href = link.href ?? "#";
+          return href.startsWith("/") ? (
+            <Link key={link.label} href={href} style={style} onClick={() => setOpen(false)}>
               {link.label}
             </Link>
           ) : (
-            <a key={link.href} href={link.href} style={{ "--i": index } as CSSProperties} onClick={() => setOpen(false)}>
+            <a key={link.label} href={href} style={style} onClick={() => setOpen(false)}>
               {link.label}
             </a>
-          )
-        )}
+          );
+        })}
       </nav>
     </>
   );

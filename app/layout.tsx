@@ -1,6 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+
+/**
+ * There was no viewport declaration at all, which meant env(safe-area-inset-*)
+ * resolved to zero everywhere — the padding meant to clear the iPhone home bar
+ * did nothing — and Android was free to resize the whole layout when the
+ * keyboard appeared. "overlays-content" lets the keyboard sit over the page
+ * rather than squeezing it.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "overlays-content",
+  themeColor: "#f2e2e2",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -45,8 +60,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preload" as="image" href="/wedding/story/gen-floral-arch-with-blue-lace-accents.webp" fetchPriority="high" />
-        <link rel="preload" as="image" href="/wedding/story/gen-whimsical-canopy-wedding-sticker.webp" fetchPriority="high" />
+        <link rel="preload" as="image" href="/wedding/story/bg/dream-1.webp" fetchPriority="high" />
         <link
           href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
           rel="stylesheet"

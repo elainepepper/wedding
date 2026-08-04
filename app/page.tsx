@@ -1,7 +1,6 @@
-import { Entrance } from "./Entrance";
+import { HeroPortal } from "./HeroPortal";
 
-// The front door: guests with an invitation pass through to the welcome,
-// everyone else stops here.
+// Layer 0 — the archway everyone passes through, invited or not.
 export default function Home() {
-  return <Entrance />;
+  return <HeroPortal />;
 }

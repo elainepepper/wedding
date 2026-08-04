@@ -111,7 +111,13 @@ export async function nextId(collection: string) {
   });
 }
 
+// Twelve characters from a 32-letter alphabet — around 60 bits, which is far
+// beyond guessing for a guest list of this size, and short enough to read
+// aloud. Ambiguous characters (i, l, o, 0, 1) are left out so a token can be
+// typed by hand from a screenshot without confusion.
+const TOKEN_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
 export function randomToken() {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(bytes, (byte) => TOKEN_ALPHABET[byte % TOKEN_ALPHABET.length]).join("");
 }

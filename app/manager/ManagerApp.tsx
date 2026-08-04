@@ -1,8 +1,6 @@
 "use client";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { SiteDesign } from "../../lib/site-design";
-import { WebsiteEditor } from "./WebsiteEditor";
 
 type Guest = {
   id: number; household_id: number | null; first_name: string; last_name: string; preferred_name: string | null;
@@ -35,7 +33,7 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "website" | "settings";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "links", label: "Invitation links", glyph: "↗" },
@@ -44,7 +42,6 @@ const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
   { id: "wishes", label: "Wishes & advice", glyph: "♡" },
   { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
-  { id: "website", label: "Website editor", glyph: "✎" },
   { id: "settings", label: "Settings", glyph: "◇" },
 ];
 
@@ -106,7 +103,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const load = async (quiet = false) => {
     if (!quiet) setLoading(true);
     try {
-      const response = await fetch("/api/manager", { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
+      const response = await fetch(`/api/manager?at=${Date.now()}`, { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
       const result = await readApiResponse<ManagerData>(response);
       if (!response.ok) throw new Error(result.error || "Unable to load the guest manager.");
       setData(result);
@@ -202,18 +199,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "imports" ? <Imports act={act} /> : null}
         {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
-        {tab === "website" ? <WebsiteEditor
-          initialDesign={data.settings.site_design}
-          save={async (siteDesign: SiteDesign) => { await act({ action: "saveWebsiteDesign", siteDesign }, "Website design published"); }}
-          upload={async (file: File) => {
-            const body = new FormData();
-            body.append("file", file);
-            const response = await fetch("/api/manager/assets", { method: "POST", headers: { Authorization: `Bearer ${authToken}` }, body });
-            const result = await readApiResponse<{ url?: string }>(response);
-            if (!response.ok || !result.url) throw new Error(result.error || "The illustration could not be uploaded.");
-            return result.url;
-          }}
-        /> : null}
+
         {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} /> : null}
       </main>
 
@@ -260,7 +246,12 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter by RSVP status"><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select>
         <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option></select>
       </div>
-      {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
+      {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" onClick={async () => {
+        if (!window.confirm(`Remove ${selected.length} guest${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+        const count = selected.length;
+        for (const id of selected) await act({ action: "deleteGuest", guestId: id }, `${count} guest${count === 1 ? "" : "s"} removed`);
+        setSelected([]);
+      }}>Delete</button><button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
       <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : guests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><th>Guest</th><th>Household</th><th>Group</th><th>RSVP</th><th>Meal &amp; dietary</th><th>Table</th><th>Invitation</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
         {guests.map((guest) => <tr key={guest.id}><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
@@ -271,12 +262,27 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
 
 // The guest names travel inside the link itself, so a link pasted into the
 // wrong WhatsApp chat is obvious at a glance to both sides.
-function nameSlug(names: string) {
-  return names.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+/**
+ * A personal link: haykalelaine.com/i/<token>/<their-name>
+ *
+ * The token comes first because it is the part that matters; the name follows
+ * so the link reads as clearly theirs in a WhatsApp message. Only the token is
+ * ever read, so an edited or missing name changes nothing.
+ */
+function nameSlug(names?: string) {
+  return (names || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .split("-")
+    .slice(0, 4)                 // keeps it short when a household has several names
+    .join("-");
 }
-function inviteLink(origin: string, token: string | null, names: string) {
+
+function inviteLink(origin: string, token: string | null, names?: string) {
   const slug = nameSlug(names);
-  return `${origin}/invite/${token}${slug ? `?for=${slug}` : ""}`;
+  return slug ? `${origin}/i/${token}/${slug}` : `${origin}/i/${token}`;
 }
 // wa.me opens WhatsApp with the message already written. If we hold a mobile
 // number it opens that chat directly; otherwise WhatsApp asks who to send to.
@@ -293,11 +299,13 @@ function invitationMessage(names: string, link: string) {
 
 function Households({ households, guests, act, notify }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void }) {
   const copyLink = async (household: Household, afterParty = false) => {
-    const path = afterParty ? `/after-party?token=${household.invitation_token}` : `/invite/${household.invitation_token}`;
-    await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+    const link = afterParty
+      ? `${window.location.origin}/after-party?token=${household.invitation_token}`
+      : inviteLink(window.location.origin, household.invitation_token, household.name);
+    await navigator.clipboard.writeText(link);
     notify(afterParty ? "Private after-party link copied" : "Invitation link copied");
   };
-  return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>Couples, families and friends can reply together.</span></div></div><section className="household-grid">{households.map((household) => {
+  return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>A household is one invitation link, shared by everyone on it. A couple is one household with two people; a single guest is a household of one.</span></div></div><section className="household-grid">{households.map((household) => {
     const members = guests.filter((guest) => guest.household_id === household.id);
     const afterParty = members.some((guest) => guest.after_party_invited);
     return <article className="household-card" key={household.id}><header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="member-stack">{members.map((guest) => <p key={guest.id}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></p>)}</div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
@@ -327,20 +335,164 @@ function InvitationLinks({ households, guests, notify, setTab }: { households: H
   };
   return <div className="manager-page invitation-links-page">
     <div className="section-intro-row"><div><p className="panel-kicker">Private invitations</p><h2>Personal link generator</h2><span>Preview each guest journey, then copy its secure link for WhatsApp or text.</span></div><a className="secondary-button" href="/invitation-preview" target="_blank" rel="noreferrer">Preview every page ↗</a></div>
-    {selected ? <section className="manager-panel invitation-link-studio"><div className="invitation-link-copy"><p className="panel-kicker">Selected invitation</p><h3>{selected.name}</h3><p>{members.map(displayName).join(" & ") || "Named guests"}</p><label><span>Choose household</span><select value={selected.id} onChange={(event) => setSelectedId(Number(event.target.value))}>{households.map((household) => { const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & "); return <option key={household.id} value={household.id}>{household.name}{names && names !== household.name ? ` — ${names}` : ""}</option>; })}</select></label><div className="secure-link-field"><span>{invitationUrl}</span></div><div className="invitation-link-buttons"><a href={`/invite/${selected.invitation_token}`} target="_blank" rel="noreferrer">Preview this invitation ↗</a><button type="button" onClick={() => void copy()}>Copy link + names</button><button type="button" className="secondary-button" onClick={() => void copyAll()}>Copy all links</button>{selected ? <a className="wa-button" href={waLink(selected.mobile, invitationMessage(memberNames || selected.name, invitationUrl))} target="_blank" rel="noreferrer">Send on WhatsApp ↗</a> : null}</div><small>Only the named adults in this household appear. The secure token prevents guests from opening anyone else’s invitation.</small></div><div className="invitation-link-steps"><h3>How you will send it</h3><ol><li><b>1</b><span>Choose a household and preview it.</span></li><li><b>2</b><span>Copy the private link when the website is ready.</span></li><li><b>3</b><span>Press <b>Send on WhatsApp</b>. The message is written for you — you only press send.</span></li></ol></div></section> : <section className="manager-panel invitation-link-empty"><span>↗</span><h3>Your first link is one guest away.</h3><p>Add a named guest. A household and secure invitation link will be generated automatically.</p><button type="button" onClick={() => setTab("guests")}>＋ Add the first guest</button><a href="/invitation-preview" target="_blank" rel="noreferrer">Preview the complete example journey</a></section>}
+    <section className="manager-panel link-table-panel">
+      <div className="table-scroll">
+        <table className="guest-table link-table">
+          <thead><tr><th>Household</th><th>Who it is for</th><th>Link</th><th>Send</th></tr></thead>
+          <tbody>
+            {households.map((household) => {
+              const people = guests.filter((guest) => guest.household_id === household.id);
+              const names = people.map(displayName).join(" & ") || household.name;
+              const link = inviteLink(origin, household.invitation_token, household.name);
+              return (
+                <tr key={household.id}>
+                  <td><strong>{household.name}</strong></td>
+                  <td>{names}</td>
+                  <td className="link-cell"><span>{link}</span></td>
+                  <td className="link-actions">
+                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(link); notify("Link copied"); }}>Copy</button>
+                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link)); notify("Message copied"); }}>Copy message</button>
+                    <a href={waLink(household.mobile, invitationMessage(names, link))} target="_blank" rel="noreferrer">WhatsApp</a>
+                    <a href={`${link}`} target="_blank" rel="noreferrer">Preview</a>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {!households.length ? <p className="empty-note">Add a guest and a household with its own link appears here.</p> : null}
+    </section>
   </div>;
 }
 
 function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: SeatingTable[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
-  const [newTable, setNewTable] = useState(false);
-  const [seatSearch, setSeatSearch] = useState("");
+  const [name, setName] = useState("");
+  const [shape, setShape] = useState("round");
+  const [capacity, setCapacity] = useState(10);
+  const [search, setSearch] = useState("");
+
   const confirmed = guests.filter((guest) => guest.rsvp_status === "Confirmed");
-  const unassigned = confirmed.filter((guest) => !guest.table_id && (!seatSearch || displayName(guest).toLowerCase().includes(seatSearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(seatSearch.toLowerCase())));
-  const drop = (event: DragEvent, tableId: number | null) => { event.preventDefault(); const guestId = Number(event.dataTransfer.getData("text/guest-id")); if (guestId) void act({ action: "moveGuest", guestId, tableId }, tableId ? "Guest assigned to table" : "Guest returned to unassigned"); };
-  return <div className="manager-page seating-page"><div className="section-intro-row"><div><p className="panel-kicker">Visual floor plan</p><h2>{tables.length} tables · {unassigned.length} unassigned</h2><span>Drag confirmed guests between the panel and tables.</span></div><button onClick={() => setNewTable(true)}>＋ Create table</button></div><div className="seating-layout"><aside className="unassigned-panel" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, null)}><header><h3>Unassigned guests</h3><span>{unassigned.length}</span></header><label><span>⌕</span><input value={seatSearch} onChange={(event) => setSeatSearch(event.target.value)} placeholder="Search unassigned" aria-label="Search unassigned guests" /></label><div>{unassigned.map((guest) => <GuestPill key={guest.id} guest={guest} />)}{!unassigned.length ? <p className="mini-empty">Every confirmed guest has a table. Beautiful.</p> : null}</div></aside><section className="floor-plan"><div className="floor-label"><span>Grand Hyatt · Ballroom</span><small>Stage</small></div>{tables.map((table) => {
-    const seated = confirmed.filter((guest) => guest.table_id === table.id);
-    return <article key={table.id} className={`floor-table floor-table--${table.shape}${seated.length >= table.capacity ? " is-full" : ""}`} style={{ left: `${table.x}%`, top: `${table.y}%` }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, table.id)}><div className="table-object"><span>{table.name}</span><strong>{seated.length}/{table.capacity}</strong></div><div className="table-guests">{seated.map((guest) => <GuestPill key={guest.id} guest={guest} compact />)}</div>{seated.length > table.capacity ? <em>Capacity exceeded</em> : null}</article>;
-  })}</section></div>{newTable ? <NewTableModal close={() => setNewTable(false)} act={act} /> : null}</div>;
+  const unseated = confirmed.filter((guest) => !guest.table_id);
+  const matches = (guest: Guest) =>
+    !search ||
+    displayName(guest).toLowerCase().includes(search.toLowerCase()) ||
+    (guest.household_name ?? "").toLowerCase().includes(search.toLowerCase());
+
+  // the three kinds of table actually being used on the night
+  const presets = [
+    { label: "Round table", shape: "round", capacity: 10 },
+    { label: "Viking table (48)", shape: "banquet", capacity: 48 },
+    { label: "VIP table", shape: "rectangular", capacity: 12 },
+  ];
+
+  const addTable = async (preset?: { label: string; shape: string; capacity: number }) => {
+    const chosen = preset ?? { label: name.trim(), shape, capacity };
+    const finalName = preset
+      ? `${preset.label.replace(/ \(\d+\)$/, "")} ${tables.filter((table) => table.shape === preset.shape).length + 1}`
+      : name.trim();
+    if (!finalName) return;
+    await act({ action: "createTable", name: finalName, shape: chosen.shape, capacity: chosen.capacity }, `${finalName} added`);
+    setName("");
+  };
+
+  return <div className="manager-page seating-page">
+    <div className="section-intro-row">
+      <div>
+        <p className="panel-kicker">Seating</p>
+        <h2>{tables.length} tables · {unseated.length} still to seat</h2>
+        <span>Make a table, then put people at it. Everyone who has accepted appears below.</span>
+      </div>
+    </div>
+
+    <section className="manager-panel seating-new">
+      <h3>Add a table</h3>
+      <div className="seating-presets">
+        {presets.map((preset) => (
+          <button type="button" key={preset.label} onClick={() => addTable(preset)}>
+            ＋ {preset.label}
+          </button>
+        ))}
+      </div>
+      <div className="seating-custom">
+        <label><span>Name</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Top table" /></label>
+        <label><span>Shape</span><select value={shape} onChange={(event) => setShape(event.target.value)}>
+          <option value="round">Round</option>
+          <option value="banquet">Long / Viking</option>
+          <option value="rectangular">Rectangular</option>
+        </select></label>
+        <label><span>Seats</span><input type="number" min={1} max={200} value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label>
+        <button type="button" onClick={() => addTable()} disabled={!name.trim()}>Add table</button>
+      </div>
+    </section>
+
+    {tables.map((table) => {
+      const seated = confirmed.filter((guest) => guest.table_id === table.id);
+      return (
+        <section className="manager-panel seating-table" key={table.id}>
+          <header>
+            <div>
+              <h3>{table.name}</h3>
+              <p>{seated.length} of {table.capacity} seats · {table.shape === "banquet" ? "long table" : table.shape}</p>
+            </div>
+            <div className="seating-table-actions">
+              <button type="button" onClick={async () => {
+                const next = window.prompt("Rename this table", table.name);
+                if (next && next.trim()) await act({ action: "editTable", tableId: table.id, name: next.trim() }, "Table renamed");
+              }}>Rename</button>
+              <button type="button" onClick={async () => {
+                const next = window.prompt("How many seats?", String(table.capacity));
+                if (next && Number(next) > 0) await act({ action: "editTable", tableId: table.id, capacity: Number(next) }, "Seats updated");
+              }}>Seats</button>
+              <button type="button" className="danger-link" onClick={async () => {
+                if (!window.confirm(`Remove ${table.name}? Anyone seated there goes back to the unseated list.`)) return;
+                await act({ action: "deleteTable", tableId: table.id }, `${table.name} removed`);
+              }}>Remove</button>
+            </div>
+          </header>
+          {seated.length ? (
+            <ol className="seating-list">
+              {seated.map((guest) => (
+                <li key={guest.id}>
+                  <span>{displayName(guest)}<small>{guest.household_name}</small></span>
+                  <button type="button" onClick={() => act({ action: "moveGuest", guestId: guest.id, tableId: null }, "Guest unseated")}>Remove</button>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="empty-note">No one seated here yet.</p>}
+        </section>
+      );
+    })}
+
+    <section className="manager-panel seating-unseated">
+      <header>
+        <div><h3>Still to seat · {unseated.length}</h3><p>Only guests who have accepted appear here.</p></div>
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name" />
+      </header>
+      {unseated.filter(matches).length ? (
+        <ol className="seating-list">
+          {unseated.filter(matches).map((guest) => (
+            <li key={guest.id}>
+              <span>{displayName(guest)}<small>{guest.household_name}</small></span>
+              <select
+                value=""
+                onChange={(event) => { if (event.target.value) act({ action: "moveGuest", guestId: guest.id, tableId: Number(event.target.value) }, `${displayName(guest)} seated`); }}
+                aria-label={`Seat ${displayName(guest)}`}
+              >
+                <option value="">Seat at…</option>
+                {tables.map((table) => {
+                  const taken = confirmed.filter((seat) => seat.table_id === table.id).length;
+                  return <option key={table.id} value={table.id} disabled={taken >= table.capacity}>
+                    {table.name} ({taken}/{table.capacity}){taken >= table.capacity ? " — full" : ""}
+                  </option>;
+                })}
+              </select>
+            </li>
+          ))}
+        </ol>
+      ) : <p className="empty-note">{unseated.length ? "No one matches that search." : "Everyone who has accepted has a seat."}</p>}
+    </section>
+  </div>;
 }
 
 function GuestPill({ guest, compact = false }: { guest: Guest; compact?: boolean }) {
@@ -381,6 +533,18 @@ function Imports({ act }: { act: (payload: Record<string, unknown>, success: str
         const values = line.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g)?.map((cell) => cell.replace(/,$/, "").replace(/^"|"$/g, "").replaceAll('""', '"')) ?? [];
         const row: Record<string, unknown> = {};
         headers.forEach((header, index) => { const key = keyMap[header]; if (key) row[key] = values[index] ?? ""; });
+        // "Mr & Mrs Tan" is two guests sharing one household, so each gets
+        // their own meal and their own line in the reply.
+        const couple = typeof row.fullName === "string"
+          ? row.fullName.trim().match(/^mr\.?\s*(?:&|and|\+)\s*mrs\.?\s+(.+)$/i)
+          : null;
+        if (couple) {
+          const surname = couple[1].trim();
+          row.firstName = "Mr";
+          row.lastName = surname;
+          row.household = row.household || `Mr & Mrs ${surname}`;
+          row.partnerRow = { firstName: "Mrs", lastName: surname, household: row.household };
+        }
         if (!row.firstName && typeof row.fullName === "string" && row.fullName.trim()) {
           const parts = row.fullName.trim().split(/\s+/);
           row.firstName = parts.shift();
@@ -388,13 +552,20 @@ function Imports({ act }: { act: (payload: Record<string, unknown>, success: str
         }
         if (!row.household && row.firstName) row.household = `${row.firstName}${row.lastName ? " " + row.lastName : ""} Household`;
         return row;
+      }).flatMap((row) => {
+        // a "Mr & Mrs" row becomes the two people it describes
+        const partner = row.partnerRow as Record<string, unknown> | undefined;
+        if (!partner) return [row];
+        const first = { ...row };
+        delete first.partnerRow;
+        return [first, { ...first, ...partner }];
       }));
       setFileName(file.name);
     };
     reader.readAsText(file);
   };
   const template = "First Name,Last Name,Preferred Name,Household,Mobile,Guest Category,Bride or Groom Side,RSVP Status,Ceremony Invited,Reception Invited,After-Party Invited,Dietary Requirements,Allergies,Table,Notes\n";
-  return <div className="manager-page imports-page"><div className="section-intro-row"><div><p className="panel-kicker">Bring your list</p><h2>Import adult guests</h2><span>Use a CSV exported from Google Sheets. A single Name column is fine, and mobile numbers can be added later.</span></div><button className="secondary-button" onClick={() => downloadFile("elaine-haykal-guest-template.csv", template)}>Download template</button></div><section className="manager-panel import-panel"><label className="drop-zone"><input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; if (/\.(xlsx|xls|numbers)$/i.test(file.name)) { setFileName(""); setImportError("That is a spreadsheet, not a CSV. In Excel or Google Sheets choose File → Save as (or Download) → CSV, then drop that file here."); return; } setImportError(""); parse(file); }} /><span>↓</span><h3>{fileName || "Drop your guest list here"}</h3><p>CSV only · Excel files need saving as CSV first · a mobile number is optional · up to 2,000 rows</p><button type="button">Choose CSV file</button></label>{importError ? <p className="form-error" role="alert">{importError}</p> : null}{rows.length ? <div className="import-preview"><header><div><h3>Preview {rows.length} rows</h3><p>Review names, households and required mobile numbers.</p></div><select value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value)}><option value="skip">Skip duplicates</option><option value="update">Update duplicates</option></select></header><div className="table-scroll"><table><thead><tr><th>First name</th><th>Last name</th><th>Household</th><th>Mobile</th><th>Group</th><th>Status</th></tr></thead><tbody>{rows.slice(0, 8).map((row, index) => <tr key={index}><td>{String(row.firstName || "Missing")}</td><td>{String(row.lastName || "")}</td><td>{String(row.household || "")}</td><td>{String(row.mobile || "—")}</td><td>{String(row.category || "Friends")}</td><td>{String(row.rsvpStatus || "Pending")}</td></tr>)}</tbody></table></div><footer><span>{rows.length > 8 ? `Showing first 8 of ${rows.length} rows` : `${rows.length} rows ready`}</span><button onClick={() => act({ action: "importGuests", rows, duplicateMode }, "Guest list imported")}>Confirm import</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Check duplicates</h3><p>Skip or update matching mobile and name records.</p></article></section></div>;
+  return <div className="manager-page imports-page"><div className="section-intro-row"><div><p className="panel-kicker">Bring your list</p><h2>Import adult guests</h2><span>Use a CSV exported from Google Sheets. A single Name column is fine, and mobile numbers can be added later.</span></div><button className="secondary-button" onClick={() => downloadFile("elaine-haykal-guest-template.csv", template)}>Download template</button></div><section className="manager-panel import-panel"><label className="drop-zone"><input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,.xlsx,.xls,*/*" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; if (/\.(xlsx|xls|numbers)$/i.test(file.name)) { setFileName(""); setImportError("That is a spreadsheet, not a CSV. In Excel or Google Sheets choose File → Save as (or Download) → CSV, then drop that file here."); return; } setImportError(""); parse(file); }} /><span>↓</span><h3>{fileName || "Drop your guest list here"}</h3><p>CSV only · Excel files need saving as CSV first · a mobile number is optional · up to 2,000 rows</p><button type="button">Choose CSV file</button></label>{importError ? <p className="form-error" role="alert">{importError}</p> : null}{rows.length ? <div className="import-preview"><header><div><h3>Preview {rows.length} rows</h3><p>Review names, households and required mobile numbers.</p></div><select value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value)}><option value="skip">Skip duplicates</option><option value="update">Update duplicates</option></select></header><div className="table-scroll"><table><thead><tr><th>First name</th><th>Last name</th><th>Household</th><th>Mobile</th><th>Group</th><th>Status</th></tr></thead><tbody>{rows.slice(0, 8).map((row, index) => <tr key={index}><td>{String(row.firstName || "Missing")}</td><td>{String(row.lastName || "")}</td><td>{String(row.household || "")}</td><td>{String(row.mobile || "—")}</td><td>{String(row.category || "Friends")}</td><td>{String(row.rsvpStatus || "Pending")}</td></tr>)}</tbody></table></div><footer><span>{rows.length > 8 ? `Showing first 8 of ${rows.length} rows` : `${rows.length} rows ready`}</span><button onClick={() => act({ action: "importGuests", rows, duplicateMode }, "Guest list imported")}>Confirm import</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Only know them as a couple?</h3><p>Write two rows sharing one Household: “Mr” and “Mrs”, both with the surname. They each get their own meal choice, and the invitation reads “Mr &amp; Mrs Tan”.</p></article></section></div>;
 }
 
 function WishesAndAdvice({ guests }: { guests: Guest[] }) {

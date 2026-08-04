@@ -1,6 +1,11 @@
 import { serverTimestamp, weddingRef } from "../../../../lib/firebase-admin";
 import { rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
 
+// Never serve a cached copy: the manager must see a change the instant it is
+// made, and an invitation must reflect the latest reply.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type InvitePermission = { id: number; ceremony_invited: number; reception_invited: number; after_party_invited: number };
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
 

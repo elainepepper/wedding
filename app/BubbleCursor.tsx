@@ -98,7 +98,9 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
 
     const addParticle = (x: number, y: number) => {
       // a soft ceiling, so a long swirl of the finger cannot bog the page down
-      if (particlesRef.current.length > 220) return;
+      // a phone paints these on the CPU-shared GPU while it is also scrolling
+      // a full-screen painting, so it gets a smaller allowance
+      if (particlesRef.current.length > (finePointer ? 220 : 90)) return;
       particlesRef.current.push(new Particle(x, y, fill, stroke));
     };
 
