@@ -7,6 +7,8 @@ import { Dreamscape } from "./Dreamscape";
 import BubbleCursor from "./BubbleCursor";
 import { EtherealLoader } from "./EtherealLoader";
 import { SiteMenu } from "./SiteMenu";
+import { LockedInvitation } from "./LockedInvitation";
+import { readToken } from "./invite-token";
 import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
 
@@ -291,20 +293,19 @@ function ChoiceButton({ selected, title, detail, onClick }: { selected: boolean;
 }
 
 export function WeddingExperience({ invitationToken, previewMode = false }: { invitationToken?: string; previewMode?: boolean }) {
-  const personalised = Boolean(invitationToken) || previewMode;
+  // the token arrives in the address, or is remembered from earlier in the visit
+  const [token, setToken] = useState(invitationToken ?? "");
+  useEffect(() => { setToken((current) => current || readToken(invitationToken)); }, [invitationToken]);
+  const personalised = Boolean(token) || previewMode;
   // Anyone arriving without their own invitation link meets the photograph
   // first. They may step past it and look around, but the RSVP stays closed.
-  const [photoGate, setPhotoGate] = useState(!personalised);
   const [filmReady, setFilmReady] = useState(false);
   const [openGuide, setOpenGuide] = useState("");
   const [openFaq, setOpenFaq] = useState("");
-  // Same reasoning as the loader: the cover only exists once scripts run.
-  const [scripted, setScripted] = useState(false);
-  useEffect(() => { setScripted(true); }, []);
   const [rsvp, setRsvp] = useState<RsvpState>(() => previewMode ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" } : initialRsvp);
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
   const [guestResponses, setGuestResponses] = useState<GuestResponse[]>(() => previewMode ? [{ id: -1, name: "Your name", rsvpStatus: "Pending", ceremonyAttending: true, receptionAttending: true, afterPartyInvited: false, afterPartyAttending: "Pending", mealSelection: "", dietaryRequirements: "", allergies: "", accessibility: "", transportRequired: false, accommodationRequired: false, travelArrival: "", travelDeparture: "", accommodationName: "", bedPreference: "", roomNights: null, tableName: "", wishes: "", advice: "" }] : []);
-  const [inviteLoading, setInviteLoading] = useState(Boolean(invitationToken));
+  const [inviteLoading, setInviteLoading] = useState(Boolean(token));
   const [inviteError, setInviteError] = useState("");
   const [activeSection, setActiveSection] = useState("welcome");
   const [error, setError] = useState("");
@@ -356,9 +357,9 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   };
 
   useEffect(() => {
-    if (!invitationToken) return;
+    if (!token) return;
     let cancelled = false;
-    fetch(`/api/invite/${encodeURIComponent(invitationToken)}`, { cache: "no-store" })
+    fetch(`/api/invite/${encodeURIComponent(token)}`, { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json() as InviteData & { error?: string };
         if (!response.ok) throw new Error(result.error || "This invitation could not be opened.");
@@ -406,7 +407,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       .catch((loadError) => { if (!cancelled) setInviteError(loadError instanceof Error ? loadError.message : "This invitation could not be opened."); })
       .finally(() => { if (!cancelled) setInviteLoading(false); });
     return () => { cancelled = true; };
-  }, [invitationToken]);
+  }, [token]);
 
 
 
@@ -606,37 +607,22 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
   // Let the couple see who now knows where they are sitting.
   useEffect(() => {
-    if (!tablesAssigned || !invitationToken || previewMode) return;
+    if (!tablesAssigned || !token || previewMode) return;
     const timer = window.setTimeout(() => {
-      void fetch(`/api/invite/${encodeURIComponent(invitationToken)}`, {
+      void fetch(`/api/invite/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "tableSeen" }),
       }).catch(() => undefined);
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, [tablesAssigned, invitationToken, previewMode]);
-
-  // The photograph is a full-screen cover, not a lock. Nothing freezes the
-  // page: a scroll, a tap or the button all carry the visitor inside, so
-  // there is no state in which the site can refuse to move.
-  useEffect(() => {
-    if (!photoGate) return;
-    window.scrollTo(0, 0);
-    const open = () => setPhotoGate(false);
-    window.addEventListener("wheel", open, { once: true, passive: true });
-    window.addEventListener("touchmove", open, { once: true, passive: true });
-    return () => {
-      window.removeEventListener("wheel", open);
-      window.removeEventListener("touchmove", open);
-    };
-  }, [photoGate]);
+  }, [tablesAssigned, token, previewMode]);
 
   // A safety net: if any overlay ever leaves the page frozen, release it.
   useEffect(() => {
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
-  }, [photoGate, submitted]);
+  }, [submitted]);
 
   const update = <K extends keyof RsvpState>(key: K, value: RsvpState[K]) => {
     setRsvp((current) => ({ ...current, [key]: value }));
@@ -653,7 +639,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       window.setTimeout(() => goToSection("confirmation"), 80);
       return;
     }
-    if (!invitationToken) {
+    if (!token) {
       setError("Replies may only be sent through your own invitation link.");
       goToSection("rsvp");
       return;
@@ -710,7 +696,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
         wishes: rsvp.wishes || guest.wishes,
         advice: guest.id === firstConfirmedId || guestResponses.length === 1 ? rsvp.advice : "",
       }));
-      const response = await fetch(`/api/invite/${encodeURIComponent(invitationToken)}`, {
+      const response = await fetch(`/api/invite/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mobile, guests }),
@@ -727,6 +713,11 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   };
 
   if (inviteLoading) return <main className="invitation-loading"><div className="wax-seal">E<span>&amp;</span>H</div><p>Unfolding your invitation…</p><i /></main>;
+  // Until a token is resolved we show nothing; after that, either the
+  // invitation or the locked card. Wedding details never reach the page
+  // for a visitor without a personal link.
+  if (!previewMode && !inviteLoading && !token) return <LockedInvitation />;
+
   if (inviteError) return <main className="invitation-invalid"><span>✦</span><h1>This invitation is resting.</h1><p>{inviteError}</p><a href="/">Return to Elaine &amp; Haykal</a></main>;
 
   const content = siteDesign.content;
@@ -736,22 +727,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
   return <main className={`wedding-shell wedding-shell--storybook wizard ${designClasses}`} style={typography}>
     <DreamBackdrop />
-    {photoGate && scripted ? <div className="photo-gate" role="dialog" aria-label="Elaine and Haykal" onClick={() => setPhotoGate(false)} onWheel={() => setPhotoGate(false)} onTouchMove={() => setPhotoGate(false)}>
-      <picture>
-        <source media="(max-width: 640px)" srcSet="/wedding/hero-portrait-small.webp" />
-        <img src="/wedding/hero-portrait.webp" alt="Elaine and Haykal, forehead to forehead" fetchPriority="high" />
-      </picture>
-      <div className="photo-gate-veil" aria-hidden="true" />
-      <div className="photo-gate-words">
-        <p className="overline">{content.eventDate}</p>
-        <h1>{content.brideName}<span>&amp;</span>{content.groomName}</h1>
-        <p className="line">{content.venueName}</p>
-      </div>
-      <button type="button" className="photo-gate-enter" onClick={() => setPhotoGate(false)}>
-        Look inside <span aria-hidden="true">↓</span>
-      </button>
-      <p className="photo-gate-note">Replies are by personal invitation only.</p>
-    </div> : null}
+
     <EtherealLoader ready={filmReady} />
     <SiteMenu links={[
       { href: "/welcome", label: "Welcome" },
@@ -900,7 +876,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       <p className="help-note private-note">Only Elaine and Haykal will ever read this one.</p>{error && activeSection === "wishes" ? <p className="form-error" role="alert">{error}</p> : null}<button className="primary-button" type="button" onClick={submitRsvp} disabled={submitting || submitted}>{submitting ? "Sending with love…" : submitted ? "RSVP sent" : previewMode ? "Preview confirmation" : "Send our RSVP"}{!submitting && !submitted ? <span aria-hidden="true">♡</span> : null}</button><small className="privacy-note">{previewMode ? "Preview only — no response or personal information will be saved." : "Your details are used only to plan Elaine and Haykal’s celebration."}</small></> : <div className="invitation-only compact"><p>Your personal invitation link unlocks the RSVP and wishes form.</p></div>}</div></section> : null}
     {renderCustomPages("wishes")}
 
-    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}{inviteData?.afterPartyInvited && invitationToken ? <a className="after-party-reveal" href={`/after-party?token=${encodeURIComponent(invitationToken)}`}>A secret chapter awaits ✦</a> : null}</div></section> : null}
+    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}{inviteData?.afterPartyInvited && token ? <a className="after-party-reveal" href={`/after-party?token=${encodeURIComponent(token)}`}>A secret chapter awaits ✦</a> : null}</div></section> : null}
 
     {journeyDone && !hiddenScenes.has("faq") ? <section id="faq" data-sky="dream-1" style={textStyle("faq")} className="scene scene--faq" data-scene>
       <div className="scene-content reveal">

@@ -7,6 +7,8 @@ import BubbleCursor from "../BubbleCursor";
 import { SiteMenu } from "../SiteMenu";
 import { EtherealLoader } from "../EtherealLoader";
 import { Butterflies } from "../Butterflies";
+import { LockedInvitation } from "../LockedInvitation";
+import { readToken } from "../invite-token";
 import { useRouter } from "next/navigation";
 
 /**
@@ -51,6 +53,9 @@ export function WelcomeExperience() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
   const [filmReady, setFilmReady] = useState(false);
+  // "" while we look, then either a token or "none"
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => { setToken(readToken() || "none"); }, []);
   const [crossing, setCrossing] = useState(false);
   const router = useRouter();
 
@@ -60,7 +65,8 @@ export function WelcomeExperience() {
     event.preventDefault();
     if (crossing) return;
     setCrossing(true);
-    window.setTimeout(() => router.push("/rsvp"), 1150);
+    // carry the invitation across, so the reply page knows who this is
+    window.setTimeout(() => router.push(token && token !== "none" ? `/rsvp?t=${encodeURIComponent(token)}` : "/rsvp"), 1150);
   };
 
   useEffect(() => { setReady(true); }, []);
@@ -94,6 +100,9 @@ export function WelcomeExperience() {
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
+
+  if (token === null) return null;
+  if (token === "none") return <LockedInvitation />;
 
   return (
     <main className={`welcome portal-sweep${crossing ? " is-sweeping" : ""}`}>
