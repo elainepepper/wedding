@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 /**
  * The painted world behind the whole site.
@@ -14,6 +14,12 @@ import { useEffect, useRef, type CSSProperties } from "react";
  *
  * Everything scrolls over the top; only opacity and a slow swell animate, so
  * this stays comfortable on iOS Safari.
+ *
+ * Each painting can also be a short film. If a matching .mp4 exists at
+ * /wedding/story/videos/<name>.mp4 the layer plays it over the painting; if it
+ * is missing, slow to arrive, or the guest prefers reduced motion, the
+ * painting simply stays. The still is always underneath, so there is no state
+ * in which a layer is blank.
  */
 
 const SKIES = ["dream-1", "dream-2", "dream-3"] as const;
@@ -24,8 +30,34 @@ const smoothstep = (edge0: number, edge1: number, value: number) => {
   return x * x * (3 - 2 * x);
 };
 
-export function Dreamscape() {
+export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const [motion, setMotion] = useState(true);
+  const announced = useRef(false);
+
+  // reduced motion means the paintings hold still — no video is even fetched
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setMotion(!reduce.matches);
+    apply();
+    reduce.addEventListener("change", apply);
+    return () => reduce.removeEventListener("change", apply);
+  }, []);
+
+  // whatever happens, the page is never held hostage to a video
+  useEffect(() => {
+    if (!motion) { announced.current = true; onReady?.(); return; }
+    const timer = window.setTimeout(() => {
+      if (!announced.current) { announced.current = true; onReady?.(); }
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [motion, onReady]);
+
+  const filmReady = () => {
+    if (announced.current) return;
+    announced.current = true;
+    onReady?.();
+  };
 
   useEffect(() => {
     const box = boxRef.current;
@@ -105,6 +137,25 @@ export function Dreamscape() {
             <source media="(max-width: 780px)" srcSet={asset(`bg/${name}-tall.webp`)} />
             <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} />
           </picture>
+          {motion ? (
+            <video
+              className="dream-film"
+              src={asset(`videos/${name}.mp4`)}
+              poster={asset(`bg/${name}.webp`)}
+              playsInline
+              autoPlay
+              loop
+              muted
+              preload={index === 0 ? "auto" : "metadata"}
+              onCanPlayThrough={index === 0 ? filmReady : undefined}
+              onLoadedData={index === 0 ? filmReady : undefined}
+              onError={(event) => {
+                // no film for this painting — leave the still showing
+                (event.currentTarget as HTMLVideoElement).remove();
+                if (index === 0) filmReady();
+              }}
+            />
+          ) : null}
         </div>
       ))}
       <div className="dream-mist" />

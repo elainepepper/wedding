@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { Dreamscape } from "../Dreamscape";
 import BubbleCursor from "../BubbleCursor";
 import { SiteMenu } from "../SiteMenu";
+import { EtherealLoader } from "../EtherealLoader";
+import { Butterflies } from "../Butterflies";
+import { useRouter } from "next/navigation";
 
 /**
  * /welcome — the invitation itself, and nothing else.
@@ -47,6 +50,18 @@ const smoothstep = (edge0: number, edge1: number, value: number) => {
 export function WelcomeExperience() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
+  const [filmReady, setFilmReady] = useState(false);
+  const [crossing, setCrossing] = useState(false);
+  const router = useRouter();
+
+  // the portal pushes into the world: the page zooms and softens while two
+  // butterflies cross, then the RSVP takes over
+  const enter = (event: ReactMouseEvent) => {
+    event.preventDefault();
+    if (crossing) return;
+    setCrossing(true);
+    window.setTimeout(() => router.push("/rsvp"), 1150);
+  };
 
   useEffect(() => { setReady(true); }, []);
 
@@ -81,16 +96,16 @@ export function WelcomeExperience() {
   }, []);
 
   return (
-    <main className="welcome">
-      <Dreamscape />
+    <main className={`welcome portal-sweep${crossing ? " is-sweeping" : ""}`}>
+      <EtherealLoader ready={filmReady} />
+      <Dreamscape onReady={() => setFilmReady(true)} />
       <SiteMenu links={[
-        { href: "#hello", label: "Hello" },
-        { href: "#invitation", label: "The invitation" },
-        { href: "#when", label: "The day" },
-        { href: "#where", label: "The place" },
-        { href: "/rsvp", label: "Reply to your invitation" },
+        { href: "/welcome", label: "Welcome" },
+        { href: "/rsvp", label: "RSVP" },
+        { href: "/rsvp#recommendations", label: "Recommendations & FAQ" },
+        { href: "/rsvp#confirmation", label: "Confirmation" },
       ]} />
-      <Link className="fixed-rsvp" href="/rsvp">RSVP</Link>
+      <Link className="fixed-rsvp" href="/rsvp" onClick={enter}>RSVP</Link>
       {ready ? <BubbleCursor zIndex={95} /> : null}
       <div className="welcome-track" ref={trackRef}>
         {panels.map((panel, index) => (
@@ -101,13 +116,14 @@ export function WelcomeExperience() {
               {panel.heading ? <h1>{panel.heading}</h1> : null}
               {panel.lines?.map((line) => <p className="line" key={line}>{line}</p>)}
               {index === panels.length - 1 ? (
-                <Link className="welcome-cta" href="/rsvp">Reply to your invitation</Link>
+                <Link className="welcome-cta" href="/rsvp" onClick={enter}>Enter</Link>
               ) : null}
             </div>
           </section>
         ))}
       </div>
       <p className="welcome-cue" aria-hidden="true"><i /> Scroll gently</p>
+      <Butterflies flying={crossing} />
     </main>
   );
 }

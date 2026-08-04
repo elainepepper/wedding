@@ -5,8 +5,9 @@ import { defaultSiteDesign, fontPairs, normaliseSiteDesign, SiteDesign } from ".
 import { rsvpDeadlineLabel } from "../lib/rsvp-window";
 import { Dreamscape } from "./Dreamscape";
 import BubbleCursor from "./BubbleCursor";
-import { TwirlLoader } from "./Twirl";
+import { EtherealLoader } from "./EtherealLoader";
 import { SiteMenu } from "./SiteMenu";
+import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
 
 type Attendance = "yes" | "no" | null;
@@ -294,6 +295,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   // Anyone arriving without their own invitation link meets the photograph
   // first. They may step past it and look around, but the RSVP stays closed.
   const [photoGate, setPhotoGate] = useState(!personalised);
+  const [filmReady, setFilmReady] = useState(false);
   const [openGuide, setOpenGuide] = useState("");
   const [openFaq, setOpenFaq] = useState("");
   // Same reasoning as the loader: the cover only exists once scripts run.
@@ -321,6 +323,26 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
+
+  // Music tries to start on its own; browsers usually refuse until a guest
+  // has touched the page, so the first tap anywhere quietly starts it.
+  useEffect(() => {
+    const player = audioRef.current;
+    if (!player) return;
+    let done = false;
+    const start = () => {
+      if (done) return;
+      player.play().then(() => { done = true; setSoundEnabled(true); }).catch(() => undefined);
+    };
+    start();
+    const onFirstTouch = () => { start(); };
+    window.addEventListener("pointerdown", onFirstTouch, { once: true });
+    window.addEventListener("keydown", onFirstTouch, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onFirstTouch);
+      window.removeEventListener("keydown", onFirstTouch);
+    };
+  }, [music.musicUrl]);
 
   const toggleSound = async () => {
     const player = audioRef.current;
@@ -459,13 +481,17 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     return map;
   }, [siteDesign.customPages]);
   const validPhone = () => rsvp.phoneNumber.replace(/\D/g, "").length >= 7;
-  const rsvpComplete = personalised && guestResponses.length > 0 && guestResponses.every((guest) => guest.rsvpStatus !== "Pending") && validPhone();
+  const someoneAttending = guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
+  const rsvpComplete = personalised && guestResponses.length > 0
+    && guestResponses.every((guest) => guest.rsvpStatus !== "Pending")
+    // a number is only asked of guests who are coming
+    && (!someoneAttending || validPhone());
   const anyYes = rsvpComplete && guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
   const allDeclined = rsvpComplete && !guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
   const mealComplete = anyYes && guestResponses.every((guest) => guest.rsvpStatus !== "Confirmed" || Boolean(guest.mealSelection));
   const roomComplete = rsvp.roomAtHyatt === true
     ? Boolean(rsvp.bedPreference) && Boolean(rsvp.nights) && Boolean(rsvp.arrivalDate)
-    : rsvp.roomAtHyatt === false ? Boolean(rsvp.accommodation.trim()) : false;
+    : rsvp.roomAtHyatt === false;
   const travelComplete = mealComplete && (hiddenScenes.has("travel") || (rsvp.flyingIn === false || (rsvp.flyingIn === true && roomComplete)));
   const flyingIn = travelComplete && rsvp.flyingIn === true;
   const journeyDone = travelComplete || allDeclined;
@@ -632,7 +658,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       goToSection("rsvp");
       return;
     }
-    if (!validPhone()) {
+    if (someoneAttending && !validPhone()) {
       setError("A number to reach you on, and your reply is ready to send.");
       goToSection("rsvp");
       return;
@@ -660,11 +686,6 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       }
       if (rsvp.flyingIn && rsvp.roomAtHyatt === true && (!rsvp.arrivalDate || !rsvp.nights)) {
         setError("Your check-in date and how many nights, whenever you know them.");
-        goToSection("travel");
-        return;
-      }
-      if (rsvp.flyingIn && rsvp.roomAtHyatt === false && !rsvp.accommodation.trim()) {
-        setError("Do tell us where you will be staying.");
         goToSection("travel");
         return;
       }
@@ -731,15 +752,14 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       </button>
       <p className="photo-gate-note">Replies are by personal invitation only.</p>
     </div> : null}
-    <TwirlLoader />
+    <EtherealLoader ready={filmReady} />
     <SiteMenu links={[
-      { href: "/welcome", label: "The invitation" },
-      { href: "#rsvp", label: "Your reply" },
-      { href: "#schedule", label: "The evening" },
-      { href: "#venue", label: "Finding us" },
-      { href: "#faq", label: "Good to know" },
+      { href: "/welcome", label: "Welcome" },
+      { href: "#rsvp", label: "RSVP" },
+      { href: "#recommendations", label: "Recommendations & FAQ" },
+      { href: "#confirmation", label: "Confirmation" },
     ]} />
-    <Dreamscape />
+    <Dreamscape onReady={() => setFilmReady(true)} />
     <BubbleCursor zIndex={95} />
     <a className="skip-experience" href="#rsvp">Go straight to your reply</a>
     {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
@@ -777,6 +797,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     {renderCustomPages("table")}
 
     {renderCustomPages("invitation")}
+    <PhotoRail />
     {!hiddenScenes.has("schedule") ? <section id="schedule" data-sky="dream-1" style={textStyle("schedule")} className="scene scene--schedule" data-scene>
       <img className="scene-art scene-art--schedule" src="/wedding/frame-tall.webp" alt="" loading="lazy" aria-hidden="true" />
       <div className="scene-content schedule-card reveal">
@@ -793,13 +814,13 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     </section> : null}
     {renderCustomPages("schedule")}
 
-    <section id="rsvp" data-sky="dream-2" style={textStyle("rsvp")} className="scene scene--paper" data-scene><img className="scene-art scene-art--dinner" src="/wedding/dinner-table.webp" alt="A hand-drawn wedding reception table" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">01 · Your reply</p><h2>Will you join us?</h2>{personalised ? <><p className="section-intro">Written for the names below. We are unable to welcome additional guests or children.</p>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? <p className="rsvp-deadline-note">Kindly reply by <strong>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}</strong> — you may return to this link to update your reply any time before then.</p> : null}<p className="help-note phone-note">One number per household — whoever is easiest to reach.</p><div className="field-grid phone-grid"><label><span>My country code is</span><select value={rsvp.countryCode} onChange={(event) => update("countryCode", event.target.value)} aria-label="Country calling code">{countryCodes.map(([country, code]) => <option key={`${country}-${code}`} value={code}>{country} ({code})</option>)}</select></label><label><span>My mobile number is</span><input required value={rsvp.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="12 345 6789" maxLength={24} /></label></div><div className="party-rsvp-list">{guestResponses.map((guest) => <fieldset key={guest.id}>{guestResponses.length > 1 ? <legend>{guest.name}</legend> : <legend className="is-quiet">Will you be joining us?</legend>}<div className="segmented-control"><button type="button" className={guest.rsvpStatus === "Confirmed" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Confirmed", receptionAttending: true })}>Joyfully accept</button><button type="button" className={guest.rsvpStatus === "Declined" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Declined", receptionAttending: false, ceremonyAttending: false, mealSelection: "" })}>Regretfully decline</button></div></fieldset>)}</div>{guestResponses.length > 1 ? <p className="help-note couple-note">You may each reply in your own right — if one of you can join us and the other cannot, that is perfectly all right.</p> : null}{guestResponses.length === 0 ? <p className="form-error" role="alert">We are unable to find the names attached to this invitation, so the reply buttons are missing. Do let Elaine and Haykal know — nothing entered here can be saved until it is put right.</p> : null}</> : <div className="invitation-only"><span aria-hidden="true">🔐</span><h3>Your invitation is your key</h3><p>Replies are opened only through the personal link Elaine and Haykal have sent you. It carries the names of those they have invited, and cannot be extended to additional guests.</p><p className="invitation-only-note">The rest of the evening — the dress code, the menu, and how to find us — opens with that link. This is where the page ends for now.</p></div>}{error && activeSection === "rsvp" ? <p className="form-error" role="alert">{error}</p> : null}{personalised && guestResponses.length > 0 ? <ScrollOn ready={rsvpComplete} hint={!validPhone() && guestResponses.some((guest) => guest.rsvpStatus === "Pending") ? "Reply for everyone above and add a number." : !validPhone() ? "Add a number we can reach you on." : "A reply is still awaited above."} label="Thank you — please continue below" /> : null}</div></section>
+    <section id="rsvp" data-sky="dream-2" style={textStyle("rsvp")} className="scene scene--paper" data-scene><img className="scene-art scene-art--dinner" src="/wedding/dinner-table.webp" alt="A hand-drawn wedding reception table" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">01 · Your reply</p><h2>Will you join us?</h2>{personalised ? <><p className="section-intro">Written for the names below. We are unable to welcome additional guests or children.</p>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? <p className="rsvp-deadline-note">Kindly reply by <strong>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}</strong> — you may return to this link to update your reply any time before then.</p> : null}{someoneAttending ? <><p className="help-note phone-note">One number per household — whoever is easiest to reach.</p><div className="field-grid phone-grid"><label><span>My country code is</span><select value={rsvp.countryCode} onChange={(event) => update("countryCode", event.target.value)} aria-label="Country calling code">{countryCodes.map(([country, code]) => <option key={`${country}-${code}`} value={code}>{country} ({code})</option>)}</select></label><label><span>My mobile number is</span><input required value={rsvp.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="12 345 6789" maxLength={24} /></label></div></> : null}<div className="party-rsvp-list">{guestResponses.map((guest) => <fieldset key={guest.id}>{guestResponses.length > 1 ? <legend>{guest.name}</legend> : <legend className="is-quiet">Will you be joining us?</legend>}<div className="segmented-control"><button type="button" className={guest.rsvpStatus === "Confirmed" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Confirmed", receptionAttending: true })}>Joyfully accept</button><button type="button" className={guest.rsvpStatus === "Declined" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Declined", receptionAttending: false, ceremonyAttending: false, mealSelection: "" })}>Regretfully decline</button></div></fieldset>)}</div>{guestResponses.length > 1 ? <p className="help-note couple-note">You may each reply in your own right — if one of you can join us and the other cannot, that is perfectly all right.</p> : null}{guestResponses.length === 0 ? <p className="form-error" role="alert">We are unable to find the names attached to this invitation, so the reply buttons are missing. Do let Elaine and Haykal know — nothing entered here can be saved until it is put right.</p> : null}</> : <div className="invitation-only"><span aria-hidden="true">🔐</span><h3>Your invitation is your key</h3><p>Replies are opened only through the personal link Elaine and Haykal have sent you. It carries the names of those they have invited, and cannot be extended to additional guests.</p><p className="invitation-only-note">The rest of the evening — the dress code, the menu, and how to find us — opens with that link. This is where the page ends for now.</p></div>}{error && activeSection === "rsvp" ? <p className="form-error" role="alert">{error}</p> : null}{personalised && guestResponses.length > 0 ? <ScrollOn ready={rsvpComplete} hint={guestResponses.some((guest) => guest.rsvpStatus === "Pending") ? "A reply is still awaited above." : "Add a number we can reach you on."} label="Thank you — please continue below" /> : null}</div></section>
 
     {renderCustomPages("rsvp")}
-    {anyYes && !hiddenScenes.has("dress") ? <section id="dress" data-sky="dream-3" style={textStyle("dress")} className="scene scene--blush" data-scene><img className="scene-art scene-art--wide-frame" src="/wedding/frame-wide.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content dress-card reveal"><p className="step-label">02 · Dress code</p><p className="script-kicker">{content.dressKicker}</p><h2>{content.dressCode}</h2><RibbonDivider /><p>{content.dressNote}</p><p className="dress-restriction">{content.dressRestriction}</p><div className="swatches" aria-label="Suggested colour palette"><span style={{ background: "#F1E6DD" }} title="Ivory blush" /><span style={{ background: "#D8C0B4" }} title="Champagne rose" /><span style={{ background: "#C9A8A0" }} title="Rosewood mist" /><span style={{ background: "#AB5369" }} title="Deep rose" /><span style={{ background: "#8E4258" }} title="Rose noir" /></div><small className="palette-note">A guide only — any colour but the bridal shades is welcome.</small><ScrollOn label="Keep scrolling to choose your dinner" /></div></section> : null}
+    {anyYes && !hiddenScenes.has("dress") ? <section id="dress" data-sky="dream-3" style={textStyle("dress")} className="scene scene--blush" data-scene><img className="scene-art scene-art--wide-frame" src="/wedding/frame-wide.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content dress-card reveal"><p className="step-label">02 · Dress code</p><p className="script-kicker">{content.dressKicker}</p><h2>{content.dressCode}</h2><RibbonDivider /><p>{content.dressNote}</p><p className="dress-restriction">{content.dressRestriction}</p><ScrollOn label="Keep scrolling to choose your dinner" /></div></section> : null}
 
     {renderCustomPages("dress")}
-    {anyYes ? <section id="meal" data-sky="dream-1" style={textStyle("meal")} className="scene scene--paper scene--meal" data-scene><img className="scene-art scene-art--feast" src="/wedding/feast-table.webp" alt="A hand-drawn candlelit wedding feast" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">03 · At the table</p><h2>Choose your main course</h2><p className="section-intro">One happy decision before the dancing.</p><div className="guest-meal-list">{guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed").map((guest) => <fieldset key={guest.id}>{attendingCount > 1 ? <legend>{guest.name}</legend> : null}<div className="choice-grid choice-grid--two meal-choices"><ChoiceButton selected={guest.mealSelection === "Salmon"} title="Seared Alaskan salmon" detail={salmonDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Salmon" })} /><ChoiceButton selected={guest.mealSelection === "Lamb"} title="Almond dukkha-crusted lamb" detail={lambDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Lamb" })} /></div><div className="field-grid field-grid--single"><label><span>At dinner, please note</span><input value={guest.dietaryRequirements} onChange={(event) => updateGuest(guest.id, { dietaryRequirements: event.target.value })} placeholder="Vegetarian, no nuts…" maxLength={800} /></label></div></fieldset>)}</div>{error && activeSection === "meal" ? <p className="form-error" role="alert">{error}</p> : null}<ScrollOn ready={mealComplete} hint="Choose a main course for everyone joining us." /></div></section> : null}
+    {anyYes ? <section id="meal" data-sky="dream-1" style={textStyle("meal")} className="scene scene--paper scene--meal" data-scene><img className="scene-art scene-art--feast" src="/wedding/feast-table.webp" alt="A hand-drawn candlelit wedding feast" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">03 · At the table</p><h2>Choose your main course</h2><p className="section-intro">One happy decision before the dancing.</p><div className="guest-meal-list">{guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed").map((guest) => <fieldset key={guest.id}>{attendingCount > 1 ? <legend>{guest.name}</legend> : null}<div className="choice-grid choice-grid--two meal-choices"><ChoiceButton selected={guest.mealSelection === "Salmon"} title="Seared Alaskan salmon" detail={salmonDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Salmon" })} /><ChoiceButton selected={guest.mealSelection === "Lamb"} title="Almond dukkha-crusted lamb" detail={lambDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Lamb" })} /></div><div className="field-grid field-grid--single"><label><span>Dietary requirements or allergies</span><input value={guest.dietaryRequirements} onChange={(event) => updateGuest(guest.id, { dietaryRequirements: event.target.value })} placeholder="Vegetarian, no nuts…" maxLength={800} /></label></div></fieldset>)}</div>{error && activeSection === "meal" ? <p className="form-error" role="alert">{error}</p> : null}<ScrollOn ready={mealComplete} hint="Choose a main course for everyone joining us." /></div></section> : null}
 
     {renderCustomPages("meal")}
     {mealComplete && !hiddenScenes.has("travel") ? <section id="travel" data-sky="dream-2" style={textStyle("travel")} className="scene scene--pearl" data-scene><img className="scene-art scene-art--pearl" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content form-card form-card--glass reveal"><p className="step-label">04 · Your journey</p><h2>Coming from afar?</h2><p className="section-intro">Only if you are travelling to us.</p><fieldset><legend>{attendingCount > 1 ? "We are flying in" : "I am flying in"}</legend><div className="segmented-control"><button type="button" className={rsvp.flyingIn === true ? "is-selected" : ""} onClick={() => update("flyingIn", true)}>Yes</button><button type="button" className={rsvp.flyingIn === false ? "is-selected" : ""} onClick={() => { update("flyingIn", false); update("roomAtHyatt", null); }}>No</button></div></fieldset>{rsvp.flyingIn ? <div className="slide-open travel-details">
@@ -814,7 +835,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       {rsvp.roomAtHyatt === false ? <div className="slide-open">
         <p className="help-note">A few good places within a short walk, should you still be deciding.</p>
         <ul className="hotel-list">{nearbyHotels.map((hotel) => <li key={hotel.name}><a href={maps(`${hotel.name} Kuala Lumpur`)} target="_blank" rel="noreferrer"><strong>{hotel.name}</strong><span>{hotel.note}</span><em className="place-score">★ {hotel.score}</em><i>{hotel.walk} away ↗</i></a></li>)}</ul>
-        <label className="full-field"><span>We will be staying at</span><input value={rsvp.accommodation} onChange={(event) => update("accommodation", event.target.value)} placeholder="Hotel or neighbourhood" maxLength={240} /></label>
+        
       </div> : null}
     </div> : null}<label className="full-field"><span>It would help us if</span><input value={rsvp.accessibilityNote} onChange={(event) => update("accessibilityNote", event.target.value)} placeholder="Step-free access, seating close to the door…" maxLength={800} /></label>{error && activeSection === "travel" ? <p className="form-error" role="alert">{error}</p> : null}<ScrollOn ready={travelComplete} hint={rsvp.flyingIn === null ? "Answer the question above to continue." : rsvp.roomAtHyatt === null ? "Let us know about a room to continue." : "A few details above are still to be filled in."} /></div></section> : null}
 
@@ -879,7 +900,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       <p className="help-note private-note">Only Elaine and Haykal will ever read this one.</p>{error && activeSection === "wishes" ? <p className="form-error" role="alert">{error}</p> : null}<button className="primary-button" type="button" onClick={submitRsvp} disabled={submitting || submitted}>{submitting ? "Sending with love…" : submitted ? "RSVP sent" : previewMode ? "Preview confirmation" : "Send our RSVP"}{!submitting && !submitted ? <span aria-hidden="true">♡</span> : null}</button><small className="privacy-note">{previewMode ? "Preview only — no response or personal information will be saved." : "Your details are used only to plan Elaine and Haykal’s celebration."}</small></> : <div className="invitation-only compact"><p>Your personal invitation link unlocks the RSVP and wishes form.</p></div>}</div></section> : null}
     {renderCustomPages("wishes")}
 
-    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}{inviteData?.afterPartyInvited && invitationToken ? <a className="after-party-reveal" href={`/after-party?token=${encodeURIComponent(invitationToken)}`}>A secret chapter awaits ✦</a> : null}<button className="text-button" type="button" onClick={() => scrollToSection("welcome")}>Return to the beginning ↑</button></div></section> : null}
+    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}{inviteData?.afterPartyInvited && invitationToken ? <a className="after-party-reveal" href={`/after-party?token=${encodeURIComponent(invitationToken)}`}>A secret chapter awaits ✦</a> : null}</div></section> : null}
 
     {journeyDone && !hiddenScenes.has("faq") ? <section id="faq" data-sky="dream-1" style={textStyle("faq")} className="scene scene--faq" data-scene>
       <div className="scene-content reveal">
@@ -900,6 +921,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       </div>
     </section> : null}
     {renderCustomPages("faq")}
+    {journeyDone ? <p className="return-to-start"><a href="/welcome">Return to the beginning ↑</a></p> : null}
     {submitted ? renderCustomPages("confirmation") : null}
     <div className="wizard-nav" aria-label="Continue">
       {stepIndex > 0 && !submitted ? <button type="button" className="wizard-back" onClick={() => setStep((value) => Math.max(0, value - 1))}>Back</button> : <span />}

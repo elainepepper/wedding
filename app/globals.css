@@ -137,8 +137,8 @@
   top: 0;
   z-index: 2;
   width: min(700px, 52vw);
-  min-height: 100vh;
-  margin: -100vh 5vw 0 auto;
+  min-height: 100dvh;
+  margin: -100dvh 5vw 0 auto;
   padding: 8vh clamp(1.5rem, 4vw, 4rem);
   display: flex;
   flex-direction: column;
@@ -235,8 +235,8 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  min-height: 100vh;
-  margin-top: -100vh;
+  min-height: 100dvh;
+  margin-top: -100dvh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -296,8 +296,8 @@
 .sound-control {
   position: fixed;
   z-index: 80;
-  top: 1rem;
-  right: 1rem;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
   min-width: 8rem;
   padding: .58rem .8rem;
   border: 1px solid rgba(142, 66, 88, .22);
@@ -1497,15 +1497,7 @@ textarea {
   border: 2px solid rgba(255, 255, 255, 0.48);
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(142, 66, 88, 0.12);
-}
-
-.palette-note {
-  display: block;
-  color: rgba(255, 247, 236, 0.7);
-  font-style: italic;
-}
-
-.dress-card .primary-button {
+}.dress-card .primary-button {
   margin-top: 1.7rem;
   color: var(--wine);
   background: var(--cream);
@@ -1770,11 +1762,17 @@ legend {
   height: 5rem;
   border: 1px solid rgba(255, 240, 219, 0.52);
   border-radius: 50%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* tracking adds a trailing gap after the final letter, which reads as the
+     text sitting left of centre inside a circle — pull it back by half */
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+  line-height: 1;
   color: #EFE2CC;
   font-size: 1.25rem;
-  letter-spacing: 0.08em;
   box-shadow: inset 0 0 0 5px rgba(255, 240, 219, 0.06), 0 0 30px rgba(255, 223, 187, 0.12);
 }
 
@@ -4124,16 +4122,7 @@ canvas { pointer-events: none; }
   color: rgba(74, 58, 60, .8);
   letter-spacing: 0;
   text-transform: none;
-}
-
-/* The palette note was nearly invisible against the painting */
-.palette-note {
-  color: rgba(74, 58, 60, .82) !important;
-  font: italic 500 .92rem/1.5 var(--font-body) !important;
-  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
-  opacity: 1 !important;
-}
-.guide-answer {
+}.guide-answer {
   margin: 0;
   padding: 0 1.1rem 1.1rem;
   font: italic 500 .96rem/1.55 var(--font-body);
@@ -4612,3 +4601,322 @@ canvas { pointer-events: none; }
   cursor: default;
 }
 @media (prefers-reduced-motion: reduce) { .wizard-next { animation: none; } }
+
+/* ==================================================================== */
+/* The films behind the paintings, and the loader that waits for them.  */
+/* ==================================================================== */
+.dream-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.ethereal-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  width: 100vw;
+  background: rgba(255, 245, 245, .85);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  opacity: 1;
+  transition: opacity 1500ms cubic-bezier(.25, 1, .5, 1);
+}
+.ethereal-loader.is-leaving { opacity: 0; pointer-events: none; }
+.ethereal-loader p {
+  margin: 0;
+  font: 400 clamp(1.9rem, 8vw, 3rem)/1.2 var(--font-header);
+  letter-spacing: .01em;
+  color: #4a3a3c;
+  animation: ethereal-breathe 2.5s ease-in-out infinite;
+}
+.ethereal-loader p span { color: var(--rhapsodic, #C9A8A0); font-style: italic; }
+@keyframes ethereal-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .ethereal-loader p { animation: none; }
+}
+
+/* ==================================================================== */
+/* /table — the dispersing mist.                                        */
+/* ==================================================================== */
+.table-reveal {
+  position: relative;
+  z-index: 0;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 8dvh 1.4rem;
+}
+
+/* the card sits below the fog, so it emerges as the fog clears */
+.table-card {
+  position: relative;
+  z-index: 40;
+  width: min(90vw, 460px);
+  padding: 3rem 1.8rem 3.2rem;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .16);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1), transform 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-reveal.is-cleared .table-card { opacity: 1; transform: none; }
+
+.table-welcome {
+  margin: 0 0 .6rem;
+  font: italic 500 clamp(1rem, 4vw, 1.2rem)/1.5 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+}
+.table-number {
+  margin: 0;
+  font: 500 clamp(3rem, 16vw, 5.4rem)/1 var(--font-header);
+  letter-spacing: -.02em;
+  color: #3f3235;
+  text-shadow: 0 6px 30px rgba(201, 120, 143, .35);
+}
+.table-number--pending { font-size: clamp(1.5rem, 7vw, 2.1rem); color: rgba(74, 58, 60, .7); }
+.table-room {
+  margin: 1.1rem 0 0;
+  font: 500 .6rem/1.6 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #8e4258;
+}
+
+/* the mist itself */
+.table-fog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100dvh;
+  padding: 2rem;
+  border: 0;
+  background: rgba(255, 245, 250, .4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1),
+              backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1),
+              -webkit-backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-fog span {
+  max-width: 22ch;
+  font: 400 clamp(1.15rem, 5vw, 1.6rem)/1.5 var(--font-header);
+  color: #4a3a3c;
+  animation: mist-breathe 3s ease-in-out infinite;
+}
+.table-fog.is-cleared {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
+@keyframes mist-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .table-fog span { animation: none; }
+  .table-card { transition-duration: 1ms; }
+}
+
+/* ==================================================================== */
+/* PHASE 3 — the cinematic pass.                                        */
+/* ==================================================================== */
+
+/* 1. the controls swap corners: menu low left, sound high right */
+.site-menu-button {
+  top: auto !important;
+  right: auto !important;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+}
+
+/* 3. the sweep: the portal pushes into the world rather than fading */
+.portal-sweep {
+  transition: transform 1.2s cubic-bezier(.8, 0, .2, 1),
+              filter 1.2s cubic-bezier(.8, 0, .2, 1),
+              opacity 1.2s cubic-bezier(.8, 0, .2, 1);
+  will-change: transform, filter, opacity;
+}
+.portal-sweep.is-sweeping { transform: scale(1.5); filter: blur(10px); opacity: 0; }
+
+/* the butterflies leave only as the guest crosses over */
+.butterflies { position: fixed; inset: 0; z-index: 210; pointer-events: none; }
+.butterfly {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  opacity: 0;
+  color: rgba(255, 255, 255, .92);
+  filter: drop-shadow(0 3px 10px rgba(142, 66, 88, .3));
+}
+.butterflies.is-flying .butterfly--1 { animation: flutter-1 2.4s cubic-bezier(.4, .1, .3, 1) both; }
+.butterflies.is-flying .butterfly--2 { animation: flutter-2 2.8s cubic-bezier(.4, .1, .3, 1) .25s both; }
+.butterfly i { display: block; width: 100%; height: 100%; animation: wingbeat .28s ease-in-out infinite; transform-origin: 50% 50%; }
+@keyframes flutter-1 {
+  0% { opacity: 0; left: 12%; top: 78%; transform: rotate(-8deg) scale(.7); }
+  18% { opacity: 1; }
+  100% { opacity: 0; left: 78%; top: 8%; transform: rotate(16deg) scale(1.15); }
+}
+@keyframes flutter-2 {
+  0% { opacity: 0; left: 74%; top: 84%; transform: rotate(10deg) scale(.65); }
+  20% { opacity: 1; }
+  100% { opacity: 0; left: 18%; top: 6%; transform: rotate(-14deg) scale(1.1); }
+}
+@keyframes wingbeat { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.55); } }
+
+/* 4. nothing opaque behind the words once past the portal */
+.wizard .scene .scene-content,
+.wizard .scene .form-card,
+.wizard .scene .dress-card,
+.wizard .scene .wishes-card,
+.wizard .scene .venue-card,
+.wizard .scene .schedule-card {
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+.wizard .scene > .scene-content::before { display: none; }
+.wizard .scene h2 {
+  font-size: clamp(2.3rem, 10vw, 3.6rem);
+  line-height: 1.08;
+  color: #3f3235;
+  text-shadow: 0 2px 26px rgba(255, 250, 248, .95), 0 1px 4px rgba(255, 250, 248, .9);
+}
+.wizard .scene .section-intro,
+.wizard .scene p { color: rgba(58, 45, 47, .95); text-shadow: 0 1px 16px rgba(255, 250, 248, .95); }
+.wizard .scene legend,
+.wizard .scene label > span { text-shadow: 0 1px 18px rgba(255, 250, 248, .95); }
+
+/* 4. the blinking arrow replaces the Continue box */
+.wizard-next {
+  min-height: 74px;
+  min-width: 74px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 50%;
+  background: none !important;
+  box-shadow: none !important;
+  color: #8e4258;
+  font-size: 2rem;
+  line-height: 1;
+  text-indent: 0;
+  animation: arrow-blink 1.5s ease-in-out infinite;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+}
+.wizard-next::after { content: "↓"; }
+.wizard-next:disabled { opacity: .22; animation: none; }
+@keyframes arrow-blink { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
+@media (prefers-reduced-motion: reduce) { .wizard-next { animation: none; } }
+
+/* 5. choices as floating type inside notched frames */
+/* A clip-path cuts the border off along the diagonals, so a plain 1px border
+   would vanish exactly at the notches. The line is drawn as a filled layer
+   underneath instead, with the glass sitting 1px inside it. */
+.wizard .scene .choice-card {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  padding: 1.5rem 1.3rem !important;
+  margin-bottom: 1rem;
+  transition: opacity .3s ease-out;
+  isolation: isolate;
+}
+.wizard .scene .choice-card::before,
+.wizard .scene .choice-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  transition: background .3s ease-out;
+}
+.wizard .scene .choice-card::before {            /* the line */
+  inset: 0;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background: rgba(201, 120, 143, .42);
+}
+.wizard .scene .choice-card::after {             /* the glass, 1px inside it */
+  inset: 1px;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background: rgba(255, 255, 255, .14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.wizard .scene .choice-card h3 {
+  font: 500 clamp(1.5rem, 6.6vw, 2.2rem)/1.15 var(--font-header);
+  letter-spacing: -.015em;
+  color: #3f3235;
+}
+.wizard .scene .choice-card p { font-size: .95rem; opacity: .8; }
+.wizard .scene .choice-card.is-selected::before { background: rgba(201, 120, 143, .95); }
+.wizard .scene .choice-card.is-selected::after { background: rgba(255, 252, 252, .3); }
+.wizard .scene .choice-card.is-selected {
+  background: none !important;
+  filter: drop-shadow(0 0 14px rgba(201, 120, 143, .45)) drop-shadow(0 16px 34px rgba(201, 120, 143, .2));
+}
+.wizard .scene .choice-card.is-selected h3 { color: #8e4258; }
+
+/* 6. the horizontal gallery — snapping sideways inside its own rail only */
+.photo-rail {
+  display: flex;
+  gap: 1rem;
+  margin: 1.6rem -1.2rem 0;
+  padding: 0 1.2rem 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.photo-rail::-webkit-scrollbar { display: none; }
+.photo-rail figure {
+  flex: 0 0 min(74vw, 320px);
+  margin: 0;
+  scroll-snap-align: center;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+.photo-rail img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-rail figcaption {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 1rem;
+  font: italic 500 .95rem/1.5 var(--font-body);
+  color: rgba(74, 58, 60, .6);
+  text-align: center;
+}
+
+/* The way back, once everything else has been read */
+.return-to-start { position: relative; z-index: 1; margin: 0 0 4rem; text-align: center; }
+.return-to-start a {
+  font: 500 .6rem/1 var(--font-sans);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-decoration: none;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+}
