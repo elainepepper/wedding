@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+import { Entrance } from "./Entrance";
 
-// The front door is the invitation itself.
+// The front door: guests with an invitation pass through to the welcome,
+// everyone else stops here.
 export default function Home() {
-  redirect("/welcome");
+  return <Entrance />;
 }
