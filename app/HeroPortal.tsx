@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Butterflies } from "./Butterflies";
 import { readToken } from "./invite-token";
+import { Butterflies } from "./Butterflies";
 
 /**
  * The archway — the first thing anyone sees.
@@ -28,7 +28,8 @@ export function HeroPortal() {
     if (crossing) return;
     if (!token) { setRefused(true); return; }
     setCrossing(true);
-    window.setTimeout(() => router.push(`/welcome?t=${encodeURIComponent(token)}`), 1150);
+    // straight to the invitation itself — the welcome was an empty scroll
+    window.setTimeout(() => router.push(`/rsvp?t=${encodeURIComponent(token)}`), 1150);
   };
 
   return (
@@ -53,7 +54,7 @@ export function HeroPortal() {
           <button type="button" className="portal-enter" onClick={enter}>Enter</button>
           {refused ? (
             <p className="portal-refused">
-              Every invitation carries its own private link — please open the one sent to you.
+              This portal is reserved for invited guests. Please use the personalised link provided to you.
             </p>
           ) : null}
         </div>

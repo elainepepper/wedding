@@ -4836,3 +4836,471 @@ canvas { pointer-events: none; }
 
 /* The fog on the table page keeps its blur — it is the whole point of that
    page, it is shown once, and nothing scrolls underneath it. */
+
+/* On a wide screen the venue page put its words in a left column with the map
+   floating right, which reads as off-centre now that every other page is a
+   single centred column. Stack it instead: words, then map, both centred. */
+@media (min-width: 900px) {
+  .wizard .scene--venue {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    align-content: center;
+    gap: 1.6rem;
+  }
+  .wizard .scene--venue > .scene-content {
+    grid-column: 1;
+    max-width: min(680px, 88vw);
+    margin-inline: auto;
+    text-align: center;
+  }
+  .wizard .scene--venue .venue-map {
+    position: static;
+    grid-column: 1;
+    width: min(680px, 88vw);
+    height: 340px !important;
+    margin-inline: auto;
+  }
+  /* every page keeps to one centred measure */
+  .wizard .scene > .scene-content { margin-inline: auto; }
+}
+
+/* ==================================================================== */
+/* EDITORIAL PASS                                                       */
+/* Centred type throughout; actions as underlined words, not buttons.   */
+/* ==================================================================== */
+.wizard .scene,
+.wizard .scene-content,
+.wizard .scene label,
+.wizard .scene legend,
+.wizard .scene fieldset,
+.wizard .scene p,
+.wizard .scene li,
+.portal-words { text-align: center; }
+.wizard .scene label > span,
+.wizard .scene legend { text-align: center; }
+.wizard .scene input,
+.wizard .scene textarea,
+.wizard .scene select { text-align: center; }
+.wizard .guide-group > button { justify-content: center; gap: .6rem; }
+.wizard .guide-group li a,
+.wizard .guide-app { text-align: center; }
+
+/* actions read as words with a fine rule beneath, not as boxes */
+.wizard-next,
+.wizard-back,
+.site-menu-button,
+.portal-enter,
+.fixed-rsvp,
+.primary-button,
+.return-to-start button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  padding-left: .2rem;
+  padding-right: .2rem;
+}
+.wizard-next::before, .wizard-next::after,
+.portal-enter::before, .portal-enter::after { display: none !important; }
+.site-menu-button { width: auto; height: auto; min-height: 44px; padding: 0 .3rem; }
+.portal-enter { color: #fff; text-shadow: 0 1px 12px rgba(70,45,60,.5); }
+
+/* prompts breathe rather than blink */
+@keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.wizard-next,
+.fixed-rsvp,
+.portal-enter,
+.table-fog span { animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite !important; }
+
+/* the panes behind words: whimsical, barely there */
+.wizard .scene .form-card,
+.wizard .scene .wishes-card,
+.wizard .scene .venue-card { background: rgba(255, 255, 255, .15) !important; }
+
+/* the country code sits tight against the number */
+.phone-grid {
+  display: grid !important;
+  grid-template-columns: 7.5rem minmax(0, 1fr) !important;
+  gap: 0 .6rem !important;
+  max-width: 24rem;
+  margin-inline: auto;
+}
+.phone-grid select { padding-right: 1.2rem; }
+
+/* the wishes headings were touching */
+.wizard #wishes .scene-content > label:first-of-type { margin-top: 2.4rem; }
+.wizard #wishes h2 { margin-bottom: .4rem; }
+.wizard #wishes .section-intro { margin-bottom: 2.6rem; }
+/* the number's label spans both fields */
+.phone-grid .phone-code { align-self: end; }
+.phone-grid > label:last-child > span { text-align: center; }
+/* the invitation's own way forward */
+.rsvp-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;            /* a comfortable target, not a 23px line of text */
+  margin: 2.6rem auto 0;
+  padding: .6rem 1rem;
+  border: 0;
+  background: none;
+  color: #8e4258;
+  font: 600 .68rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+  text-shadow: 0 1px 12px rgba(255, 250, 248, .95);
+}
+@media (prefers-reduced-motion: reduce) { .rsvp-trigger { animation: none; } }
+
+/* ==================================================================== */
+/* Two butterflies, crossing once as a guest steps through the archway. */
+/* Nothing renders until the animation begins: opacity starts at zero   */
+/* and only the keyframes lift it, so they cannot appear on load even   */
+/* if these styles were to load late.                                   */
+/* ==================================================================== */
+.butterflies {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  pointer-events: none;
+  overflow: hidden;
+}
+.butterfly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  opacity: 0;
+  visibility: hidden;
+  filter: drop-shadow(0 4px 12px rgba(142, 66, 88, .22));
+}
+.butterflies.is-flying .butterfly { visibility: visible; }
+.butterflies.is-flying .butterfly--1 { animation: flutter-1 2.4s cubic-bezier(.4, .1, .3, 1) both; }
+.butterflies.is-flying .butterfly--2 { animation: flutter-2 2.8s cubic-bezier(.4, .1, .3, 1) .25s both; }
+.butterfly i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+}
+.butterflies.is-flying .butterfly i { animation: wingbeat .3s ease-in-out infinite; }
+@keyframes flutter-1 {
+  0%   { opacity: 0; transform: translate(12vw, 82svh) rotate(-8deg) scale(.7); }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(76vw, 6svh) rotate(16deg) scale(1.15); }
+}
+@keyframes flutter-2 {
+  0%   { opacity: 0; transform: translate(74vw, 88svh) rotate(10deg) scale(.65); }
+  18%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(16vw, 4svh) rotate(-14deg) scale(1.1); }
+}
+@keyframes wingbeat { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.6); } }
+@media (prefers-reduced-motion: reduce) {
+  .butterflies { display: none; }
+}
+
+/* ==================================================================== */
+/* RESTORED: these blocks were removed as collateral by earlier regex   */
+/* cleanups. Without them the /table page has no fog and the background */
+/* films render inline instead of covering the screen.                  */
+/* ==================================================================== */
+
+/* the film layer inside each painting */
+.dream-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* /table — the dispersing mist */
+.table-reveal {
+  position: relative;
+  z-index: 0;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 8svh 1.4rem;
+}
+.table-reveal .table-card {
+  position: relative;
+  z-index: 40;
+  width: min(90vw, 460px);
+  padding: 3rem 1.8rem 3.2rem;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .16);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1), transform 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-reveal.is-cleared .table-card { opacity: 1; transform: none; }
+.table-welcome {
+  margin: 0 0 .6rem;
+  font: italic 500 clamp(1rem, 4vw, 1.2rem)/1.5 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+}
+.table-number {
+  margin: 0;
+  font: 500 clamp(3rem, 16vw, 5.4rem)/1 var(--font-header);
+  letter-spacing: -.02em;
+  color: #3f3235;
+  text-shadow: 0 6px 30px rgba(201, 120, 143, .35);
+}
+.table-number--pending { font-size: clamp(1.5rem, 7vw, 2.1rem); color: rgba(74, 58, 60, .7); }
+.table-room {
+  margin: 1.1rem 0 0;
+  font: 500 .6rem/1.6 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #8e4258;
+}
+.table-fog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100svh;
+  padding: 2rem;
+  border: 0;
+  background: rgba(255, 245, 250, .4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1),
+              backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1),
+              -webkit-backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-fog span {
+  max-width: 22ch;
+  font: 400 clamp(1.15rem, 5vw, 1.6rem)/1.5 var(--font-header);
+  color: #4a3a3c;
+  text-align: center;
+}
+.table-fog.is-cleared {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
+
+/* small helpers the markup expects */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.phone-note { margin-bottom: .9rem; }
+@media (prefers-reduced-motion: reduce) {
+  .table-reveal .table-card { transition-duration: 1ms; }
+}
+
+/* ==================================================================== */
+/* ONE VOICE                                                            */
+/*                                                                      */
+/* The stylesheet had grown 113 distinct type sizes and 78 colours over */
+/* many rounds of changes, which is what makes a site feel assembled    */
+/* rather than composed. Everything a guest actually sees now draws     */
+/* from the small scale below.                                          */
+/* ==================================================================== */
+:root {
+  /* type — five sizes, nothing between */
+  --t-display: clamp(2.3rem, 10vw, 3.6rem);   /* page titles */
+  --t-title:   clamp(1.5rem, 6.4vw, 2.1rem);  /* questions, card titles */
+  --t-body:    clamp(1.02rem, 4vw, 1.18rem);  /* sentences */
+  --t-input:   clamp(1.2rem, 5vw, 1.5rem);    /* what guests write */
+  --t-label:   .62rem;                        /* tracked-out small caps */
+
+  /* ink and blush — four values carry the whole invitation */
+  --ink-strong: #3f3235;
+  --ink:        rgba(74, 58, 60, .88);
+  --blush:      #8e4258;
+  --blush-soft: #c9788f;
+
+  /* motion — one curve, three speeds */
+  --ease: cubic-bezier(.25, 1, .5, 1);
+  --quick: 250ms;
+  --settle: 500ms;
+  --cinematic: 1200ms;
+}
+
+/* titles and questions */
+.wizard .scene h2,
+.portal-words h1,
+.locked-card h1 { font-size: var(--t-display); color: var(--ink-strong); }
+.wizard .scene h3,
+.wizard .scene legend,
+.wizard .scene label > span,
+.table-number--pending { font-size: var(--t-title); }
+.wizard .scene p,
+.wizard .scene li,
+.locked-card p,
+.guide-group li span { font-size: var(--t-body); color: var(--ink); }
+.wizard .scene input:not([type="checkbox"]):not([type="radio"]),
+.wizard .scene textarea,
+.wizard .scene select { font-size: var(--t-input) !important; }
+.step-label,
+.portal-eyebrow,
+.portal-place,
+.table-room,
+.wizard-next,
+.rsvp-trigger,
+.site-menu-button,
+.guide-group li em,
+.app-links a {
+  font-size: var(--t-label);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+/* one curve for every state change a guest can cause */
+.wizard-next, .wizard-back, .site-menu-button, .portal-enter,
+.rsvp-trigger, .primary-button, .choice-card, .segmented-control button,
+.guide-group > button, .guide-group ul, .guide-answer {
+  transition-timing-function: var(--ease);
+  transition-duration: var(--quick);
+}
+.step-enter .scene:not([hidden]) { animation-duration: var(--settle); animation-timing-function: var(--ease); }
+.portal, .table-fog, .table-reveal .table-card { transition-timing-function: var(--ease); }
+
+/* These two lost the scale to older, more specific rules. */
+.wizard .scene .step-label,
+.wizard .scene-content .step-label {
+  font-size: var(--t-label) !important;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--blush);
+}
+.wizard .scene .choice-card p,
+.wizard .scene .section-intro { font-size: var(--t-body) !important; }
+
+/* ==================================================================== */
+/* CINEMATIC PASS — measured against the reference breakdown.           */
+/* ==================================================================== */
+
+/* 1. Glass: translucency plus a little saturation, so the paintings keep
+   their colour through the frost rather than going grey. */
+.wizard .scene .form-card,
+.wizard .scene .wishes-card,
+.wizard .scene .venue-card,
+.wizard .scene .choice-card::after,
+.wizard .scene .segmented-control,
+.guide-group,
+.app-list li,
+.photo-rail figure,
+.table-reveal .table-card,
+.site-menu-overlay,
+.ethereal-loader,
+.table-fog {
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+/* A blur only costs real work when what sits behind it is moving. These
+   overlays cover a still page, so they keep their frost even on a phone;
+   the cards that scroll over a drifting painting do not. */
+@media (hover: none) and (pointer: coarse) {
+  .site-menu-overlay,
+  .ethereal-loader,
+  .table-fog {
+    backdrop-filter: blur(14px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(115%) !important;
+  }
+  .site-menu-overlay { background: rgba(250, 240, 238, .72); }
+  .ethereal-loader { background: rgba(255, 245, 245, .85); }
+}
+
+/* 2. Entry: a longer, deeper drift upward — nothing arrives abruptly. */
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+.step-enter .scene:not([hidden]) {
+  animation: step-in 900ms var(--ease) both;
+}
+/* the page leaves before the next arrives, so there is never a bare frame */
+@keyframes step-out { to { opacity: 0; transform: translateY(-12px); } }
+.wizard.is-leaving .scene:not([hidden]) { animation: step-out 260ms var(--ease) both; }
+
+/* 3. Hover: a line drawn from the left, and the faintest lift. */
+.wizard-next,
+.wizard-back,
+.rsvp-trigger,
+.site-menu-button,
+.portal-enter,
+.primary-button,
+.welcome-cta {
+  position: relative;
+  text-decoration: none;          /* the rule is drawn, not underlined */
+  transition: transform 400ms var(--ease), opacity 400ms var(--ease);
+}
+.wizard-next::before,
+.wizard-back::before,
+.rsvp-trigger::before,
+.site-menu-button::before,
+.portal-enter::before,
+.primary-button::before,
+.welcome-cta::before {
+  content: "";
+  position: absolute;
+  left: .2rem;
+  right: .2rem;
+  bottom: .35rem;
+  height: 1px;
+  background: currentColor;
+  opacity: .55;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform 500ms var(--ease), opacity 500ms var(--ease);
+}
+@media (hover: hover) {
+  .wizard-next:hover, .wizard-back:hover, .rsvp-trigger:hover,
+  .site-menu-button:hover, .portal-enter:hover, .primary-button:hover,
+  .welcome-cta:hover { transform: scale(1.02); }
+  .wizard-next:hover::before, .wizard-back:hover::before, .rsvp-trigger:hover::before,
+  .site-menu-button:hover::before, .portal-enter:hover::before,
+  .primary-button:hover::before, .welcome-cta:hover::before { opacity: 1; }
+}
+.wizard-next:disabled::before { opacity: .25; }
+
+/* 4. Parallax: the paintings drift a little slower than the words above them. */
+.dream-skies { will-change: transform; }
+.dream-sky { transform: translate3d(0, var(--parallax, 0px), 0) scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  .dream-sky { transform: none; }
+  .step-enter .scene:not([hidden]),
+  .wizard.is-leaving .scene:not([hidden]) { animation: none; }
+}

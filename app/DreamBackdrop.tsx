@@ -94,13 +94,16 @@ export function DreamBackdrop() {
     collect();
     render();
     window.addEventListener("scroll", requestRender, { passive: true });
-    window.addEventListener("resize", () => { collect(); requestRender(); }, { passive: true });
+    // an inline arrow cannot be removed later, so it leaked on every unmount
+    const onResize = () => { collect(); requestRender(); };
+    window.addEventListener("resize", onResize, { passive: true });
     reduce.addEventListener("change", requestRender);
     const watcher = window.setInterval(() => {
       if (document.querySelectorAll("[data-scene], .dream-chapter").length !== lastCount) { collect(); requestRender(); }
     }, 900);
     return () => {
       window.removeEventListener("scroll", requestRender);
+      window.removeEventListener("resize", onResize);
       reduce.removeEventListener("change", requestRender);
       window.clearInterval(watcher);
       if (frame) cancelAnimationFrame(frame);

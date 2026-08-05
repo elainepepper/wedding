@@ -634,3 +634,15 @@
   .seating-list li select, .seating-list li button { width: 100%; }
   .seating-unseated header input { width: 100%; }
 }
+
+/* the health check */
+.health-pass { color: #2f7d55; }
+.health-fail { color: #a8324a; }
+.health-list { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+.health-list li { display: flex; gap: .7rem; padding: .8rem .9rem; border: 1px solid var(--m-line); border-radius: 12px; background: #fff; }
+.health-list li > span { font-weight: 800; }
+.health-list li.is-pass > span { color: #2f7d55; }
+.health-list li.is-fail > span { color: #a8324a; }
+.health-list strong { display: block; font-size: .85rem; }
+.health-list p { margin: .15rem 0 0; color: var(--m-muted); font-size: .76rem; }
+.health-affected { font-style: italic; }

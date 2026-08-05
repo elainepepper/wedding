@@ -10,8 +10,17 @@ type InvitePermission = { id: number; ceremony_invited: number; reception_invite
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
 
 async function householdForToken(token: string) {
-  const snapshot = await weddingRef.collection("households").where("invitation_token", "==", token).where("invitation_enabled", "==", true).limit(1).get();
-  return snapshot.empty ? null : snapshot.docs[0];
+  // Match on the token alone. Firestore silently drops any document missing a
+  // field named in a where(), and a flag saved as 1 rather than true would
+  // never match either — either case would tell a real guest that their
+  // invitation is "resting". The flag is judged here instead, where a missing
+  // value can be read as enabled.
+  const snapshot = await weddingRef.collection("households").where("invitation_token", "==", token).limit(1).get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  const enabled = doc.data().invitation_enabled;
+  if (enabled === false || enabled === 0 || enabled === "false") return null;
+  return doc;
 }
 
 // Only the fields the invitation experience needs ever leave the server.

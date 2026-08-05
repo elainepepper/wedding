@@ -36,6 +36,26 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
   const announced = useRef(false);
 
   // reduced motion means the paintings hold still — no video is even fetched
+  // Parallax: the paintings move a fraction of the page's own scroll, which
+  // reads as depth. One transform on one fixed layer, so it stays cheap.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const box = boxRef.current;
+    if (!box) return;
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      box.style.setProperty("--parallax", `${Math.round(window.scrollY * -0.06)}px`);
+    };
+    const request = () => { if (!frame) frame = requestAnimationFrame(render); };
+    window.addEventListener("scroll", request, { passive: true });
+    render();
+    return () => {
+      window.removeEventListener("scroll", request);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const apply = () => setMotion(!reduce.matches);

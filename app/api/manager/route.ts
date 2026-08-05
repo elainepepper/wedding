@@ -164,7 +164,9 @@ export async function POST(request: Request) {
       const tableDoc = tableId ? await docById("tables", tableId) : null;
       if (!tableDoc) return Response.json({ error: "Table not found." }, { status: 404 });
       // anyone seated there is returned to the unseated list rather than orphaned
-      const seated = await weddingRef.collection("guests").where("table_id", "==", tableId).get();
+      // the guests query elsewhere accepts a number or a string id, so this one
+      // must too, or deleting a table would strand whoever was seated at it
+      const seated = await weddingRef.collection("guests").where("table_id", "in", [Number(tableId), String(tableId)]).get();
       await Promise.all(seated.docs.map((doc) => doc.ref.set({ table_id: null, updated_at: serverTimestamp() }, { merge: true })));
       await tableDoc.ref.delete();
       await addActivity(admin.displayName, "Table removed", "table", tableId as number, String(tableDoc.data().name ?? ""));

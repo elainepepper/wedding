@@ -33,7 +33,7 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "links", label: "Invitation links", glyph: "↗" },
@@ -42,6 +42,7 @@ const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
   { id: "wishes", label: "Wishes & advice", glyph: "♡" },
   { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
+  { id: "health", label: "Health check", glyph: "✓" },
   { id: "settings", label: "Settings", glyph: "◇" },
 ];
 
@@ -55,7 +56,15 @@ const greetingForNow = () => {
   const hour = new Date().getHours();
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 };
-const dateLabel = (value: string | null | undefined) => value ? new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Perth" }).format(new Date(`${value.replace(" ", "T")}Z`)) : "—";
+const dateLabel = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const text = value.replace(" ", "T");
+  // Firestore hands back ISO strings that already carry a zone; only add one
+  // when it is missing. An invalid date used to throw and blank the manager.
+  const date = new Date(/(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text}Z`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Perth" }).format(date);
+};
 
 function downloadFile(filename: string, content: string, type = "text/csv;charset=utf-8") {
   const link = document.createElement("a");
@@ -198,6 +207,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "imports" ? <Imports act={act} /> : null}
+        {tab === "health" ? <HealthCheck authToken={authToken} /> : null}
         {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
 
         {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} /> : null}
@@ -281,14 +291,20 @@ function nameSlug(names?: string) {
 }
 
 function inviteLink(origin: string, token: string | null, names?: string) {
+  if (!token) return "";                     // no token, no link — never /i/null
   const slug = nameSlug(names);
   return slug ? `${origin}/i/${token}/${slug}` : `${origin}/i/${token}`;
 }
 // wa.me opens WhatsApp with the message already written. If we hold a mobile
 // number it opens that chat directly; otherwise WhatsApp asks who to send to.
 function waLink(mobile: string | null, message: string) {
-  const digits = (mobile || "").replace(/[^0-9]/g, "");
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  let digits = (mobile || "").replace(/[^0-9]/g, "");
+  // WhatsApp needs a country code and no leading zero. A number saved in local
+  // form ("012...") would otherwise open a chat with nobody.
+  if (digits.startsWith("0")) digits = `60${digits.replace(/^0+/, "")}`;
+  return digits
+    ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
+    : `https://wa.me/?text=${encodeURIComponent(message)}`;   // no number: compose and pick a contact
 }
 function tableMessage(names: string, tables: string, link: string) {
   return `Dear ${names},\n\nElaine and Haykal have assigned your seat for 7 November — you are at ${tables}.\n\nYou can see it on your invitation here:\n${link}\n\nWith love,\nElaine & Haykal`;
@@ -724,4 +740,53 @@ function Toggle({ label, value, set }: { label: string; value: boolean; set: (va
 function NewTableModal({ close, act }: { close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [name, setName] = useState(""); const [shape, setShape] = useState("round"); const [capacity, setCapacity] = useState(10);
   return <div className="modal-backdrop"><form className="small-modal" onSubmit={async (event) => { event.preventDefault(); await act({ action: "createTable", name, shape, capacity, x: 50, y: 50 }, "Table created"); close(); }}><header><h2>Create a table</h2><button type="button" onClick={close}>×</button></header><label><span>Table name</span><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Moonlight" /></label><label><span>Shape</span><select value={shape} onChange={(event) => setShape(event.target.value)}><option value="round">Round</option><option value="rectangular">Rectangular</option><option value="banquet">Long banquet</option></select></label><label><span>Capacity</span><input type="number" min="2" max="30" value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label><footer><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit">Create table</button></footer></form></div>;
+}
+
+
+/**
+ * Runs the health check against the live database and reads back what it
+ * found. It only reads — nothing here changes any guest's details.
+ */
+function HealthCheck({ authToken }: { authToken: string }) {
+  const [result, setResult] = useState<{ ok: boolean; summary: string; counts?: Record<string, number>; checks: Array<{ name: string; ok: boolean; detail: string; affected?: string[] }> } | null>(null);
+  const [running, setRunning] = useState(false);
+  const [failed, setFailed] = useState("");
+
+  const run = async () => {
+    setRunning(true); setFailed("");
+    try {
+      const response = await fetch(`/api/manager/health?at=${Date.now()}`, { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "The health check could not run.");
+      setResult(data);
+    } catch (error) {
+      setFailed(error instanceof Error ? error.message : "The health check could not run.");
+    } finally { setRunning(false); }
+  };
+
+  return <div className="manager-page">
+    <div className="section-intro-row">
+      <div>
+        <p className="panel-kicker">Before you send</p>
+        <h2>Health check</h2>
+        <span>Ten checks against your real guest list, looking for the quiet faults that never show an error — a link that cannot open, a guest attached to nothing, a number WhatsApp cannot dial.</span>
+      </div>
+      <button className="primary" onClick={run} disabled={running}>{running ? "Checking…" : "Run the check"}</button>
+    </div>
+    {failed ? <section className="manager-panel"><p className="import-help">{failed}</p></section> : null}
+    {result ? <section className="manager-panel">
+      <h3 className={result.ok ? "health-pass" : "health-fail"}>{result.summary}</h3>
+      {result.counts ? <p className="import-help">{result.counts.guests} guests · {result.counts.households} households · {result.counts.tables} tables</p> : null}
+      <ul className="health-list">
+        {result.checks.map((check) => <li key={check.name} className={check.ok ? "is-pass" : "is-fail"}>
+          <span>{check.ok ? "✓" : "!"}</span>
+          <div>
+            <strong>{check.name}</strong>
+            <p>{check.detail}</p>
+            {check.affected && check.affected.length ? <p className="health-affected">{check.affected.join(" · ")}</p> : null}
+          </div>
+        </li>)}
+      </ul>
+    </section> : null}
+  </div>;
 }

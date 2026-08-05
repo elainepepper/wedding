@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
-import { WelcomeExperience } from "./WelcomeExperience";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Elaine & Haykal — 7 November 2026",
-  description: "You are invited to celebrate Elaine and Haykal at Grand Hyatt Kuala Lumpur.",
-};
-
-export default function WelcomePage() {
-  return <WelcomeExperience />;
+// The separate welcome pages were an empty scroll between the archway and the
+// invitation. Anyone landing here goes straight to the invitation.
+export default async function WelcomePage({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
+  const { t } = await searchParams;
+  redirect(t ? `/rsvp?t=${encodeURIComponent(t)}` : "/rsvp");
 }

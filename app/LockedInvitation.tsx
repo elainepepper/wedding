@@ -14,8 +14,8 @@ export function LockedInvitation() {
         <p className="locked-mark" aria-hidden="true">✦</p>
         <h1>By invitation</h1>
         <p>
-          Every invitation carries its own private link. Open the one sent to you
-          and everything will be waiting.
+          This portal is reserved for invited guests. Please use the personalised
+          link provided to you.
         </p>
         <p className="locked-help">
           If your link has gone astray, message Elaine or Haykal and they will send it again.

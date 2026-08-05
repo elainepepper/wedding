@@ -3,7 +3,7 @@ import { WeddingExperience } from "../WeddingExperience";
 
 export const metadata: Metadata = {
   title: "Your reply",
-  description: "Reply to Elaine and Haykal's invitation.",
+  description: "Reply to Elaine and Haykal’s invitation.",
   robots: { index: false, follow: false },
 };
 
