@@ -1,0 +1,5768 @@
+@import "tailwindcss";
+
+:root {
+  --fairy: #F1E6DD;
+  --powder: #F6EEE8;
+  --parchment: #FBF6F3;
+  --pastel: #D8C0B4;
+  --rhapsodic: #C9A8A0;
+  --coral: #AB5369;
+  --manhattan: #A05066;
+  --berry: #AB5369;
+  --wine: #8E4258;
+  --ink: #2A2A2A;
+  --cream: #FAF6F2;
+  --sage: #B8B9A5;
+  --pointer-x: 0;
+  --pointer-y: 0;
+  --font-body: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  /* Inter for anything a guest types or taps; the serif carries the voice. */
+  --font-sans: "Inter", "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-header: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  --motion-quick: 150ms;
+  --motion-standard: 300ms;
+  --motion-slow: 600ms;
+  --motion-grand: 1000ms;
+  --ease-standard: cubic-bezier(.4, 0, .2, 1);
+  --ease-gentle: cubic-bezier(.33, 0, .15, 1);
+  --ease-soft: cubic-bezier(.25, .1, .15, 1);
+}
+
+/* Enchanted storybook revision */
+.wedding-shell--storybook {
+  --enchanted: #8B5E57;
+  --enchanted-dark: #5C3A35;
+  --lantern: #CDBA9A;
+}
+
+.wedding-shell--storybook .scene--welcome {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(232, 216, 183, .42), transparent 26%),
+    linear-gradient(180deg, #8B5E57 0%, #CDBA9A 33%, #C9A8A0 74%, #F1E6DD 100%);
+}
+
+.storybook-canopy {
+  position: absolute;
+  inset: -8% -4% auto;
+  height: 44%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 8% 20%, #5C3A35 0 20%, transparent 21%),
+    radial-gradient(ellipse at 25% 0%, #74504A 0 24%, transparent 25%),
+    radial-gradient(ellipse at 75% 0%, #74504A 0 24%, transparent 25%),
+    radial-gradient(ellipse at 92% 20%, #5C3A35 0 20%, transparent 21%);
+  filter: blur(1px);
+  opacity: .92;
+  transform: translateY(calc(var(--scene-progress, 0) * -10%)) scale(calc(1 + var(--scene-progress, 0) * .08));
+}
+
+.lantern {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 246, 205, .7);
+  border-radius: 50% 50% 44% 44%;
+  color: #F5EDD8;
+  background: radial-gradient(circle, #F3E9D3 0 12%, #C9B292 35%, rgba(205, 186, 154, .24) 70%);
+  box-shadow: 0 0 45px 18px rgba(255, 202, 107, .3);
+  animation: lantern-drift 5.4s ease-in-out infinite alternate;
+}
+
+.lantern::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  width: 1px;
+  height: 22vh;
+  background: rgba(255, 246, 205, .48);
+}
+
+.lantern--one { left: 12%; top: 24%; }
+.lantern--two { right: 11%; top: 38%; animation-delay: -2.2s; transform: scale(.72); }
+
+@keyframes lantern-drift {
+  from { translate: 0 -8px; rotate: -2deg; }
+  to { translate: 8px 10px; rotate: 2deg; }
+}
+
+.wedding-shell--storybook .hero-content,
+.wedding-shell--storybook .hero-content h1,
+.wedding-shell--storybook .hero-content .guest-name-label {
+  color: #FAF6F2;
+  text-shadow: 0 3px 22px rgba(74, 52, 47, .55);
+}
+
+.guest-name-label strong {
+  display: inline-block;
+  max-width: min(88vw, 780px);
+  font: italic clamp(2.8rem, 8vw, 7rem)/.95 Georgia, "Times New Roman", serif;
+  overflow-wrap: anywhere;
+}
+
+.scene--venue {
+  min-height: 620vh;
+  color: #fffaf0;
+  background: linear-gradient(135deg, #6E4A44, #8B5E57 48%, #8B5E57);
+}
+
+.venue-map {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.venue-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(74, 52, 47, .12), rgba(74, 52, 47, .72) 68%, rgba(74, 52, 47, .9));
+}
+
+.venue-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  filter: sepia(.35) saturate(.72) hue-rotate(325deg) contrast(.9);
+  transform: scale(calc(1.03 + var(--scene-progress, 0) * .08));
+}
+
+.venue-card {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  width: min(700px, 52vw);
+  min-height: 100svh;
+  margin: -100svh 5vw 0 auto;
+  padding: 8vh clamp(1.5rem, 4vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.venue-card h2,
+.recommendations-card h2 {
+  margin: .2rem 0 .65rem;
+  font: italic clamp(3rem, 6vw, 6.4rem)/.9 Georgia, "Times New Roman", serif;
+}
+
+.venue-address {
+  margin: 0 0 1.75rem;
+  color: #f5dccf;
+  line-height: 1.7;
+}
+
+.arrival-grid {
+  display: grid;
+  gap: .75rem;
+}
+
+.arrival-grid article {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, .22);
+}
+
+.arrival-grid article > span {
+  grid-row: 1 / 3;
+  font: italic 1.15rem Georgia, serif;
+  color: var(--lantern);
+}
+
+.arrival-grid h3,
+.arrival-grid p { margin: 0; }
+.arrival-grid h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .12em; }
+.arrival-grid p { margin-top: .2rem; color: rgba(255, 250, 240, .74); line-height: 1.45; }
+
+.map-button { align-self: flex-start; text-decoration: none; margin-top: 1rem; }
+
+.invitation-only {
+  margin: 1.5rem 0;
+  padding: clamp(1.5rem, 4vw, 2.4rem);
+  border: 1px solid rgba(115, 67, 74, .24);
+  background: rgba(255, 250, 244, .64);
+  text-align: center;
+}
+
+.invitation-only > span { font-size: 1.75rem; }
+.invitation-only h3 { margin: .55rem 0; font: italic 2rem Georgia, serif; }
+.invitation-only p { margin: 0 auto; max-width: 620px; line-height: 1.65; }
+.invitation-only.compact { padding: 1rem; }
+
+.phone-grid { grid-template-columns: minmax(190px, .7fr) minmax(230px, 1.3fr); }
+.couple-note { margin: 1rem 0; border-left: 3px solid var(--enchanted); }
+
+.meal-choices .choice-card {
+  min-height: 15rem;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.meal-choices .choice-card strong {
+  font: italic clamp(1.4rem, 2vw, 2rem)/1 Georgia, serif;
+}
+
+.meal-choices .choice-card small { line-height: 1.55; }
+
+.scene--recommendations {
+  min-height: 650vh;
+  color: #FAF6F2;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(205, 186, 154, .25), transparent 21%),
+    radial-gradient(circle at 78% 78%, rgba(160, 80, 102, .2), transparent 25%),
+    linear-gradient(145deg, #6E4A44, #74504A 54%, #574247);
+}
+
+.recommendation-glow {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(232, 216, 183, .9) 0 2px, transparent 4px),
+    radial-gradient(circle at 80% 26%, rgba(232, 216, 183, .8) 0 2px, transparent 4px),
+    radial-gradient(circle at 62% 76%, rgba(232, 216, 183, .76) 0 2px, transparent 4px);
+  transform: scale(calc(1 + var(--scene-progress, 0) * .18));
+}
+
+.recommendations-card {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 100svh;
+  margin-top: -100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7vh 4vw;
+}
+
+.recommendations-card > .section-intro { color: rgba(255, 248, 232, .76); }
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: min(1120px, 100%);
+  margin: 1.5rem auto;
+}
+
+.recommendation-grid a {
+  min-height: 240px;
+  padding: clamp(1.25rem, 3vw, 2.2rem);
+  display: flex;
+  flex-direction: column;
+  color: #FAF6F2;
+  text-decoration: none;
+  border: 1px solid rgba(255, 240, 205, .28);
+  background: linear-gradient(150deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .04));
+  backdrop-filter: blur(14px);
+  transition: transform .3s ease, border-color .3s ease, background .3s ease;
+}
+
+.recommendation-grid a:hover,
+.recommendation-grid a:focus-visible {
+  transform: translateY(-8px);
+  border-color: var(--lantern);
+  background: rgba(255, 255, 255, .14);
+}
+
+.recommendation-grid span { color: var(--lantern); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+.recommendation-grid h3 { margin: auto 0 .75rem; font: italic 2rem/1 Georgia, serif; }
+.recommendation-grid p { margin: 0; color: rgba(255, 248, 232, .72); line-height: 1.5; }
+.recommendation-grid i { margin-top: 1.2rem; color: #CDBA9A; font-style: normal; font-size: .8rem; }
+
+@media (max-width: 760px) {
+  .lantern--one { left: 5%; }
+  .lantern--two { right: 4%; }
+  .scene--venue,
+  .scene--recommendations { min-height: auto; }
+  .venue-map { position: relative; height: 46vh; }
+  .venue-map::after { background: linear-gradient(180deg, transparent 45%, #5C3A35 100%); }
+  .venue-card { position: relative; width: 100%; min-height: auto; margin: 0; padding: 3rem 1.25rem 4rem; }
+  .phone-grid { grid-template-columns: 1fr; }
+  .recommendation-glow { display: none; }
+  .recommendations-card { position: relative; min-height: auto; margin: 0; padding: 4rem 1.2rem; }
+  .recommendation-grid { grid-template-columns: 1fr; }
+  .recommendation-grid a { min-height: 210px; }
+}
+
+.sound-control {
+  position: fixed;
+  z-index: 80;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  min-width: 8rem;
+  padding: .58rem .8rem;
+  border: 1px solid rgba(142, 66, 88, .22);
+  border-radius: 999px;
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  align-items: center;
+  gap: 0 .45rem;
+  background: rgba(255, 249, 242, .88);
+  color: #92485C;
+  box-shadow: 0 10px 30px rgba(142, 66, 88, .12);
+  backdrop-filter: blur(14px);
+}
+.sound-control > span { grid-row: 1 / 3; font-size: .9rem; }
+.sound-control small { font-size: .65rem; font-weight: 800; text-align: left; }
+.sound-control em { max-width: 9rem; overflow: hidden; color: #8f6e77; font-family: Georgia, serif; font-size: .55rem; font-style: italic; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .sound-control { min-width: 0; grid-template-columns: 1.2rem; }
+  .sound-control > span { grid-row: auto; }
+  .sound-control small, .sound-control em { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lantern { animation: none; }
+  .storybook-canopy,
+  .venue-map iframe,
+  .recommendation-glow { transform: none; }
+}
+
+/* 2026 palette refinement: the public invitation stays airy and within the
+   couple's five-pink art direction. Dark neutrals are reserved for readable text. */
+.wedding-shell--storybook {
+  --enchanted: var(--coral);
+  --enchanted-dark: var(--manhattan);
+  --lantern: var(--fairy);
+}
+
+.wedding-shell--storybook .scene--welcome,
+.scene--cinematic,
+.cinematic-stage {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(241, 230, 221, .96) 0 22%, rgba(216, 192, 180, .58) 54%, transparent 76%),
+    linear-gradient(150deg, var(--fairy) 0%, var(--pastel) 48%, var(--rhapsodic) 76%, var(--coral) 100%);
+}
+
+.storybook-canopy {
+  background:
+    radial-gradient(ellipse at 8% 20%, var(--manhattan) 0 20%, transparent 21%),
+    radial-gradient(ellipse at 25% 0%, var(--coral) 0 24%, transparent 25%),
+    radial-gradient(ellipse at 75% 0%, var(--coral) 0 24%, transparent 25%),
+    radial-gradient(ellipse at 92% 20%, var(--manhattan) 0 20%, transparent 21%);
+  opacity: .3;
+}
+
+.lantern {
+  color: var(--manhattan);
+  border-color: rgba(160, 80, 102, .45);
+  background: radial-gradient(circle, var(--fairy) 0 16%, var(--pastel) 42%, rgba(201, 168, 160, .18) 74%);
+  box-shadow: 0 0 45px 18px rgba(241, 230, 221, .42);
+}
+
+.wedding-shell--storybook .hero-content,
+.wedding-shell--storybook .hero-content h1,
+.wedding-shell--storybook .hero-content .guest-name-label {
+  color: var(--ink);
+  text-shadow: 0 3px 24px rgba(241, 230, 221, .82);
+}
+
+.scene--invitation,
+.scene--paper,
+.scene--pearl,
+.scene--wishes {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(216, 192, 180, .32), transparent 32%),
+    linear-gradient(145deg, var(--fairy), rgba(241, 230, 221, .55));
+}
+
+.scene--blush {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(241, 230, 221, .7), transparent 38%),
+    linear-gradient(145deg, var(--pastel), var(--rhapsodic));
+}
+
+.scene--blush::after { border-color: rgba(160, 80, 102, .42); }
+.dress-card h2 { color: var(--ink); }
+.dress-card > p:not(.step-label):not(.script-kicker) { color: rgba(142, 66, 88, .82); }
+.script-kicker,
+.scene--blush .ribbon-divider,
+.scene--blush .step-label { color: var(--manhattan); }
+.swatches [title="Enchanted green"] { background: var(--manhattan) !important; }
+
+.wedding-shell--storybook .primary-button {
+  color: var(--fairy);
+  background: var(--manhattan);
+  box-shadow: 0 12px 28px rgba(160, 80, 102, .2);
+}
+
+.wedding-shell--storybook .primary-button:hover,
+.wedding-shell--storybook .primary-button:focus-visible { background: var(--coral); }
+
+.scene--venue {
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--fairy), var(--pastel) 52%, var(--rhapsodic));
+}
+
+.venue-map::after {
+  background: linear-gradient(90deg, rgba(241, 230, 221, .12), rgba(241, 230, 221, .78) 66%, rgba(216, 192, 180, .96));
+}
+
+.venue-map iframe { filter: grayscale(.42) sepia(.18) saturate(.72) hue-rotate(315deg) contrast(.86) brightness(1.08); }
+.venue-card .step-label,
+.venue-card h2,
+.venue-address,
+.arrival-grid h3,
+.arrival-grid p,
+.venue-card .text-button { color: var(--ink); }
+.arrival-grid article { border-color: rgba(160, 80, 102, .42); }
+.arrival-grid article > span { color: var(--manhattan); }
+.venue-card .text-button { border-color: rgba(160, 80, 102, .48); }
+
+.scene--recommendations {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(241, 230, 221, .9), transparent 27%),
+    radial-gradient(circle at 78% 78%, rgba(160, 80, 102, .2), transparent 30%),
+    linear-gradient(145deg, var(--fairy), var(--pastel) 54%, var(--rhapsodic));
+}
+
+.recommendation-glow {
+  background:
+    radial-gradient(circle at 12% 18%, var(--manhattan) 0 2px, transparent 4px),
+    radial-gradient(circle at 80% 26%, var(--coral) 0 2px, transparent 4px),
+    radial-gradient(circle at 62% 76%, var(--manhattan) 0 2px, transparent 4px);
+  opacity: .5;
+}
+
+.recommendations-card > .section-intro { color: rgba(142, 66, 88, .78); }
+.recommendation-grid a {
+  color: var(--ink);
+  border-color: rgba(160, 80, 102, .4);
+  background: rgba(241, 230, 221, .6);
+  box-shadow: 0 20px 50px rgba(160, 80, 102, .13);
+}
+.recommendation-grid a:hover,
+.recommendation-grid a:focus-visible { border-color: var(--manhattan); background: rgba(241, 230, 221, .82); }
+.recommendation-grid span,
+.recommendation-grid i { color: var(--manhattan); }
+.recommendation-grid p { color: rgba(142, 66, 88, .75); }
+
+.scene--confirmation {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(241, 230, 221, .9), transparent 31%),
+    linear-gradient(145deg, var(--pastel), var(--rhapsodic) 70%);
+}
+.scene--confirmation::after { border-color: rgba(160, 80, 102, .42); }
+.confirmation-card h2,
+.confirmation-card > p:not(.eyebrow),
+.confirmation-details,
+.scene--confirmation .text-button { color: var(--ink); }
+.wax-seal { color: var(--manhattan); border-color: rgba(160, 80, 102, .55); box-shadow: inset 0 0 0 5px rgba(241, 230, 221, .18), 0 0 30px rgba(160, 80, 102, .16); }
+.scene--confirmation .text-button { border-color: rgba(160, 80, 102, .45); }
+
+.cinematic-film-wash {
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(241, 230, 221, .96) 0 14%, rgba(216, 192, 180, .55) 42%, transparent 70%),
+    linear-gradient(180deg, rgba(241, 230, 221, .82), rgba(216, 192, 180, calc(.72 - var(--welcome-portal) * .2)) 56%, rgba(201, 168, 160, .84)),
+    linear-gradient(90deg, rgba(171, 83, 105, .22), transparent 28% 72%, rgba(160, 80, 102, .22));
+  box-shadow: inset 0 0 14vw rgba(160, 80, 102, .12);
+}
+
+.cinematic-layer {
+  filter: drop-shadow(0 24px 38px rgba(160, 80, 102, .18));
+}
+
+.cinematic-layer--far {
+  top: -8vh;
+  width: min(1050px, 86vw);
+  opacity: calc(.78 - var(--welcome-portal) * .3);
+}
+
+.cinematic-layer--mid {
+  top: 50%;
+  left: 50%;
+  width: min(760px, 62vw);
+  opacity: calc(.42 - var(--welcome-portal) * .2);
+  transform: translate3d(calc(-50% + var(--pointer-x) * 7px), calc(-50% + var(--pointer-y) * 5px + var(--welcome-portal) * -8vh), 0) scale(calc(.86 + var(--welcome-portal) * .42));
+}
+
+.cinematic-layer--left {
+  left: -16vw;
+  bottom: -30vh;
+  width: min(900px, 67vw);
+  opacity: calc(.7 - var(--welcome-portal) * .22);
+}
+
+.cinematic-layer--right {
+  right: -15vw;
+  bottom: -24vh;
+  width: min(790px, 58vw);
+  opacity: calc(.68 - var(--welcome-portal) * .2);
+}
+
+.cinematic-portal {
+  border-color: rgba(160, 80, 102, calc(.58 - var(--welcome-portal) * .2));
+  box-shadow: 0 0 0 1px rgba(241, 230, 221, .32), 0 0 90px rgba(160, 80, 102, .2), inset 0 0 90px rgba(241, 230, 221, .2);
+}
+.cinematic-portal::before,
+.cinematic-portal::after,
+.cinematic-portal span { border-color: rgba(160, 80, 102, .3); }
+
+.cinematic-copy { color: var(--ink); text-shadow: 0 3px 30px rgba(241, 230, 221, .7); }
+.cinematic-copy .eyebrow,
+.cinematic-copy h1,
+.cinematic-copy h2,
+.cinematic-copy > p:not(.eyebrow) { color: var(--ink); }
+.cinematic-copy h2 span { color: var(--manhattan); }
+.cinematic-copy--date .primary-button { color: var(--fairy); background: var(--manhattan); }
+.cinematic-copy--date .primary-button:hover { background: var(--coral); }
+
+@media (max-width: 760px) {
+  .venue-map::after { background: linear-gradient(180deg, transparent 42%, var(--fairy) 100%); }
+  .cinematic-layer--far { width: 118vw; }
+  .cinematic-layer--mid { width: 92vw; opacity: calc(.32 - var(--welcome-portal) * .16); }
+  .cinematic-layer--left { left: -34vw; bottom: -13vh; width: 98vw; }
+}
+
+/* Supplied French line-art and translucent tape — no generated illustrations. */
+#welcome::before,
+#invitation::before,
+#rsvp::before,
+#meal::before,
+#wishes::before,
+#confirmation::before,
+.party-gate::before,
+.party-scene--midnight::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  will-change: transform, opacity;
+}
+
+#welcome::before {
+  top: 10%;
+  left: 50%;
+  width: min(650px, 62vw);
+  aspect-ratio: 1;
+  background-image: url("/wedding/decor/bow.webp");
+  opacity: .46;
+  filter: drop-shadow(0 18px 30px rgba(142, 66, 88, .18));
+  transform: translate3d(-50%, calc(var(--scene-progress) * -11vh), 0) rotate(calc(-3deg + var(--scene-progress) * 5deg)) scale(calc(.88 + var(--scene-progress) * .2));
+}
+
+#invitation::before {
+  inset: 0;
+  background-image: url("/wedding/decor/bow-tape.webp"), url("/wedding/decor/bow-tape.webp");
+  background-position: left -8vw top 18%, right -8vw bottom 18%;
+  background-size: min(540px, 58vw) auto, min(540px, 58vw) auto;
+  opacity: .45;
+  transform: translateY(calc(var(--scene-progress) * -4vh));
+}
+
+#rsvp::before {
+  right: -4vw;
+  bottom: 2vh;
+  width: min(430px, 38vw);
+  aspect-ratio: 1.15;
+  background-image: url("/wedding/decor/cake.webp");
+  opacity: .28;
+  transform: translate3d(0, calc((1 - var(--scene-progress)) * 10vh), 0) rotate(4deg) scale(calc(.88 + var(--scene-progress) * .16));
+}
+
+#meal::before {
+  top: 8%;
+  left: -6vw;
+  width: min(620px, 48vw);
+  aspect-ratio: 1.3;
+  background-image: url("/wedding/decor/place-setting.webp");
+  opacity: .24;
+  transform: translate3d(calc(var(--scene-progress) * 5vw), calc(var(--scene-progress) * 4vh), 0) rotate(calc(-20deg + var(--scene-progress) * 8deg));
+}
+
+#wishes::before {
+  left: 1vw;
+  bottom: -8vh;
+  width: min(500px, 36vw);
+  aspect-ratio: .58;
+  background-image: url("/wedding/decor/candelabra.webp");
+  opacity: .25;
+  transform: translate3d(0, calc((1 - var(--scene-progress)) * 12vh), 0) rotate(-4deg);
+}
+
+#confirmation::before {
+  right: 3vw;
+  bottom: -7vh;
+  width: min(400px, 31vw);
+  aspect-ratio: .42;
+  background-image: url("/wedding/decor/balloons.webp");
+  opacity: .3;
+  filter: brightness(2.15) saturate(.65);
+  transform: translate3d(0, calc((1 - var(--scene-progress)) * 15vh), 0) rotate(4deg);
+}
+
+.party-gate::before {
+  left: -4vw;
+  bottom: -8vh;
+  width: min(500px, 38vw);
+  aspect-ratio: .7;
+  background-image: url("/wedding/decor/cocktail.webp");
+  opacity: .28;
+  filter: brightness(2.1) saturate(.55);
+  transform: rotate(-8deg);
+}
+
+.party-scene--midnight::before {
+  top: -12vh;
+  right: 8vw;
+  width: min(520px, 42vw);
+  aspect-ratio: .67;
+  background-image: url("/wedding/decor/disco-ball.webp");
+  opacity: .34;
+  filter: brightness(2.2) saturate(.55) drop-shadow(0 24px 45px rgba(242, 182, 170, .14));
+  transform: rotate(5deg);
+  animation: supplied-disco-drift 7s ease-in-out infinite alternate;
+}
+
+@keyframes supplied-disco-drift {
+  from { translate: 0 -1.5vh; rotate: -2deg; }
+  to { translate: 1vw 2vh; rotate: 3deg; }
+}
+
+@media (max-width: 720px) {
+  #welcome::before { top: 14%; width: 88vw; opacity: .34; }
+  #invitation::before { background-position: left -25vw top 12%, right -25vw bottom 10%; background-size: 92vw auto, 92vw auto; opacity: .3; }
+  #rsvp::before { right: -22vw; width: 68vw; opacity: .18; }
+  #meal::before { top: 5%; left: -28vw; width: 85vw; opacity: .16; }
+  #wishes::before { left: -20vw; width: 68vw; opacity: .16; }
+  #confirmation::before { right: -12vw; width: 56vw; opacity: .22; }
+  .party-gate::before { left: -25vw; width: 75vw; opacity: .2; }
+  .party-scene--midnight::before { top: -4vh; right: -13vw; width: 66vw; opacity: .24; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #welcome::before,
+  #invitation::before,
+  #rsvp::before,
+  #meal::before,
+  #wishes::before,
+  #confirmation::before,
+  .party-gate::before,
+  .party-scene--midnight::before {
+    animation: none;
+    transform: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: none;
+  background: var(--parchment);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--parchment);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wedding-shell :where(p, label, input, select, textarea, button, a, small, legend) {
+  font-family: var(--font-body);
+}
+
+.wedding-shell :where(h1, h2),
+.wedding-shell .guest-name-label strong,
+.wedding-shell .guest-name-label input,
+.wedding-shell .invitation-card h2 span,
+.wedding-shell .script-kicker,
+.wedding-shell .wax-seal span {
+  font-family: var(--font-header);
+  font-style: normal;
+  font-weight: 400;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--berry);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wedding-shell {
+  overflow: clip;
+}
+
+.skip-experience {
+  position: fixed;
+  top: -5rem;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--wine);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition: top 180ms ease;
+}
+
+.skip-experience:focus {
+  top: 1rem;
+}
+
+.scene {
+  --scene-progress: 0;
+  position: relative;
+  min-height: 100svh;
+  padding: 8vh 5vw;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.scene--welcome,
+.scene--invitation {
+  min-height: 165svh;
+  padding-block: 0;
+  align-items: start;
+}
+
+.scene--welcome > .scene-content,
+.scene--invitation > .scene-content {
+  position: sticky;
+  top: 0;
+  min-height: 100svh;
+  padding-block: 8vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.scene::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(171, 83, 105, 0.2);
+  border-radius: 22px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.scene-content {
+  position: relative;
+  z-index: 2;
+  width: min(680px, 92vw);
+  text-align: center;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(42px) scale(0.985);
+  transition: opacity 1s ease, transform 1.1s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
+.is-visible .reveal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.eyebrow,
+.step-label {
+  margin: 0 0 1.2rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.primary-button,
+.party-button {
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  min-height: 52px;
+  padding: 0.95rem 1.55rem;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background: var(--berry);
+  color: var(--cream);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(142, 66, 88, 0.16);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.primary-button:hover,
+.party-button:hover {
+  transform: translateY(-2px);
+  background: #92485C;
+  box-shadow: 0 16px 34px rgba(142, 66, 88, 0.22);
+}
+
+.primary-button:disabled,
+.party-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100svh;
+  background: rgba(255, 255, 255, 0.18);
+  z-index: 20;
+}
+
+.scroll-progress i {
+  display: block;
+  width: 100%;
+  min-height: 6%;
+  background: var(--wine);
+  transition: height 700ms ease;
+}
+
+.scene-nav {
+  position: fixed;
+  left: 1.25rem;
+  top: 50%;
+  z-index: 20;
+  display: grid;
+  gap: 0.45rem;
+  transform: translateY(-50%);
+}
+
+.scene-nav button {
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scene-nav button span {
+  width: 5px;
+  height: 5px;
+  display: block;
+  border: 1px solid rgba(142, 66, 88, 0.7);
+  border-radius: 50%;
+  transition: width 200ms ease, height 200ms ease, background 200ms ease;
+}
+
+.scene-nav button.is-active span {
+  width: 11px;
+  height: 11px;
+  background: var(--berry);
+}
+
+.scene--welcome {
+  color: var(--cream);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 244, 229, 0.12), transparent 34%),
+    linear-gradient(150deg, #B98693 0%, #AB5369 48%, #9B5A63 100%);
+}
+
+.scene--welcome::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background-image: url("/wedding/overall-inspiration.jpg");
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: soft-light;
+  filter: blur(1px) saturate(0.4);
+}
+
+.scene--welcome::after {
+  border-color: rgba(255, 247, 236, 0.44);
+}
+
+.hero-content {
+  width: min(780px, 90vw);
+}
+
+.hero-content .eyebrow {
+  color: rgba(255, 247, 236, 0.82);
+}
+
+.hero-content h1 {
+  margin: 0;
+  font-size: clamp(4.2rem, 12vw, 9.2rem);
+  font-weight: 400;
+  line-height: 0.8;
+  letter-spacing: -0.065em;
+}
+
+.crescent {
+  margin: 0 auto 1rem;
+  width: 3.8rem;
+  color: #F3E9D3;
+  font-size: 4.6rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 18px rgba(255, 237, 197, 0.45));
+  animation: float 5s ease-in-out infinite;
+}
+
+.guest-name-label {
+  margin: 0.6rem auto 1.7rem;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.guest-name-label input {
+  width: min(610px, 76vw);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 247, 236, 0.5);
+  border-radius: 0;
+  padding: 0.15rem 0.5rem 0.28rem;
+  background: transparent;
+  color: var(--cream);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(2.7rem, 8vw, 6.2rem);
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.guest-name-label input:focus {
+  outline: 0;
+  border-color: var(--cream);
+}
+
+.guest-name-label em {
+  margin-left: -0.2rem;
+  padding-bottom: 0.2rem;
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  font-style: normal;
+}
+
+.hero-note {
+  margin: 0 auto 2rem;
+  max-width: 26rem;
+  color: rgba(255, 247, 236, 0.82);
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.scene--welcome .primary-button {
+  color: var(--wine);
+  background: var(--cream);
+}
+
+.scene--welcome .primary-button:hover {
+  background: white;
+}
+
+.scroll-cue {
+  position: absolute;
+  bottom: 4vh;
+  left: 50%;
+  margin: 0;
+  color: rgba(255, 247, 236, 0.7);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.61rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+}
+
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  color: #EFDFC2;
+  animation: twinkle 2.8s ease-in-out infinite;
+}
+
+.sparkle--one { top: 17%; left: 18%; font-size: 2rem; }
+.sparkle--two { top: 30%; right: 17%; font-size: 1.2rem; animation-delay: 0.8s; }
+.sparkle--three { bottom: 19%; right: 23%; font-size: 1.7rem; animation-delay: 1.3s; }
+.sparkle--four { bottom: 28%; left: 16%; font-size: 1rem; animation-delay: 0.4s; }
+
+.orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(64vw, 690px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 243, 211, 0.18);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-16deg) scaleY(0.56);
+}
+
+.corner-flourish {
+  position: absolute;
+  top: 5vh;
+  width: 17vw;
+  height: 22vh;
+  border-top: 1px solid rgba(255, 244, 224, 0.35);
+}
+
+.corner-flourish::before,
+.corner-flourish::after {
+  content: "";
+  position: absolute;
+  width: 44%;
+  height: 44%;
+  border: 1px solid rgba(255, 244, 224, 0.32);
+  border-radius: 100% 0 100% 0;
+}
+
+.corner-flourish--left { left: 4vw; border-left: 1px solid rgba(255, 244, 224, 0.35); border-radius: 70px 0 0; }
+.corner-flourish--right { right: 4vw; border-right: 1px solid rgba(255, 244, 224, 0.35); border-radius: 0 70px 0 0; }
+.corner-flourish--left::before { top: 1rem; left: 1rem; }
+.corner-flourish--left::after { top: 3rem; left: 3rem; transform: scale(0.7) rotate(15deg); }
+.corner-flourish--right::before { top: 1rem; right: 1rem; transform: scaleX(-1); }
+.corner-flourish--right::after { top: 3rem; right: 3rem; transform: scale(-0.7, 0.7) rotate(15deg); }
+
+.scene--invitation {
+  background: #fffbed;
+}
+
+.scene-art {
+  position: absolute;
+  z-index: -1;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
+.depth-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.depth-layer--far {
+  opacity: 0.24;
+  background:
+    radial-gradient(circle at 24% 30%, transparent 0 8%, rgba(255, 241, 220, 0.55) 8.4% 8.8%, transparent 9.2%),
+    radial-gradient(circle at 74% 68%, transparent 0 11%, rgba(255, 241, 220, 0.4) 11.4% 11.7%, transparent 12.1%);
+  transform: translate(calc(var(--pointer-x) * -5px), calc(var(--pointer-y) * -4px)) scale(calc(1 + var(--scene-progress) * 0.05));
+}
+
+.depth-layer--mid {
+  inset: 8% 5%;
+  border: 1px solid rgba(255, 241, 220, 0.2);
+  border-radius: 48% 48% 12% 12%;
+  transform: translate(calc(var(--pointer-x) * 9px), calc(var(--pointer-y) * 7px)) scale(calc(0.9 + var(--scene-progress) * 0.18)) rotate(calc(-4deg + var(--scene-progress) * 8deg));
+}
+
+.depth-layer--front::before,
+.depth-layer--front::after {
+  content: "";
+  position: absolute;
+  bottom: -12vh;
+  width: 34vw;
+  height: 52vh;
+  border: 1px solid rgba(255, 239, 218, 0.25);
+  border-radius: 80% 18% 72% 20%;
+  background: linear-gradient(150deg, rgba(255, 235, 214, 0.08), transparent);
+  filter: blur(calc(var(--scene-progress) * 1.5px));
+}
+
+.depth-layer--front::before {
+  left: -15vw;
+  transform: translate(calc(var(--pointer-x) * 18px + var(--scene-progress) * -6vw), calc(var(--pointer-y) * 13px)) rotate(calc(-18deg + var(--scene-progress) * -12deg)) scale(calc(1 + var(--scene-progress) * 0.55));
+}
+
+.depth-layer--front::after {
+  right: -15vw;
+  transform: translate(calc(var(--pointer-x) * -18px + var(--scene-progress) * 6vw), calc(var(--pointer-y) * -13px)) rotate(calc(18deg + var(--scene-progress) * 12deg)) scale(calc(1 + var(--scene-progress) * 0.55));
+}
+
+.scene-art--floral {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.86;
+  mix-blend-mode: multiply;
+  transform: translate(calc(var(--pointer-x) * -5px), calc(var(--pointer-y) * -4px)) scale(calc(0.96 + var(--scene-progress) * 0.15));
+}
+
+.floating-bloom {
+  top: 18%;
+  width: min(460px, 44vw);
+  height: 68%;
+  object-fit: cover;
+  opacity: calc(0.14 + var(--scene-progress) * 0.18);
+  mix-blend-mode: multiply;
+  filter: blur(1px);
+}
+
+.floating-bloom--left {
+  left: -21vw;
+  object-position: right center;
+  transform: translate(calc(var(--pointer-x) * 12px + var(--scene-progress) * 13vw), calc(var(--pointer-y) * 8px)) rotate(calc(-8deg + var(--scene-progress) * 8deg)) scale(calc(0.8 + var(--scene-progress) * 0.5));
+}
+
+.floating-bloom--right {
+  right: -21vw;
+  object-position: left center;
+  transform: translate(calc(var(--pointer-x) * -12px + var(--scene-progress) * -13vw), calc(var(--pointer-y) * -8px)) rotate(calc(8deg + var(--scene-progress) * -8deg)) scale(calc(0.8 + var(--scene-progress) * 0.5)) scaleX(-1);
+}
+
+.invitation-card {
+  padding: clamp(2rem, 5vw, 4.8rem) clamp(1.3rem, 6vw, 5.2rem);
+}
+
+.invitation-line {
+  margin: 0 auto 0.7rem;
+  max-width: 25rem;
+  font-style: italic;
+  line-height: 1.65;
+}
+
+.invitation-card h2,
+.form-card h2,
+.dress-card h2,
+.wishes-card h2,
+.confirmation-card h2 {
+  margin: 0;
+  color: var(--berry);
+  font-size: clamp(2.8rem, 7vw, 5.8rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.invitation-card h2 span {
+  display: block;
+  margin: 0.15rem 0;
+  color: var(--coral);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.68em;
+}
+
+.ribbon-divider {
+  margin: 1.5rem auto;
+  display: flex;
+  width: min(270px, 70%);
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--coral);
+}
+
+.ribbon-divider span {
+  height: 1px;
+  flex: 1;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.ribbon-divider b {
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.event-details {
+  margin: 0 auto 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 560px;
+  border-block: 1px solid rgba(171, 83, 105, 0.24);
+}
+
+.event-details p {
+  margin: 0.85rem 0;
+  padding: 0.1rem 0.8rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.event-details p + p {
+  border-left: 1px solid rgba(171, 83, 105, 0.2);
+}
+
+.event-details strong {
+  color: var(--berry);
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.event-details span {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.61rem;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.scene--paper {
+  background:
+    linear-gradient(rgba(255, 250, 243, 0.91), rgba(255, 250, 243, 0.91)),
+    radial-gradient(circle at 30% 20%, var(--fairy), transparent 35%);
+}
+
+.scene-art--dinner {
+  bottom: -1.5rem;
+  left: 50%;
+  width: min(700px, 83vw);
+  max-height: 42vh;
+  object-fit: contain;
+  object-position: bottom;
+  opacity: 0.48;
+  mix-blend-mode: multiply;
+  transform: translateX(-50%) translateY(calc((1 - var(--scene-progress)) * 8vh)) scale(calc(0.9 + var(--scene-progress) * 0.18));
+}
+
+.form-card {
+  padding: clamp(1.6rem, 4vw, 2.7rem);
+  border: 1px solid rgba(171, 83, 105, 0.24);
+  border-radius: 30px;
+  background: rgba(255, 250, 243, 0.86);
+  box-shadow: 0 30px 80px rgba(171, 83, 105, 0.11);
+  backdrop-filter: blur(8px);
+}
+
+.form-card h2 {
+  font-size: clamp(2.7rem, 6vw, 4.6rem);
+}
+
+.section-intro {
+  margin: 0.8rem auto 1.6rem;
+  color: rgba(142, 66, 88, 0.74);
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.field-grid label,
+.full-field,
+.wishes-card label,
+.secret-card label {
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.field-grid label > span,
+.full-field > span,
+.secret-card label > span {
+  padding-left: 0.15rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.field-grid input,
+.full-field input,
+.full-field textarea,
+.wishes-card textarea,
+.secret-card input {
+  width: 100%;
+  border: 1px solid rgba(171, 83, 105, 0.27);
+  border-radius: 8px;
+  min-height: 48px;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--ink);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.field-grid input:focus,
+.full-field input:focus,
+.full-field textarea:focus,
+.wishes-card textarea:focus,
+.secret-card input:focus {
+  outline: 0;
+  border-color: var(--berry);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(160, 80, 102, 0.12);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.choice-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-card {
+  position: relative;
+  min-height: 112px;
+  padding: 1.1rem;
+  border: 1px solid rgba(171, 83, 105, 0.25);
+  border-radius: 18px;
+  display: grid;
+  place-content: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.choice-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--coral);
+}
+
+.choice-card.is-selected {
+  border-color: var(--berry);
+  background: #f7dcd8;
+  box-shadow: inset 0 0 0 1px var(--berry), 0 10px 28px rgba(171, 83, 105, 0.1);
+}
+
+.choice-card strong {
+  color: var(--berry);
+  font-size: 1.12rem;
+  font-weight: 400;
+}
+
+.choice-card small {
+  color: rgba(142, 66, 88, 0.65);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.68rem;
+}
+
+.choice-mark {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid rgba(171, 83, 105, 0.35);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.7rem;
+}
+
+.choice-card.is-selected .choice-mark {
+  color: white;
+  background: var(--berry);
+}
+
+.full-field {
+  margin: 0.9rem 0 1rem;
+}
+
+.form-card > .primary-button,
+.wishes-card > .primary-button {
+  margin-top: 0.35rem;
+}
+
+.form-error {
+  margin: 0.7rem 0;
+  color: #8E4258;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.slide-open {
+  animation: slideOpen 420ms ease both;
+}
+
+.scene--blush {
+  color: var(--cream);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 237, 224, 0.18), transparent 34%),
+    linear-gradient(145deg, #B57783, #9B5A63);
+}
+
+.scene--blush::after {
+  border-color: rgba(255, 247, 236, 0.42);
+}
+
+.scene-art--wide-frame {
+  top: 50%;
+  left: 50%;
+  width: min(750px, 95vw);
+  opacity: 0.24;
+  mix-blend-mode: screen;
+  transform: translate(calc(-50% + var(--pointer-x) * 8px), calc(-50% + var(--pointer-y) * 6px)) scale(calc(1.18 + var(--scene-progress) * 0.22)) rotate(calc(-2deg + var(--scene-progress) * 4deg));
+}
+
+.dress-card {
+  max-width: 600px;
+  padding: 2.5rem 2rem;
+}
+
+.dress-card h2 {
+  color: var(--cream);
+  font-size: clamp(4rem, 10vw, 7.2rem);
+}
+
+.dress-card > p:not(.step-label):not(.script-kicker) {
+  margin: 0 auto 1.3rem;
+  max-width: 31rem;
+  color: rgba(255, 247, 236, 0.82);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.script-kicker {
+  margin: 0 0 0.5rem;
+  color: #F2E4DC;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(1.7rem, 5vw, 2.8rem);
+}
+
+.scene--blush .ribbon-divider,
+.scene--blush .step-label {
+  color: #F2E7D9;
+}
+
+.swatches {
+  margin: 1.3rem auto 0.7rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.swatches span {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.48);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(142, 66, 88, 0.12);
+}.dress-card .primary-button {
+  margin-top: 1.7rem;
+  color: var(--wine);
+  background: var(--cream);
+}
+
+.scene--meal {
+  padding-bottom: 18vh;
+}
+
+.scene-art--feast {
+  bottom: -1px;
+  left: 50%;
+  width: min(900px, 100vw);
+  max-height: 43vh;
+  object-fit: contain;
+  object-position: bottom;
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+  transform: translateX(-50%) translateY(calc((1 - var(--scene-progress)) * 10vh)) scale(calc(0.9 + var(--scene-progress) * 0.2));
+}
+
+.scene--pearl {
+  background: linear-gradient(130deg, #f6dedb, #fff9f2 50%, #edd5d8);
+}
+
+.scene-art--pearl {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  transform: translate(calc(var(--pointer-x) * -5px), calc(var(--pointer-y) * -4px)) scale(calc(1.02 + var(--scene-progress) * 0.08));
+}
+
+.form-card--glass {
+  background: rgba(255, 250, 243, 0.76);
+  backdrop-filter: blur(18px);
+}
+
+fieldset {
+  margin: 1rem 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  margin-bottom: 0.65rem;
+  color: var(--ink);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 4px;
+  border: 1px solid rgba(171, 83, 105, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.segmented-control button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.68rem 0.8rem;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease;
+}
+
+.segmented-control button.is-selected {
+  color: white;
+  background: var(--berry);
+}
+
+.travel-details {
+  margin-top: 0.5rem;
+  padding-top: 0.2rem;
+}
+
+.help-note {
+  margin: 0.6rem 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(216, 192, 180, 0.25);
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.scene--wishes {
+  background: #fffdfa;
+}
+
+.scene-art--tall-frame {
+  top: 50%;
+  left: 50%;
+  width: min(720px, 91vw);
+  height: 92vh;
+  object-fit: contain;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+  transform: translate(calc(-50% + var(--pointer-x) * 5px), calc(-50% + var(--pointer-y) * 4px)) scale(calc(0.96 + var(--scene-progress) * 0.1));
+}
+
+.party-rsvp-list,
+.guest-meal-list {
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.party-rsvp-list fieldset,
+.guest-meal-list fieldset {
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(171, 83, 105, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.party-rsvp-list legend,
+.guest-meal-list legend {
+  margin: 0;
+  padding: 0 0.3rem;
+  color: var(--berry);
+  font-size: 1rem;
+}
+
+.guest-meal-list .choice-card {
+  min-height: 88px;
+}
+
+.after-party-reveal {
+  margin: 1.5rem auto 0;
+  width: fit-content;
+  border-bottom: 1px solid rgba(255, 231, 201, 0.55);
+  padding: 0.5rem 0;
+  display: block;
+  color: #EFE2CC;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.invitation-loading,
+.invitation-invalid {
+  min-height: 100svh;
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  color: var(--wine);
+  background: radial-gradient(circle, #fffaf4, #f1d7d4);
+  text-align: center;
+}
+
+.invitation-loading p,
+.invitation-invalid p {
+  margin: 0;
+  color: rgba(142, 66, 88, 0.7);
+  font-style: italic;
+}
+
+.invitation-loading > i {
+  width: 130px;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(142, 66, 88, 0.18);
+}
+
+.invitation-loading > i::after {
+  content: "";
+  width: 45%;
+  height: 100%;
+  display: block;
+  background: var(--coral);
+  animation: invitationLoad 1.5s ease-in-out infinite;
+}
+
+.invitation-invalid > span {
+  color: var(--coral);
+  font-size: 2rem;
+}
+
+.invitation-invalid h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 7vw, 4rem);
+  font-weight: 400;
+}
+
+.invitation-invalid a {
+  margin-top: 0.5rem;
+  color: var(--wine);
+}
+
+@keyframes invitationLoad {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(230%); }
+}
+
+.wishes-card {
+  width: min(510px, 75vw);
+  padding-top: 6vh;
+}
+
+.wishes-card h2 {
+  font-size: clamp(2.4rem, 6vw, 4.3rem);
+}
+
+.wishes-card textarea {
+  min-height: 150px;
+  margin: 1.4rem 0 0.6rem;
+  border: 0;
+  border-bottom: 1px solid rgba(171, 83, 105, 0.4);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.54);
+  line-height: 1.55;
+}
+
+.privacy-note {
+  margin: 1rem auto 0;
+  display: block;
+  max-width: 22rem;
+  color: rgba(142, 66, 88, 0.58);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.63rem;
+  line-height: 1.5;
+}
+
+.scene--confirmation {
+  color: var(--cream);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(241, 230, 221, 0.17), transparent 27%),
+    linear-gradient(145deg, #92485C, #713748 70%);
+}
+
+.scene--confirmation::after {
+  border-color: rgba(255, 247, 236, 0.35);
+}
+
+.confirmation-card {
+  max-width: 620px;
+}
+
+.confirmation-card h2 {
+  color: var(--cream);
+}
+
+.confirmation-card > p:not(.eyebrow) {
+  margin: 1.5rem auto;
+  max-width: 31rem;
+  color: rgba(255, 247, 236, 0.78);
+  line-height: 1.75;
+}
+
+.wax-seal {
+  margin: 0 auto 1.5rem;
+  width: 5rem;
+  height: 5rem;
+  border: 1px solid rgba(255, 240, 219, 0.52);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* tracking adds a trailing gap after the final letter, which reads as the
+     text sitting left of centre inside a circle — pull it back by half */
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+  line-height: 1;
+  color: #EFE2CC;
+  font-size: 1.25rem;
+  box-shadow: inset 0 0 0 5px rgba(255, 240, 219, 0.06), 0 0 30px rgba(255, 223, 187, 0.12);
+}
+
+.wax-seal span {
+  margin-inline: -0.1rem;
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+.confirmation-details {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  color: #EFE2CC;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.confirmation-details span + span::before {
+  content: "·";
+  margin-right: 1rem;
+}
+
+.text-button {
+  margin-top: 2rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 247, 236, 0.42);
+  padding: 0.35rem 0;
+  background: transparent;
+  color: var(--cream);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+/* Secret after-party route */
+.after-party {
+  color: #ffece6;
+  background: #241E1C;
+}
+
+.party-scene {
+  position: relative;
+  min-height: 100svh;
+  padding: 7vh 6vw;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.party-scene::after {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid rgba(255, 218, 207, 0.18);
+  border-radius: 22px;
+  pointer-events: none;
+}
+
+.party-gate {
+  background:
+    radial-gradient(circle at center, rgba(160, 80, 102, 0.3), transparent 36%),
+    linear-gradient(145deg, #8E4258, #241E1C 72%);
+}
+
+.party-glass {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.2;
+  mix-blend-mode: screen;
+  filter: saturate(0.35) contrast(1.1);
+}
+
+.party-stars {
+  position: absolute;
+  top: 7vh;
+  left: 50%;
+  color: #f6ccb5;
+  letter-spacing: 0.6em;
+  transform: translateX(-50%);
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.secret-card,
+.party-copy {
+  position: relative;
+  z-index: 2;
+  width: min(560px, 90vw);
+  text-align: center;
+}
+
+.secret-card {
+  padding: clamp(2rem, 6vw, 4.5rem);
+  border: 1px solid rgba(255, 226, 214, 0.27);
+  border-radius: 30px;
+  background: rgba(42, 42, 42, 0.76);
+  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px);
+}
+
+.secret-key {
+  margin-bottom: 1rem;
+  display: block;
+  color: #f0bd9d;
+  font-size: 2.2rem;
+}
+
+.secret-card h1,
+.party-copy h2 {
+  margin: 0 0 1.7rem;
+  color: #fff2e9;
+  font-size: clamp(3rem, 8vw, 6.4rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.secret-card label {
+  width: min(380px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.secret-card label > span {
+  color: rgba(255, 236, 230, 0.78);
+}
+
+.secret-card input {
+  border-color: rgba(255, 225, 213, 0.3);
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  text-align: center;
+}
+
+.secret-card input::placeholder {
+  color: rgba(255, 236, 230, 0.37);
+}
+
+.secret-card .party-button {
+  margin-top: 1.2rem;
+  color: #3A2C2A;
+  background: #f4c8b6;
+}
+
+.secret-card .form-error {
+  color: #ffc7cf;
+}
+
+.party-nav {
+  position: fixed;
+  bottom: 1.4rem;
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  gap: 0.65rem;
+  transform: translateX(-50%);
+}
+
+.party-nav button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid #f4c8b6;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.party-nav button.is-active {
+  background: #f4c8b6;
+  transform: scale(1.4);
+}
+
+.party-scene--midnight {
+  background:
+    radial-gradient(circle at 73% 25%, rgba(255, 218, 188, 0.13), transparent 22%),
+    linear-gradient(150deg, #2A2A2A, #241E1C);
+}
+
+.party-moon {
+  position: absolute;
+  top: 5vh;
+  right: 11vw;
+  color: #ffdabb;
+  font-size: min(30vw, 17rem);
+  line-height: 1;
+  opacity: 0.13;
+  filter: drop-shadow(0 0 30px rgba(255, 216, 179, 0.2));
+  animation: float 7s ease-in-out infinite;
+}
+
+.party-copy > p:not(.eyebrow) {
+  margin: 0 auto 2rem;
+  max-width: 29rem;
+  color: rgba(255, 236, 230, 0.68);
+  line-height: 1.75;
+}
+
+.party-button {
+  text-decoration: none;
+  color: #3A2C2A;
+  background: #f4c8b6;
+}
+
+.party-scene--details {
+  background: linear-gradient(135deg, #713748, #241E1C);
+}
+
+.party-glass--details {
+  opacity: 0.14;
+  mix-blend-mode: screen;
+}
+
+.party-copy--card {
+  padding: clamp(2rem, 5vw, 4rem);
+  border: 1px solid rgba(255, 228, 215, 0.22);
+  border-radius: 200px 200px 26px 26px;
+  background: rgba(42, 42, 42, 0.58);
+  backdrop-filter: blur(12px);
+}
+
+.party-copy--card h2 {
+  font-size: clamp(3rem, 8vw, 5.3rem);
+}
+
+.party-detail-list {
+  margin: 0 auto 1.5rem;
+  border-block: 1px solid rgba(255, 225, 212, 0.18);
+}
+
+.party-detail-list p {
+  margin: 0;
+  padding: 0.9rem 0;
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 1rem;
+  text-align: left;
+}
+
+.party-detail-list p + p {
+  border-top: 1px solid rgba(255, 225, 212, 0.12);
+}
+
+.party-detail-list span {
+  color: #eebaa6;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.party-detail-list strong {
+  color: #fff0e8;
+  font-weight: 400;
+}
+
+.party-copy .secret-note {
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.party-scene--finale {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(160, 80, 102, 0.3), transparent 25%),
+    linear-gradient(160deg, #241E1C, #713748);
+}
+
+.party-fireworks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.party-fireworks i {
+  position: absolute;
+  color: #f8cbb1;
+  font-style: normal;
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+
+.party-fireworks i:nth-child(1) { top: 15%; left: 16%; font-size: 3rem; }
+.party-fireworks i:nth-child(2) { top: 23%; right: 18%; font-size: 2rem; animation-delay: 0.6s; }
+.party-fireworks i:nth-child(3) { bottom: 17%; right: 24%; font-size: 2.7rem; animation-delay: 1.2s; }
+.party-fireworks i:nth-child(4) { bottom: 28%; left: 20%; font-size: 1.5rem; animation-delay: 0.3s; }
+.party-fireworks i:nth-child(5) { top: 9%; left: 51%; font-size: 1rem; animation-delay: 1.5s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.8) rotate(0); }
+  50% { opacity: 1; transform: scale(1.15) rotate(8deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
+
+@keyframes slideOpen {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 720px) {
+  html {
+  scroll-snap-type: none;
+  }
+
+  .scene {
+    min-height: 100svh;
+    padding: 5rem 1.3rem 4rem;
+  }
+
+  .scene--welcome,
+  .scene--invitation {
+    min-height: 125svh;
+    padding-block: 0;
+  }
+
+  .scene--welcome > .scene-content,
+  .scene--invitation > .scene-content {
+    padding-inline: 1.3rem;
+  }
+
+  .floating-bloom {
+    display: none;
+  }
+
+  .scene::after,
+  .party-scene::after {
+    inset: 8px;
+    border-radius: 18px;
+  }
+
+  .scene-nav {
+    top: auto;
+    bottom: 1rem;
+    left: 50%;
+    display: flex;
+    gap: 0.15rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(255, 250, 243, 0.7);
+    box-shadow: 0 4px 16px rgba(142, 66, 88, 0.08);
+    backdrop-filter: blur(8px);
+    transform: translateX(-50%);
+  }
+
+  .scene-nav button {
+    width: 23px;
+    height: 23px;
+  }
+
+  .scene-nav button.is-active span {
+    width: 9px;
+    height: 9px;
+  }
+
+  .corner-flourish {
+    width: 27vw;
+    height: 15vh;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+
+  .scene-art--floral {
+    width: 118%;
+    left: -9%;
+    object-fit: cover;
+    opacity: 0.58;
+  }
+
+  .invitation-card {
+    padding: 2rem 1rem;
+    border-radius: 130px 130px 25px 25px;
+    background: rgba(255, 251, 237, 0.56);
+    backdrop-filter: blur(4px);
+  }
+
+  .event-details {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+  }
+
+  .event-details p {
+    margin: 0;
+    padding: 0.65rem;
+  }
+
+  .event-details p + p {
+    border-top: 1px solid rgba(171, 83, 105, 0.2);
+    border-left: 0;
+  }
+
+  .form-card {
+    width: min(100%, 560px);
+    padding: 1.4rem 1rem;
+    border-radius: 22px;
+  }
+
+  .field-grid,
+  .choice-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .choice-card {
+    min-height: 86px;
+  }
+
+  .scene--meal {
+    padding-bottom: 7rem;
+  }
+
+  .scene-art--dinner,
+  .scene-art--feast {
+    opacity: 0.18;
+  }
+
+  .scene-art--tall-frame {
+    width: 125vw;
+    height: 98vh;
+    opacity: 0.6;
+  }
+
+  .wishes-card {
+    width: 82vw;
+    padding-top: 3vh;
+  }
+
+  .confirmation-details {
+    display: grid;
+  }
+
+  .confirmation-details span + span::before {
+    content: none;
+  }
+
+  .party-scene {
+    padding: 4.5rem 1.2rem;
+  }
+
+  .party-copy--card {
+    padding: 3.2rem 1.3rem 2rem;
+    border-radius: 130px 130px 22px 22px;
+  }
+
+  .party-detail-list p {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+    text-align: center;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 721px) {
+  .scene {
+    padding-block: 3rem;
+  }
+
+  .form-card {
+    transform: scale(0.9);
+  }
+
+  .scene-art--tall-frame {
+    height: 98vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .scene--welcome,
+  .scene--invitation {
+    min-height: 100svh;
+  }
+
+  .depth-layer,
+  .scene-art {
+    transform: none !important;
+  }
+}
+
+/* Scroll-linked cinematic prologue. All illustrated layers are supplied artwork. */
+.scene--cinematic {
+  --welcome-intro: 1;
+  --welcome-names: 0;
+  --welcome-date: 0;
+  --welcome-portal: 0;
+  display: block;
+  min-height: 560svh;
+  padding: 0;
+  overflow: visible;
+  color: #FAF6F2;
+  background: #5C3A35;
+}
+
+.scene--cinematic > :not(.cinematic-stage) {
+  display: none !important;
+}
+
+#welcome.scene--cinematic::before,
+#welcome.scene--cinematic::after {
+  content: none;
+}
+
+.cinematic-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #5C3A35;
+}
+
+.cinematic-film,
+.cinematic-film-wash,
+.cinematic-layer,
+.cinematic-portal,
+.cinematic-copy {
+  position: absolute;
+  will-change: transform, opacity, filter;
+}
+
+.cinematic-film {
+  inset: -4%;
+  z-index: 0;
+  width: 108%;
+  height: 108%;
+  object-fit: cover;
+  object-position: center;
+  opacity: calc(.56 + var(--welcome-portal) * .28);
+  filter: saturate(.76) contrast(.96) sepia(.12) brightness(.75);
+  transform: translate3d(calc(var(--pointer-x) * -7px), calc(var(--pointer-y) * -5px), 0) scale(calc(1.02 + var(--welcome-portal) * .34));
+  transform-origin: 50% 48%;
+}
+
+.cinematic-film-wash {
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(255, 241, 217, calc(.15 - var(--welcome-portal) * .08)) 0 13%, transparent 43%),
+    linear-gradient(180deg, rgba(74, 52, 47, .58), rgba(107, 74, 80, calc(.46 - var(--welcome-portal) * .18)) 56%, rgba(160, 80, 102, .48)),
+    linear-gradient(90deg, rgba(74, 52, 47, .56), transparent 28% 72%, rgba(74, 52, 47, .56));
+  box-shadow: inset 0 0 14vw rgba(74, 52, 47, .5);
+}
+
+.cinematic-layer {
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  filter: sepia(.16) saturate(.88) drop-shadow(0 24px 38px rgba(42, 42, 42, .26));
+}
+
+.cinematic-layer--far {
+  top: -6vh;
+  left: 50%;
+  width: min(960px, 76vw);
+  opacity: calc(.38 - var(--welcome-portal) * .24);
+  transform: translate3d(calc(-50% + var(--pointer-x) * -5px), calc(var(--welcome-portal) * -14vh + var(--pointer-y) * -3px), 0) scale(calc(.86 + var(--welcome-portal) * .2));
+}
+
+.cinematic-layer--left {
+  left: -7vw;
+  bottom: -17vh;
+  width: min(590px, 43vw);
+  opacity: calc(.45 - var(--welcome-portal) * .18);
+  transform: translate3d(calc(var(--welcome-portal) * -20vw + var(--pointer-x) * 18px), calc(var(--welcome-portal) * 9vh + var(--pointer-y) * 10px), 0) rotate(calc(-8deg - var(--welcome-portal) * 7deg)) scale(calc(.92 + var(--welcome-portal) * .52));
+  transform-origin: 25% 86%;
+}
+
+.cinematic-layer--right {
+  right: -10vw;
+  bottom: -17vh;
+  width: min(720px, 52vw);
+  opacity: calc(.4 - var(--welcome-portal) * .15);
+  transform: translate3d(calc(var(--welcome-portal) * 21vw + var(--pointer-x) * -20px), calc(var(--welcome-portal) * 8vh + var(--pointer-y) * -10px), 0) rotate(calc(9deg + var(--welcome-portal) * 8deg)) scale(calc(.88 + var(--welcome-portal) * .56));
+  transform-origin: 78% 86%;
+}
+
+.cinematic-portal {
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: min(calc(24vw + var(--welcome-portal) * 62vw), 1120px);
+  height: min(calc(46vh + var(--welcome-portal) * 42vh), 880px);
+  border: 1px solid rgba(255, 239, 213, calc(.52 - var(--welcome-portal) * .2));
+  border-radius: 48% 48% 11% 11% / 36% 36% 8% 8%;
+  opacity: calc(.74 - var(--welcome-portal) * .28);
+  transform: translate3d(-50%, -50%, 0) scale(calc(.78 + var(--welcome-portal) * .36));
+  box-shadow: 0 0 0 1px rgba(255, 244, 221, .1), 0 0 90px rgba(205, 186, 154, .16), inset 0 0 90px rgba(255, 239, 213, .08);
+}
+
+.cinematic-portal::before,
+.cinematic-portal::after,
+.cinematic-portal span {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(255, 239, 213, .2);
+  border-radius: inherit;
+}
+
+.cinematic-portal::after { inset: 25px; opacity: .55; }
+.cinematic-portal span { inset: auto 50% -14px auto; width: 66%; height: 28px; border-radius: 50%; transform: translateX(50%); }
+
+.cinematic-copy {
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: min(780px, 88vw);
+  text-align: center;
+  text-shadow: 0 3px 30px rgba(74, 52, 47, .62);
+}
+
+.cinematic-copy .eyebrow {
+  color: rgba(255, 248, 234, .78);
+}
+
+.cinematic-copy h1,
+.cinematic-copy h2 {
+  margin: 0;
+  color: #FAF6F2;
+  font-weight: 400;
+  letter-spacing: -.055em;
+}
+
+.cinematic-copy h1 { font-size: clamp(4.4rem, 12vw, 9.8rem); line-height: .78; }
+.cinematic-copy h2 { font-size: clamp(4rem, 10vw, 8.6rem); line-height: .82; }
+.cinematic-copy h2 span { color: #f1bfc2; font-family: var(--font-header); font-size: .78em; }
+.cinematic-copy > p:not(.eyebrow) { margin: 1.6rem auto 0; max-width: 34rem; color: rgba(255, 248, 234, .88); font-size: clamp(1rem, 1.8vw, 1.22rem); font-style: italic; line-height: 1.55; }
+
+.cinematic-copy--intro {
+  opacity: var(--welcome-intro);
+  transform: translate3d(-50%, calc(-50% - var(--scene-progress) * 17vh), 0) scale(calc(1 - var(--scene-progress) * .1));
+}
+
+.cinematic-copy--names {
+  opacity: var(--welcome-names);
+  transform: translate3d(-50%, calc(-48% + (1 - var(--welcome-names)) * 8vh), 0) scale(calc(.9 + var(--welcome-names) * .1));
+}
+
+.cinematic-copy--date {
+  opacity: var(--welcome-date);
+  transform: translate3d(-50%, calc(-47% + (1 - var(--welcome-date)) * 10vh), 0) scale(calc(.9 + var(--welcome-date) * .1));
+}
+
+.cinematic-copy--date > p:not(.eyebrow) { max-width: 29rem; }
+.cinematic-copy--date .primary-button { margin-top: 1.7rem; color: var(--wine); background: #FAF6F2; }
+.cinematic-copy--date .primary-button:hover { background: #fff; }
+
+.cinematic-stage .guest-name-label { margin-bottom: 1.4rem; }
+.cinematic-stage .guest-name-label strong { font-family: var(--font-header); font-style: normal; font-weight: 400; }
+.cinematic-stage .scroll-cue { z-index: 6; display: flex; align-items: center; gap: .75rem; opacity: calc(1 - var(--scene-progress) * 4); white-space: nowrap; }
+.cinematic-stage .scroll-cue span { width: 32px; height: 1px; display: block; background: currentColor; }
+
+@media (max-width: 720px) {
+  .scene--cinematic { min-height: 380svh; }
+  .cinematic-stage { min-height: 580px; }
+  .cinematic-film { inset: -2%; width: 104%; height: 104%; }
+  .cinematic-layer--far { top: 0; width: 108vw; opacity: calc(.28 - var(--welcome-portal) * .2); }
+  .cinematic-layer--left { left: -28vw; bottom: -8vh; width: 78vw; opacity: calc(.3 - var(--welcome-portal) * .16); }
+  .cinematic-layer--right { display: none; }
+  .cinematic-portal { width: calc(56vw + var(--welcome-portal) * 60vw); height: calc(48vh + var(--welcome-portal) * 36vh); }
+  .cinematic-copy { width: min(88vw, 580px); }
+  .cinematic-copy h2 { font-size: clamp(3.35rem, 16vw, 5.2rem); }
+  .cinematic-copy--date > p:not(.eyebrow) { max-width: 20rem; }
+  .cinematic-stage .scroll-cue { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene--cinematic { min-height: 100svh; }
+  .cinematic-stage { position: relative; }
+  .cinematic-film { transform: none; }
+  .cinematic-layer { display: none; }
+  .cinematic-portal { width: min(76vw, 720px); height: 76vh; opacity: .52; transform: translate3d(-50%, -50%, 0); }
+  .cinematic-copy--intro { top: 42%; opacity: 1; transform: translate3d(-50%, -50%, 0); }
+  .cinematic-copy--names { display: none; }
+  .cinematic-copy--date { top: auto; bottom: 6vh; opacity: 1; transform: translateX(-50%); }
+  .cinematic-copy--date .eyebrow,
+  .cinematic-copy--date h2,
+  .cinematic-copy--date > p { display: none; }
+  .cinematic-stage .scroll-cue { display: none; }
+}
+
+/* Final public-page palette lock. Keep this after the cinematic module. */
+.wedding-shell--storybook { --enchanted: var(--coral); --enchanted-dark: var(--manhattan); --lantern: var(--fairy); }
+.wedding-shell--storybook .scene--welcome,
+.scene--cinematic,
+.cinematic-stage {
+  color: var(--ink);
+  background: radial-gradient(circle at 50% 35%, rgba(239,211,203,.96) 0 22%, rgba(221,168,165,.58) 54%, transparent 76%), linear-gradient(150deg, var(--fairy) 0%, var(--pastel) 48%, var(--rhapsodic) 76%, var(--coral) 100%);
+}
+.wedding-shell--storybook .hero-content,
+.wedding-shell--storybook .hero-content h1,
+.wedding-shell--storybook .hero-content .guest-name-label { color: var(--ink); text-shadow: 0 3px 24px rgba(239,211,203,.82); }
+.scene--invitation,
+.scene--paper,
+.scene--pearl,
+.scene--wishes { background: radial-gradient(circle at 18% 15%, rgba(221,168,165,.32), transparent 32%), linear-gradient(145deg, var(--fairy), rgba(239,211,203,.55)); }
+.scene--blush { color: var(--ink); background: radial-gradient(circle at 50% 50%, rgba(239,211,203,.7), transparent 38%), linear-gradient(145deg, var(--pastel), var(--rhapsodic)); }
+.scene--blush::after { border-color: rgba(190,106,121,.42); }
+.dress-card h2 { color: var(--ink); }
+.dress-card > p:not(.step-label):not(.script-kicker) { color: rgba(87,45,57,.82); }
+.script-kicker,
+.scene--blush .ribbon-divider,
+.scene--blush .step-label { color: var(--manhattan); }
+.swatches [title="Enchanted green"] { background: var(--manhattan) !important; }
+.wedding-shell--storybook .primary-button { color: var(--fairy); background: var(--manhattan); box-shadow: 0 12px 28px rgba(190,106,121,.2); }
+.wedding-shell--storybook .primary-button:hover,
+.wedding-shell--storybook .primary-button:focus-visible { background: var(--coral); }
+
+.scene--venue { color: var(--ink); background: linear-gradient(135deg, var(--fairy), var(--pastel) 52%, var(--rhapsodic)); }
+.venue-map::after { background: linear-gradient(90deg, rgba(239,211,203,.12), rgba(239,211,203,.78) 66%, rgba(221,168,165,.96)); }
+.venue-map iframe { filter: grayscale(.42) sepia(.18) saturate(.72) hue-rotate(315deg) contrast(.86) brightness(1.08); }
+.venue-card .step-label,
+.venue-card h2,
+.venue-address,
+.arrival-grid h3,
+.arrival-grid p,
+.venue-card .text-button { color: var(--ink); }
+.arrival-grid article { border-color: rgba(190,106,121,.42); }
+.arrival-grid article > span { color: var(--manhattan); }
+.venue-card .text-button { border-color: rgba(190,106,121,.48); }
+
+.scene--recommendations { color: var(--ink); background: radial-gradient(circle at 18% 20%, rgba(239,211,203,.9), transparent 27%), radial-gradient(circle at 78% 78%, rgba(190,106,121,.2), transparent 30%), linear-gradient(145deg, var(--fairy), var(--pastel) 54%, var(--rhapsodic)); }
+.recommendation-glow { background: radial-gradient(circle at 12% 18%, var(--manhattan) 0 2px, transparent 4px), radial-gradient(circle at 80% 26%, var(--coral) 0 2px, transparent 4px), radial-gradient(circle at 62% 76%, var(--manhattan) 0 2px, transparent 4px); opacity: .5; }
+.recommendations-card > .section-intro { color: rgba(87,45,57,.78); }
+.recommendation-grid a { color: var(--ink); border-color: rgba(190,106,121,.4); background: rgba(239,211,203,.6); box-shadow: 0 20px 50px rgba(190,106,121,.13); }
+.recommendation-grid a:hover,
+.recommendation-grid a:focus-visible { border-color: var(--manhattan); background: rgba(239,211,203,.82); }
+.recommendation-grid span,
+.recommendation-grid i { color: var(--manhattan); }
+.recommendation-grid p { color: rgba(87,45,57,.75); }
+
+.scene--confirmation { color: var(--ink); background: radial-gradient(circle at 50% 42%, rgba(239,211,203,.9), transparent 31%), linear-gradient(145deg, var(--pastel), var(--rhapsodic) 70%); }
+.scene--confirmation::after { border-color: rgba(190,106,121,.42); }
+.confirmation-card h2,
+.confirmation-card > p:not(.eyebrow),
+.confirmation-details,
+.scene--confirmation .text-button { color: var(--ink); }
+.wax-seal { color: var(--manhattan); border-color: rgba(190,106,121,.55); box-shadow: inset 0 0 0 5px rgba(239,211,203,.18), 0 0 30px rgba(190,106,121,.16); }
+.scene--confirmation .text-button { border-color: rgba(190,106,121,.45); }
+
+.cinematic-film-wash { background: radial-gradient(ellipse at 50% 46%, rgba(239,211,203,.96) 0 14%, rgba(221,168,165,.55) 42%, transparent 70%), linear-gradient(180deg, rgba(239,211,203,.82), rgba(221,168,165,calc(.72 - var(--welcome-portal) * .2)) 56%, rgba(220,157,150,.84)), linear-gradient(90deg, rgba(192,122,134,.22), transparent 28% 72%, rgba(190,106,121,.22)); box-shadow: inset 0 0 14vw rgba(190,106,121,.12); }
+.cinematic-layer { filter: drop-shadow(0 24px 38px rgba(190,106,121,.18)); }
+.cinematic-layer--far { top: -8vh; width: min(1050px,86vw); opacity: calc(.78 - var(--welcome-portal) * .3); }
+.cinematic-layer--mid { top: 50%; left: 50%; width: min(760px,62vw); opacity: calc(.42 - var(--welcome-portal) * .2); transform: translate3d(calc(-50% + var(--pointer-x) * 7px),calc(-50% + var(--pointer-y) * 5px + var(--welcome-portal) * -8vh),0) scale(calc(.86 + var(--welcome-portal) * .42)); }
+.cinematic-layer--left { left: -16vw; bottom: -30vh; width: min(900px,67vw); opacity: calc(.7 - var(--welcome-portal) * .22); }
+.cinematic-layer--right { right: -15vw; bottom: -24vh; width: min(790px,58vw); opacity: calc(.68 - var(--welcome-portal) * .2); }
+.cinematic-portal { border-color: rgba(190,106,121,calc(.58 - var(--welcome-portal) * .2)); box-shadow: 0 0 0 1px rgba(239,211,203,.32), 0 0 90px rgba(190,106,121,.2), inset 0 0 90px rgba(239,211,203,.2); }
+.cinematic-portal::before,
+.cinematic-portal::after,
+.cinematic-portal span { border-color: rgba(190,106,121,.3); }
+.cinematic-copy { color: var(--ink); text-shadow: 0 3px 30px rgba(239,211,203,.7); }
+.cinematic-copy .eyebrow,
+.cinematic-copy h1,
+.cinematic-copy h2,
+.cinematic-copy > p:not(.eyebrow) { color: var(--ink); }
+.cinematic-copy h2 span { color: var(--manhattan); }
+.cinematic-copy--date .primary-button { color: var(--fairy); background: var(--manhattan); }
+.cinematic-copy--date .primary-button:hover { background: var(--coral); }
+
+@media (max-width: 760px) {
+  .venue-map::after { background: linear-gradient(180deg, transparent 42%, var(--fairy) 100%); }
+  .cinematic-layer--far { width: 118vw; opacity: calc(.7 - var(--welcome-portal) * .28); }
+  .cinematic-layer--mid { width: 92vw; opacity: calc(.32 - var(--welcome-portal) * .16); }
+  .cinematic-layer--left { left: -34vw; bottom: -13vh; width: 98vw; opacity: calc(.62 - var(--welcome-portal) * .22); }
+}
+
+/* v6 spatial layout: deeper prologue, clear central copy, framed venue map. */
+.cinematic-stage {
+  perspective: 1100px;
+  perspective-origin: 50% 48%;
+  transform-style: preserve-3d;
+}
+
+.cinematic-film-wash {
+  translate: 0 0 -220px;
+  scale: 1.26;
+}
+
+.cinematic-layer {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.cinematic-layer--far {
+  top: -16vh;
+  width: min(1180px, 92vw);
+  translate: 0 0 -170px;
+  opacity: calc(.76 - var(--welcome-portal) * .34);
+}
+
+.cinematic-layer--mid {
+  top: auto;
+  bottom: -26vh;
+  width: min(1120px, 88vw);
+  translate: 0 0 -60px;
+  opacity: calc(.42 - var(--welcome-portal) * .22);
+  transform: translate3d(calc(-50% + var(--pointer-x) * 11px), calc(var(--pointer-y) * 7px + var(--welcome-portal) * 9vh), 0) rotateX(calc(var(--pointer-y) * -.8deg)) scale(calc(.9 + var(--welcome-portal) * .34));
+}
+
+.cinematic-layer--left {
+  left: -23vw;
+  bottom: -32vh;
+  width: min(980px, 70vw);
+  translate: 0 0 110px;
+  opacity: calc(.76 - var(--welcome-portal) * .3);
+  transform: translate3d(calc(var(--welcome-portal) * -22vw + var(--pointer-x) * 25px), calc(var(--welcome-portal) * 12vh + var(--pointer-y) * 14px), 0) rotate(calc(-12deg - var(--welcome-portal) * 8deg)) scale(calc(.86 + var(--welcome-portal) * .6));
+}
+
+.cinematic-layer--right {
+  right: -18vw;
+  top: -25vh;
+  bottom: auto;
+  width: min(790px, 54vw);
+  translate: 0 0 155px;
+  opacity: calc(.72 - var(--welcome-portal) * .28);
+  transform: translate3d(calc(var(--welcome-portal) * 22vw + var(--pointer-x) * -28px), calc(var(--welcome-portal) * -8vh + var(--pointer-y) * -15px), 0) rotate(calc(11deg + var(--welcome-portal) * 9deg)) scale(calc(.86 + var(--welcome-portal) * .58));
+}
+
+.cinematic-portal {
+  transform-style: preserve-3d;
+  transform: translate3d(-50%, -50%, 25px) rotateX(calc(var(--pointer-y) * -.7deg)) rotateY(calc(var(--pointer-x) * .8deg)) scale(calc(.78 + var(--welcome-portal) * .36));
+}
+
+.cinematic-copy {
+  top: 50%;
+  z-index: 8;
+  min-height: min(58vh, 560px);
+  padding: clamp(2rem, 5vw, 4.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  translate: 0 0 120px;
+  text-align: center;
+}
+
+.cinematic-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8% -4%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(241, 230, 221, .94) 0 28%, rgba(241, 230, 221, .72) 52%, transparent 76%);
+  filter: blur(4px);
+}
+
+.cinematic-copy--intro,
+.cinematic-copy--names,
+.cinematic-copy--date { transform-origin: 50% 50%; }
+
+/* The venue map is now a square exhibit beside the travel information. */
+.scene--venue {
+  min-height: 100svh;
+  padding: clamp(5.5rem, 8vw, 8rem) clamp(1.25rem, 6vw, 6rem);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 520px);
+  grid-template-rows: auto;
+  gap: clamp(2rem, 5vw, 6rem);
+  align-items: center;
+}
+
+.venue-card {
+  position: relative;
+  top: auto;
+  grid-column: 1;
+  grid-row: 1;
+  width: min(680px, 100%);
+  min-height: auto;
+  margin: 0;
+  padding: 0;
+  justify-self: end;
+}
+
+.venue-map {
+  position: relative;
+  top: auto;
+  grid-column: 2;
+  grid-row: 1;
+  width: min(100%, 520px);
+  height: auto;
+  aspect-ratio: 1;
+  justify-self: start;
+  border: clamp(8px, 1vw, 14px) solid rgba(241, 230, 221, .92);
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(160, 80, 102, .24), 14px 16px 0 rgba(171, 83, 105, .2);
+  transform: translate3d(calc(var(--pointer-x) * -5px), calc(var(--pointer-y) * -4px), 0) rotate(calc(var(--pointer-x) * .35deg));
+}
+
+.venue-map::after { content: none; }
+.venue-map iframe { transform: none; }
+
+/* The wishes copy gets a clean central field; the lace stays below it. */
+.scene--wishes {
+  background: radial-gradient(circle at 50% 38%, rgba(241, 230, 221, .95), transparent 46%), linear-gradient(155deg, var(--fairy), rgba(216, 192, 180, .55));
+}
+
+#wishes::before { opacity: .08; left: -12vw; }
+
+.scene-art--wishes-lace {
+  left: 50%;
+  bottom: -21vh;
+  width: min(1050px, 88vw);
+  max-height: 52vh;
+  object-fit: contain;
+  opacity: .34;
+  filter: drop-shadow(0 24px 48px rgba(160, 80, 102, .14));
+  transform: translate3d(calc(-50% + var(--pointer-x) * 7px), calc((1 - var(--scene-progress)) * 7vh + var(--pointer-y) * 5px), 0) scale(calc(.92 + var(--scene-progress) * .12));
+}
+
+.wishes-card {
+  width: min(590px, 88vw);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border: 1px solid rgba(160, 80, 102, .24);
+  border-radius: 44% 44% 18px 18px / 12% 12% 18px 18px;
+  background: rgba(241, 230, 221, .82);
+  box-shadow: 0 30px 80px rgba(160, 80, 102, .12);
+  backdrop-filter: blur(12px);
+}
+
+.wishes-card .script-kicker { margin-top: .25rem; }
+
+@media (max-width: 760px) {
+  .cinematic-stage { perspective: 850px; }
+  .cinematic-copy { width: min(92vw, 580px); min-height: 56vh; padding: 2rem 1.15rem; translate: 0 0 70px; }
+  .cinematic-layer--far { top: -7vh; width: 128vw; }
+  .cinematic-layer--mid { bottom: -8vh; width: 122vw; }
+  .cinematic-layer--left { left: -42vw; bottom: -10vh; width: 105vw; opacity: calc(.56 - var(--welcome-portal) * .22); }
+  .cinematic-layer--right { display: block; right: -48vw; top: -9vh; width: 96vw; opacity: calc(.48 - var(--welcome-portal) * .2); }
+
+  .scene--venue {
+    min-height: auto;
+    padding: 5.5rem 1.2rem 4rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 2.5rem;
+  }
+  .venue-card { grid-column: 1; grid-row: 1; width: 100%; justify-self: stretch; }
+  .venue-map { grid-column: 1; grid-row: 2; width: min(100%, 430px); justify-self: center; transform: none; }
+  .map-button { align-self: center; }
+
+  .scene-art--wishes-lace { bottom: -7vh; width: 130vw; opacity: .25; }
+  .wishes-card { width: min(94vw, 590px); padding: 2rem 1.15rem; border-radius: 80px 80px 18px 18px / 30px 30px 18px 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-film-wash,
+  .cinematic-layer,
+  .cinematic-copy { translate: 0; scale: 1; }
+  .venue-map,
+  .scene-art--wishes-lace { transform: none; }
+}
+
+/* v7: seamless motion and editable composition layers. */
+html { scroll-snap-type: none; }
+.scene { scroll-snap-align: none; }
+.reveal { transition: opacity .72s cubic-bezier(.22,.72,.2,1), transform .9s cubic-bezier(.18,.78,.18,1); }
+.cinematic-layer,
+.cinematic-portal,
+.cinematic-copy,
+.editable-decoration-overlay img { transition: opacity .56s cubic-bezier(.22,.72,.2,1), filter .56s ease; }
+
+.editable-decoration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+.editable-decoration-overlay img {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 36px rgba(190,106,121,.14));
+  will-change: transform, opacity;
+}
+.editable-decoration-overlay img:not(.is-active) { visibility: hidden; transition: opacity .4s ease, visibility 0s linear .4s; }
+
+/* The original full-page arch caused the overlap shown in the review image. */
+.scene--invitation { min-height: 145svh; }
+.scene-art--floral {
+  top: 50%;
+  left: 50%;
+  width: min(700px, 66vw);
+  max-height: 78vh;
+  opacity: .1;
+  object-fit: contain;
+  transform: translate3d(calc(-50% + var(--pointer-x) * -5px), calc(-50% + var(--pointer-y) * -4px), 0) scale(calc(.9 + var(--scene-progress) * .08));
+}
+.invitation-card {
+  width: min(720px, 88vw);
+  padding: clamp(2rem, 5vw, 4.2rem);
+  border: 1px solid rgba(190,106,121,.22);
+  border-radius: 46% 46% 24px 24px / 10% 10% 24px 24px;
+  background: rgba(239,211,203,.88);
+  box-shadow: 0 30px 90px rgba(190,106,121,.13);
+  backdrop-filter: blur(15px);
+}
+.floating-bloom { opacity: .12; }
+.floating-bloom--left { left: -10vw; }
+.floating-bloom--right { right: -10vw; }
+
+.hide-invitation-frame .scene-art--floral,
+.hide-invitation-blooms .floating-bloom,
+.hide-dinner-table .scene-art--dinner,
+.hide-dress-frame .scene-art--wide-frame,
+.hide-feast-table .scene-art--feast,
+.hide-travel-floral .scene-art--pearl,
+.hide-wishes-lace .scene-art--wishes-lace { display: none !important; }
+
+/* v8 mobile-first typography and touch refinements. */
+.wedding-shell { font-family: var(--font-body, "Cormorant Garamond", Georgia, serif); }
+.wedding-shell :where(p, label, input, select, textarea, button, a, small, legend) { font-family: var(--font-body, "Cormorant Garamond", Georgia, serif); }
+.wedding-shell :where(h1, h2),
+.wedding-shell .guest-name-label strong,
+.wedding-shell .invitation-card h2 span,
+.wedding-shell .script-kicker,
+.wedding-shell .wax-seal span { font-family: var(--font-header, "Playfair Display", Georgia, serif); -webkit-text-stroke: .25px currentColor; text-rendering: geometricPrecision; }
+.dress-restriction { margin: 1.1rem auto .5rem !important; max-width: 34rem; padding: .85rem 1rem; border-block: 1px solid rgba(190,106,121,.42); color: #8e3f53 !important; font: italic 600 clamp(.86rem, 1.5vw, 1rem)/1.65 var(--font-body, "Cormorant Garamond", Georgia, serif) !important; }
+
+@keyframes handwritten-reveal {
+  from { clip-path: inset(0 100% 0 0); filter: blur(.8px); }
+  to { clip-path: inset(0 -8% 0 0); filter: blur(0); }
+}
+.scene.is-visible:not(.scene--cinematic) .scene-content > :where(h1, h2, .script-kicker) { animation: handwritten-reveal 1.15s cubic-bezier(.18,.82,.2,1) both; }
+
+@media (max-width: 760px) {
+  html { scroll-padding-top: 0; }
+  .scene { min-height: 100svh; padding-inline: max(1rem, env(safe-area-inset-left)); padding-bottom: max(3rem, env(safe-area-inset-bottom)); }
+  .scene--cinematic { min-height: 310svh; }
+  .cinematic-stage { min-height: 100svh; height: 100svh; }
+  .scene-content { width: min(94vw, 650px); }
+  .scene-content :where(h1, h2) { font-size: clamp(3.1rem, 16vw, 5.2rem); line-height: .88; }
+  .hero-content { width: min(92vw, 520px); padding-inline: .4rem; }
+  .hero-content .hero-note { max-width: 20rem; font-size: .96rem; line-height: 1.6; }
+  .invitation-card { min-height: auto; padding: 3.2rem 1rem 2.2rem; }
+  .invitation-card .event-details { width: 100%; grid-template-columns: 1fr; gap: .35rem; }
+  .invitation-card .event-details p { padding: .65rem .25rem; border-left: 0; border-top: 1px solid rgba(190,106,121,.22); }
+  .venue-card, .form-card, .dress-card, .wishes-card { width: min(94vw, 590px); padding-inline: 1rem; }
+  .venue-map { width: min(92vw, 430px); aspect-ratio: 1; border-radius: 18px; }
+  .arrival-grid { grid-template-columns: 1fr; }
+  .arrival-grid article { min-height: auto; padding: 1rem; }
+  .choice-grid--two, .meal-choices { grid-template-columns: 1fr; }
+  .choice-card { min-height: 112px; }
+  .recommendation-grid { grid-template-columns: 1fr; }
+  .wedding-shell :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { min-height: 50px; font-size: 16px; }
+  .wedding-shell textarea { min-height: 120px; }
+  .wedding-shell :where(.primary-button, .text-button, .segmented-control button) { min-height: 52px; }
+  .primary-button { width: min(100%, 340px); justify-content: center; }
+  .segmented-control { width: 100%; }
+  .segmented-control button { flex: 1 1 50%; }
+  .field-grid, .phone-grid { grid-template-columns: 1fr; }
+  .scene-nav { right: max(.35rem, env(safe-area-inset-right)); }
+  .scene-nav button { width: 34px; height: 34px; display: grid; place-items: center; }
+  /* right only — setting left as well stretched it across the whole top,
+     which both broke the top-right placement and sat under the Back button */
+  .sound-control { top: max(.7rem, env(safe-area-inset-top)); left: auto; right: max(.7rem, env(safe-area-inset-right)); min-height: 44px; max-width: 52vw; }
+  .editable-decoration-overlay img { max-width: 135vw; }
+}
+
+@media (max-width: 420px) {
+  .scene-content :where(h1, h2) { font-size: clamp(2.8rem, 15vw, 4.25rem); }
+  .cinematic-copy { width: 90vw; }
+  .cinematic-copy h2 { font-size: clamp(3rem, 15vw, 4.8rem); }
+  .party-rsvp-list .segmented-control { display: grid; grid-template-columns: 1fr; }
+  .party-rsvp-list .segmented-control button { width: 100%; }
+  .dress-card { padding-top: 2.4rem; padding-bottom: 2.4rem; }
+  .dress-restriction { padding: .8rem .4rem; }
+  .recommendations-card { padding-inline: .85rem; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .editable-decoration-overlay img { transform: translate3d(-50%, -50%, 0) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene.is-visible:not(.scene--cinematic) .scene-content > :where(h1, h2, .script-kicker) { animation: none; clip-path: none; filter: none; }
+}
+
+@media (max-width: 760px) {
+  .scene--invitation { min-height: 125svh; }
+  .invitation-card { width: min(94vw, 650px); padding: 2.2rem 1.1rem; border-radius: 70px 70px 20px 20px / 25px 25px 20px 20px; }
+  .scene-art--floral { width: 92vw; opacity: .07; }
+  .editable-decoration-overlay img { max-width: 150vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editable-decoration-overlay { display: none; }
+}
+
+/* v7 invitation readability: preserve the supplied floral art as an outer
+   frame while keeping every line of invitation copy on a quiet centre field. */
+#invitation::before {
+  inset: 0;
+  background-image: url("/wedding/decor/lace-ribbon-white.webp");
+  background-position: center -18vh;
+  background-size: min(960px, 76vw) auto;
+  opacity: .22;
+  transform: translate3d(0, calc(var(--scene-progress) * -3vh), 0) scale(calc(.96 + var(--scene-progress) * .08));
+}
+
+.scene--invitation {
+  min-height: 150svh;
+  background: radial-gradient(circle at 50% 44%, var(--fairy) 0 26%, rgba(239,211,203,.88) 44%, rgba(221,168,165,.44) 74%, rgba(239,211,203,.72) 100%);
+}
+
+.scene-art--floral {
+  inset: 50% auto auto 50%;
+  width: min(1260px, 88vw);
+  height: min(1040px, 94vh);
+  object-fit: contain;
+  object-position: center;
+  opacity: .48;
+  mix-blend-mode: multiply;
+  filter: saturate(.78) contrast(.9);
+  -webkit-mask-image: radial-gradient(ellipse 43% 55% at 50% 51%, transparent 0 38%, rgba(0,0,0,.14) 52%, #000 76%);
+  mask-image: radial-gradient(ellipse 43% 55% at 50% 51%, transparent 0 38%, rgba(0,0,0,.14) 52%, #000 76%);
+  transform: translate3d(calc(-50% + var(--pointer-x) * -8px), calc(-50% + var(--pointer-y) * -6px), 0) scale(calc(.9 + var(--scene-progress) * .12));
+}
+
+.scene--invitation .floating-bloom {
+  opacity: calc(.07 + var(--scene-progress) * .08);
+  filter: blur(2px) saturate(.7);
+}
+
+.invitation-card {
+  width: min(760px, 88vw);
+  min-height: min(82vh, 820px);
+  padding: clamp(3rem, 7vh, 5.2rem) clamp(1.5rem, 6vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.invitation-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -3% -7%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(239,211,203,.98) 0 46%, rgba(239,211,203,.9) 62%, rgba(239,211,203,.48) 75%, transparent 88%);
+  filter: blur(5px);
+}
+
+.invitation-card .eyebrow,
+.invitation-line,
+.invitation-card h2,
+.invitation-card .ribbon-divider,
+.event-details,
+.invitation-card .primary-button {
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-card h2 {
+  font-size: clamp(3.6rem, 7vw, 6.8rem);
+  line-height: .82;
+  text-shadow: 0 2px 22px rgba(239,211,203,.95);
+}
+
+.invitation-card h2 span { margin: .25rem 0 .18rem; }
+.invitation-line { max-width: 30rem; color: var(--ink); }
+.event-details { width: min(590px, 100%); background: rgba(239,211,203,.4); }
+.invitation-card .primary-button { width: min(100%, 540px); }
+
+@media (max-width: 720px) {
+  #invitation::before {
+    background-position: center -5vh;
+    background-size: 120vw auto;
+    opacity: .16;
+  }
+
+  .scene--invitation { min-height: 125svh; }
+
+  .scene-art--floral {
+    inset: 50% auto auto 50%;
+    left: 50%;
+    width: 124vw;
+    height: 94vh;
+    object-fit: contain;
+    opacity: .34;
+    -webkit-mask-image: radial-gradient(ellipse 54% 58% at 50% 52%, transparent 0 42%, rgba(0,0,0,.12) 57%, #000 84%);
+    mask-image: radial-gradient(ellipse 54% 58% at 50% 52%, transparent 0 42%, rgba(0,0,0,.12) 57%, #000 84%);
+    transform: translate3d(-50%, -50%, 0) scale(calc(.94 + var(--scene-progress) * .08));
+  }
+
+  .invitation-card {
+    width: min(94vw, 620px);
+    min-height: 88vh;
+    padding: 4.5rem 1.1rem 3rem;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .invitation-card::before {
+    inset: 1% -2%;
+    background: radial-gradient(ellipse at center, rgba(239,211,203,.98) 0 50%, rgba(239,211,203,.84) 70%, transparent 90%);
+  }
+
+  .invitation-card h2 { font-size: clamp(3.7rem, 18vw, 5.7rem); }
+  .invitation-line { max-width: 19rem; }
+  .event-details { width: min(280px, 92%); background: rgba(239,211,203,.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #invitation::before,
+  .scene-art--floral { transform: translate3d(-50%, -50%, 0); }
+  #invitation::before { transform: none; }
+}
+
+/* v11: award-polish navigation, depth and phone-first chapter controls. */
+.wedding-shell::after {
+  content: "";
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  pointer-events: none;
+  opacity: .045;
+  background-image: radial-gradient(circle at 18% 21%, var(--ink) 0 .55px, transparent .8px), radial-gradient(circle at 72% 68%, var(--manhattan) 0 .45px, transparent .75px);
+  background-size: 9px 11px, 13px 15px;
+  mix-blend-mode: multiply;
+}
+
+.scene-nav button { position: relative; }
+.scene-nav button b {
+  position: absolute;
+  right: calc(100% + .8rem);
+  top: 50%;
+  width: max-content;
+  border: 1px solid rgba(190,106,121,.25);
+  border-radius: 999px;
+  padding: .42rem .66rem;
+  color: var(--ink);
+  background: rgba(239,211,203,.82);
+  box-shadow: 0 8px 25px rgba(87,45,57,.08);
+  backdrop-filter: blur(12px);
+  font: 600 .58rem/1 var(--font-body, "Cormorant Garamond", serif);
+  letter-spacing: .06em;
+  opacity: 0;
+  transform: translate3d(8px,-50%,0);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+.scene-nav button:hover b,
+.scene-nav button:focus-visible b { opacity: 1; transform: translate3d(0,-50%,0); }.scene-content :where(.primary-button, .text-button, .choice-card) { transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, background-color .28s ease, border-color .28s ease; }
+.scene-content .primary-button:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(190,106,121,.26); }
+.scene-content :where(input, select, textarea):focus-visible { outline: 2px solid var(--manhattan); outline-offset: 3px; box-shadow: 0 0 0 7px rgba(190,106,121,.1); }
+.form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 30px 90px rgba(190,106,121,.1); }
+
+@media (max-width: 760px) {
+  .wedding-shell { padding-bottom: env(safe-area-inset-bottom); }
+  .wedding-shell::after { opacity: .028; }
+  .scene-nav, .scroll-progress { display: none; }.scene-content :where(.primary-button, .text-button, .choice-card):active { transform: scale(.985); }
+  .form-card, .dress-card, .venue-card, .wishes-card { box-shadow: 0 20px 55px rgba(190,106,121,.08); }
+}
+
+@media (hover: none) {
+  .scene-content .primary-button:hover { transform: none; }
+}
+
+/* ============ Editable-decoration motion presets (Website Editor) ============ */
+.editable-decoration-overlay .deco-wrap { position: absolute; pointer-events: none; transition: opacity var(--motion-slow) var(--ease-gentle); }
+.editable-decoration-overlay .deco-wrap img { width: 100%; height: auto; display: block; }
+.deco-anim--float { animation: deco-float var(--m-dur, 8s) var(--ease-soft) infinite alternate; }
+.deco-anim--sway { animation: deco-sway var(--m-dur, 8s) var(--ease-soft) infinite alternate; transform-origin: 50% 8%; }
+.deco-anim--drift { animation: deco-drift calc(var(--m-dur, 8s) * 1.6) var(--ease-soft) infinite alternate; }
+.deco-anim--shimmer { animation: deco-shimmer calc(var(--m-dur, 8s) * .9) var(--ease-gentle) infinite; }
+@keyframes deco-float { from { transform: translateY(calc(var(--m-amp, 10px) * -1)); } to { transform: translateY(var(--m-amp, 10px)); } }
+@keyframes deco-sway { from { transform: rotate(calc(var(--m-deg, 4deg) * -1)); } to { transform: rotate(var(--m-deg, 4deg)); } }
+@keyframes deco-drift { from { transform: translateX(calc(var(--m-amp, 10px) * -1.4)); } to { transform: translateX(calc(var(--m-amp, 10px) * 1.4)); } }
+@keyframes deco-shimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .deco-anim--float, .deco-anim--sway, .deco-anim--drift, .deco-anim--shimmer { animation: none !important; }
+}
+
+/* ============ Editor-added custom pages ============ */
+.scene--custom {
+  display: grid;
+  place-items: center;
+  min-height: 88svh;
+  padding: 14vh 6vw;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(241, 230, 221, .9), transparent 40%),
+    linear-gradient(160deg, var(--parchment), var(--powder));
+}
+.custom-page-card {
+  max-width: 42rem;
+  text-align: center;
+}
+.custom-page-card h2 {
+  margin: .4rem 0 1rem;
+  color: var(--wine);
+  font: 400 clamp(2.2rem, 6vw, 4rem)/1.08 var(--font-header);
+  text-wrap: balance;
+}
+.custom-page-card p:not(.eyebrow) {
+  margin: .7rem auto;
+  max-width: 34rem;
+  color: var(--ink);
+  line-height: 1.7;
+}
+
+/* ============ iOS Safari stability ============ */
+/* Small-viewport units: the URL bar no longer resizes these mid-scroll. */
+@supports (height: 100svh) {
+  .venue-map, .recommendation-glow, .scroll-progress { height: 100svh; }
+  .venue-card, .recommendations-card { min-height: 100svh; }
+}
+@media (max-width: 640px) {
+  /* Heavy backdrop blurs cause flicker and dropped frames on iOS Safari. */
+  .recommendation-grid a, .sound-control, .secret-card, .party-copy--card,
+  .wishes-card, .invitation-card, .scene-nav button b { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .form-card--glass { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  /* Landing lace layers were desktop-sized (113vw) on phones — mostly offscreen
+     decode cost that crowded the hero. Keep the art, at phone scale. */
+  .cinematic-layer--left, .cinematic-layer--right { width: min(58vw, 230px); }
+  .scene-art--wide-frame { width: 100vw; }
+  .scene-art--pearl { width: 92vw; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Production polish — FAQ chapter, confirmation countdown & actions,  */
+/* RSVP deadline note and song request. Palette + type stay locked.    */
+/* ------------------------------------------------------------------ */
+
+.scene--faq {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 82% 16%, rgba(216, 192, 180, .55), transparent 30%),
+    linear-gradient(160deg, var(--parchment), var(--fairy) 58%, var(--powder));
+}
+
+.faq-card { max-width: 700px; }
+.faq-card h2 { color: var(--wine); }
+
+.faq-list {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 1.6rem;
+  text-align: left;
+}
+
+.faq-list > div {
+  padding: 1.15rem 1.35rem;
+  border: 1px solid rgba(160, 80, 102, .28);
+  border-radius: 14px;
+  background: rgba(251, 246, 243, .74);
+  box-shadow: 0 14px 34px rgba(160, 80, 102, .08);
+}
+
+.faq-list dt {
+  font-family: var(--font-header);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--wine);
+}
+
+.faq-list dd {
+  margin: .45rem 0 0;
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: rgba(42, 42, 42, .82);
+}
+
+.rsvp-deadline-note {
+  margin: -0.35rem 0 1.4rem;
+  padding: .7rem 1rem;
+  border-left: 3px solid var(--manhattan);
+  border-radius: 0 10px 10px 0;
+  background: rgba(241, 230, 221, .55);
+  font-size: .98rem;
+  line-height: 1.5;
+  color: rgba(92, 58, 53, .92);
+}
+
+.rsvp-deadline-note strong { color: var(--wine); }
+
+.confirmation-card .countdown {
+  display: flex;
+  justify-content: center;
+  gap: clamp(.7rem, 3vw, 1.4rem);
+  margin: 1.7rem 0 .3rem;
+}
+
+.confirmation-card .countdown > div {
+  display: grid;
+  gap: .2rem;
+  place-items: center;
+  min-width: 4.7rem;
+  padding: .9rem .55rem .75rem;
+  border: 1px solid rgba(160, 80, 102, .38);
+  border-radius: 12px;
+  background: rgba(251, 246, 243, .68);
+  box-shadow: 0 12px 28px rgba(160, 80, 102, .1);
+}
+
+.confirmation-card .countdown strong {
+  font: 500 2rem/1 var(--font-header);
+  font-variant-numeric: tabular-nums;
+  color: var(--wine);
+}
+
+.confirmation-card .countdown span {
+  font: 600 .58rem/1 var(--font-sans);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--manhattan);
+}
+
+.countdown-live {
+  margin: 1.4rem 0 .3rem;
+  font: italic 500 1.35rem/1.4 var(--font-header);
+  color: var(--wine);
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .8rem;
+  margin-top: 1.3rem;
+}
+
+.calendar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 48px;
+  padding: 0 1.4rem;
+  border: 1px solid rgba(160, 80, 102, .5);
+  border-radius: 8px;
+  background: rgba(251, 246, 243, .6);
+  font: 600 .78rem/1 var(--font-sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--wine);
+  cursor: pointer;
+  transition: background var(--motion-standard) var(--ease-gentle), border-color var(--motion-standard) var(--ease-gentle);
+}
+
+.calendar-button:hover,
+.calendar-button:focus-visible {
+  border-color: var(--manhattan);
+  background: rgba(241, 230, 221, .9);
+}
+
+.calendar-button:focus-visible {
+  outline: 2px solid var(--manhattan);
+  outline-offset: 3px;
+}
+
+.song-field { margin-bottom: 1.1rem; }
+
+
+/* Scroll-forward cues + gate hints (buttons removed from the journey) */
+.scroll-on {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  margin: 1.6rem 0 0;
+  font: 600 .58rem/1.6 var(--font-sans);
+  letter-spacing: .26em; text-transform: uppercase;
+  color: var(--wine);
+}
+.scroll-on i { width: 1px; height: 30px; background: linear-gradient(var(--wine), transparent); animation: story-cue 1.8s ease-in-out infinite; }
+.gate-hint {
+  margin: 1.4rem 0 0; padding: .8rem 1rem;
+  border: 1px dashed rgba(142,66,88,.4); border-radius: 12px;
+  font: 500 .85rem/1.55 var(--font-sans);
+  color: var(--wine); background: rgba(216,192,180,.16);
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) { .scroll-on i { animation: none; } }
+
+/* ==================================================================== */
+/* The landing page — a walk through three painted dreamscapes.         */
+/*                                                                      */
+/* The paintings are a fixed stack behind everything; the chapters are  */
+/* ordinary full-height sections that scroll over them and snap gently  */
+/* into place. Nothing here uses a large 3D world, so iOS Safari stays  */
+/* comfortable.                                                         */
+/* ==================================================================== */
+
+.scene--story {
+  padding: 0 !important;
+  min-height: 0;
+  display: block;
+  background: none;
+}
+.scene--story::before,
+.scene--story::after { content: none; }
+
+.dream {
+  position: relative;
+  z-index: 0;
+}
+/* No scroll snapping. It fought momentum scrolling on iOS and could leave a
+   guest stranded between two full-height chapters. */
+
+/* ---- the paintings ---- */
+.dream-skies {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #f0dfe0;
+  pointer-events: none;
+}
+.dream-sky {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.25s cubic-bezier(.4, .1, .2, 1);
+  will-change: opacity;
+}
+.dream-sky picture,
+.dream-sky img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  /* the slow swell: each layer drifts at a slightly different rate so the
+     depth reads even though every painting is flat */
+  transform:
+    scale(calc(1.06 + var(--drift, 0) * .09))
+    translate3d(0, calc(var(--drift, 0) * -3vh * (1 + var(--layer, 0) * .25)), 0);
+  transition: transform .9s cubic-bezier(.22, .72, .2, 1);
+}
+/* a breath of mist so the words always have something to sit on */
+.dream-mist {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 108%, rgba(255, 245, 243, .78), transparent 62%),
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(255, 248, 245, .5), transparent 60%),
+    linear-gradient(to bottom, rgba(255, 246, 244, .34) 0%, rgba(255, 246, 244, .06) 34%, rgba(252, 236, 236, .3) 100%);
+}
+
+/* ---- the chapters ---- */
+.dream-chapter {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 12svh 1.4rem;
+  opacity: 0;
+  will-change: opacity;
+}
+.dream-words {
+  position: relative;
+  z-index: 3;
+  width: min(90vw, 620px);
+  text-align: center;
+  color: #4a3a3c;
+  transform:
+    translate(var(--cap-x, 0%), calc(var(--cap-y, 0%) + var(--rise, 0px)))
+    scale(var(--cap-size, 1));
+  transform-origin: 50% 50%;
+}
+.dream-words .overline {
+  margin: 0 0 .9rem;
+  font: 600 .58rem/1.7 var(--font-sans);
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  color: #8e4258;
+  opacity: calc(.35 + var(--near, 0) * .65);
+}
+.is-blue .dream-words .overline { color: #5b79a6; }
+.dream-words h1,
+.dream-words h2 {
+  margin: 0;
+  font-family: var(--font-header);
+  font-weight: 500;
+  line-height: 1.06;
+  letter-spacing: -.02em;
+  color: #3f3235;
+  text-shadow: 0 1px 26px rgba(255, 250, 248, .9);
+}
+.dream-words h1 { font-size: clamp(2.9rem, 12vw, 5rem); }
+.dream-words h2 { font-size: clamp(2rem, 7.6vw, 3.1rem); }
+.dream-words h1 span {
+  display: block;
+  margin: .06em 0;
+  font: italic 400 .4em/1 var(--font-header);
+  color: #c9a8a0;
+}
+.dream-words .line {
+  margin: 1rem auto 0;
+  max-width: 32ch;
+  font: italic 500 clamp(1.05rem, 3.9vw, 1.32rem)/1.62 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  text-shadow: 0 1px 20px rgba(255, 250, 248, .95);
+}
+
+/* ---- accent artwork from the couple's own pack ---- */
+.dream-accent {
+  position: absolute;
+  z-index: 2;
+  transform:
+    translate(-50%, -50%)
+    translate3d(0, calc(var(--rise, 0px) * (.35 + var(--depth, 0) / 260)), 0);
+  will-change: transform;
+  pointer-events: none;
+}
+.dream-accent img,
+.dream-accent video {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 16px 26px rgba(142, 66, 88, .16));
+}
+.dream-accent video { filter: none; }
+.dream-accent.float { animation: dream-float 8s ease-in-out infinite alternate; }
+.dream-accent.float--slow { animation-duration: 12s; }
+@keyframes dream-float {
+  from { translate: 0 -7px; }
+  to { translate: 0 8px; }
+}
+
+/* ---- the invitation at the end of the walk ---- */
+.dream-invite {
+  margin: 2rem auto 0;
+  padding: 1.5rem 1.4rem 1.6rem;
+  width: min(86vw, 430px);
+  border-radius: 20px;
+  background: rgba(255, 251, 248, .58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 22px 60px rgba(142, 66, 88, .16);
+}
+.dream-invite .date {
+  margin: 0;
+  font: 500 clamp(1.7rem, 6.6vw, 2.3rem)/1.1 var(--font-header);
+  color: #3f3235;
+}
+.dream-invite .line { margin-top: .55rem; font-size: 1.02rem; }
+.dream-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.2rem;
+  min-height: 52px;
+  padding: 0 1.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(142, 66, 88, .92);
+  color: #fdf6f2;
+  font: 600 .7rem/1 var(--font-sans);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 246, 240, .55);
+  cursor: pointer;
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.dream-cta:hover { background: #a05066; }
+
+/* ---- quiet markers ---- */
+.dream-dots {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  top: 50%;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dream-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .55);
+  box-shadow: 0 1px 4px rgba(120, 70, 85, .35);
+  transition: background .4s ease, transform .4s ease;
+}
+.dream-dots i.is-on { background: #fff; transform: scale(1.7); }
+.dream-cue {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  transform: translateX(-50%);
+  font: 600 .55rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-shadow: 0 0 12px rgba(255, 250, 248, .95);
+  transition: opacity .6s ease;
+  pointer-events: none;
+}
+.dream-cue i {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(#8e4258, transparent);
+  animation: story-cue 2s ease-in-out infinite;
+}
+@keyframes story-cue {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  55% { transform: translateY(9px); opacity: .3; }
+}
+
+@media (min-width: 900px) {
+  .dream-words { width: min(70vw, 680px); }
+  .dream-chapter { padding: 14svh 2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dream { scroll-snap-type: none; }
+  .dream-sky img { transform: scale(1.04); transition: none; }
+  .dream-accent.float, .dream-cue i, .dream-cta { animation: none; }
+  .dream-chapter { transition: opacity .4s ease; }
+}
+
+/* Grand Hyatt room offer + venue arrival note */
+.room-offer {
+  display: grid;
+  gap: .3rem;
+  margin: 0 0 1.1rem;
+  padding: .9rem 1rem;
+  border: 1px solid rgba(142, 66, 88, .28);
+  border-radius: 14px;
+  background: rgba(216, 192, 180, .18);
+  text-align: center;
+}
+.room-offer strong {
+  font: 500 1.06rem/1.3 var(--font-header, "Playfair Display", Georgia, serif);
+  color: var(--wine, #8E4258);
+  letter-spacing: .01em;
+}
+.room-offer span {
+  font: italic 500 .92rem/1.45 var(--font-body, "Cormorant Garamond", Georgia, serif);
+  color: rgba(74, 58, 60, .82);
+}
+.venue-note {
+  margin: 0 0 1rem;
+  text-align: center;
+}
+.travel-details fieldset + fieldset { margin-top: .9rem; }
+.travel-details .segmented-control button { min-height: 46px; }
+
+/* Recommendation groups, shared wish and private note */
+.rec-group {
+  margin: 1.6rem 0 .7rem;
+  font: 600 .62rem/1.6 var(--font-sans, "Montserrat", sans-serif);
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--wine, #8E4258);
+  text-align: center;
+}
+.rec-group:first-of-type { margin-top: .9rem; }
+.private-note {
+  font-style: italic;
+  opacity: .9;
+}
+.shared-wish {
+  margin: 1.2rem 0 0;
+  padding: 1rem 1.1rem;
+  border-left: 2px solid rgba(142, 66, 88, .35);
+  background: rgba(216, 192, 180, .16);
+  border-radius: 0 12px 12px 0;
+  text-align: left;
+}
+.shared-wish p {
+  margin: 0;
+  font: italic 500 1.02rem/1.5 var(--font-body, "Cormorant Garamond", Georgia, serif);
+  color: rgba(74, 58, 60, .9);
+}
+.shared-wish cite {
+  display: block;
+  margin-top: .5rem;
+  font: 600 .56rem/1 var(--font-sans, "Montserrat", sans-serif);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--wine, #8E4258);
+}
+
+/* Nearby hotels list */
+.hotel-list { display: grid; gap: .55rem; margin: .2rem 0 1.1rem; padding: 0; list-style: none; }
+.hotel-list a {
+  display: grid; gap: .18rem; padding: .75rem .9rem;
+  border: 1px solid rgba(142, 66, 88, .22); border-radius: 12px;
+  background: rgba(251, 243, 234, .7); text-decoration: none;
+}
+.hotel-list a:hover { border-color: var(--wine, #8E4258); }
+.hotel-list strong { font: 500 1rem/1.3 var(--font-header, Georgia, serif); color: var(--ink, #4A3A3C); }
+.hotel-list span { font: italic 500 .9rem/1.4 var(--font-body, Georgia, serif); color: rgba(74, 58, 60, .8); }
+.hotel-list i { font: 600 .58rem/1 var(--font-sans, sans-serif); letter-spacing: .14em; text-transform: uppercase; color: var(--wine, #8E4258); font-style: normal; }
+
+/* Rating badge on recommendation cards */
+.place-score {
+  font: 600 .58rem/1 var(--font-sans, sans-serif);
+  letter-spacing: .1em;
+  color: var(--wine, #8E4258);
+  font-style: normal;
+  opacity: .85;
+}
+.hotel-list .place-score { margin-top: .1rem; }
+
+/* WhatsApp send buttons in the manager */
+.wa-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 0 .9rem;
+  border: 1px solid #25835a; border-radius: 8px;
+  background: #eaf6ef; color: #1d6b49;
+  font: 600 .62rem/1 var(--font-sans, sans-serif);
+  letter-spacing: .08em; text-transform: uppercase; text-decoration: none;
+}
+.wa-button:hover { background: #25835a; color: #fff; }
+
+/* Table assignment plaques */
+.table-plaques { display: grid; gap: .7rem; margin: 1.2rem 0 0; }
+@media (min-width: 640px) { .table-plaques { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } }
+.table-plaques article {
+  display: grid; gap: .3rem; padding: 1.1rem 1rem;
+  border: 1px solid rgba(142, 66, 88, .3); border-radius: 16px;
+  background: rgba(251, 243, 234, .92);
+  box-shadow: 0 14px 34px rgba(142, 66, 88, .12);
+  text-align: center;
+}
+.table-plaques span {
+  font: 600 .58rem/1 var(--font-sans, sans-serif);
+  letter-spacing: .22em; text-transform: uppercase; color: var(--wine, #8E4258);
+}
+.table-plaques strong {
+  font: 500 clamp(1.5rem, 6vw, 2rem)/1.15 var(--font-header, Georgia, serif);
+  color: var(--ink, #4A3A3C);
+}
+.wa-button--table { border-color: #8E4258; background: #f7ecf0; color: #8E4258; }
+.wa-button--table:hover { background: #8E4258; color: #fff; }
+
+/* ==================================================================== */
+/* Softer surfaces: no ruled borders anywhere. Anything a guest types    */
+/* into is a half-transparent pane; anything they press to move forward  */
+/* glows and breathes so it reads as the way onward.                     */
+/* ==================================================================== */
+
+.scene input,
+.scene select,
+.scene textarea,
+.scene .segmented-control,
+.scene .segmented-control button,
+.scene .choice-card,
+.scene fieldset,
+.scene .form-card,
+.scene .wishes-card,
+.scene .venue-card,
+.scene .dress-card,
+.scene .recommendations-card,
+.scene .faq-card,
+.scene .schedule-card,
+.scene .invitation-card,
+.scene .confirmation-card,
+.scene .custom-page-card,
+.scene .table-plaques article,
+.scene .room-offer,
+.scene .hotel-list a,
+.scene .recommendation-grid a,
+.scene .gate-hint {
+  border: 0 !important;
+  outline: 0;
+}
+
+/* the panes guests write into */
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  background: rgba(255, 252, 248, .52);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 3px rgba(104, 63, 76, .07);
+  color: var(--ink);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+.scene input:focus,
+.scene select:focus,
+.scene textarea:focus {
+  background: rgba(255, 253, 250, .78);
+  box-shadow: inset 0 1px 3px rgba(104, 63, 76, .07), 0 0 0 3px rgba(201, 168, 160, .28);
+}
+.scene ::placeholder { color: rgba(74, 58, 60, .42); }
+
+/* choices and cards float on the paper rather than sitting in a box */
+.scene .segmented-control,
+.scene fieldset,
+.scene .choice-card,
+.scene .table-plaques article,
+.scene .room-offer,
+.scene .hotel-list a,
+.scene .recommendation-grid a {
+  background: rgba(255, 252, 248, .44);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 16px;
+}
+.scene .segmented-control button.is-selected,
+.scene .choice-card.is-selected {
+  background: rgba(201, 168, 160, .34);
+  box-shadow: 0 6px 18px rgba(142, 66, 88, .12);
+}
+.scene .form-card,
+.scene .wishes-card,
+.scene .venue-card,
+.scene .dress-card,
+.scene .recommendations-card,
+.scene .faq-card,
+.scene .schedule-card,
+.scene .invitation-card,
+.scene .confirmation-card,
+.scene .custom-page-card {
+  background: rgba(255, 252, 248, .5);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 18px 46px rgba(104, 63, 76, .1);
+}
+.scene .gate-hint {
+  background: rgba(201, 168, 160, .16);
+  border-radius: 14px;
+}
+
+/* the way onward */
+.primary-button,
+.story-cta,
+.map-button,
+.calendar-button {
+  border: 0;
+  box-shadow: 0 10px 26px rgba(142, 66, 88, .18);
+}
+.primary-button:not(:disabled),
+.story-cta,
+.scroll-on {
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.primary-button:not(:disabled),
+.story-cta {
+  text-shadow: 0 0 10px rgba(255, 246, 240, .75), 0 0 22px rgba(255, 226, 214, .45);
+}
+.scroll-on { color: var(--wine); text-shadow: 0 0 12px rgba(255, 246, 240, .9); }
+@keyframes onward-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .62; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary-button, .story-cta, .scroll-on { animation: none; }
+}
+
+/* Text placement + size from the website editor */
+.scene .scene-content {
+  transform: translate(var(--text-x, 0%), var(--text-y, 0%));
+  font-size: calc(1em * var(--text-size, 1));
+}
+
+/* Website editor: moving and sizing the words */
+.editor-preview-copy { cursor: grab; touch-action: none; transition: transform .12s ease-out; }
+.editor-preview-copy.is-dragging { cursor: grabbing; opacity: .85; }
+.editor-canvas-element { touch-action: none; }
+.text-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .8rem;
+  margin: .9rem 0 .3rem; padding: .7rem .9rem;
+  border-radius: 12px; background: rgba(216,192,180,.18);
+}
+.text-toolbar h3 { margin: 0; font: 600 .8rem/1.3 var(--font-sans); color: var(--wine); }
+.text-toolbar span { font: 500 .66rem/1.4 var(--font-sans); color: rgba(74,58,60,.7); }
+.text-toolbar label { display: flex; align-items: center; gap: .5rem; flex: 1; min-width: 180px; font: 600 .6rem/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: rgba(74,58,60,.75); }
+.text-toolbar input[type="range"] { flex: 1; accent-color: var(--wine); }
+.text-toolbar button { min-height: 34px; padding: 0 .9rem; border: 0; border-radius: 8px; background: rgba(255,255,255,.7); color: var(--wine); font: 600 .6rem/1 var(--font-sans); letter-spacing: .07em; text-transform: uppercase; cursor: pointer; }
+
+/* ==================================================================== */
+/* The paintings sit behind the entire invitation, not only the story,  */
+/* so every scene has to let them through while keeping its words       */
+/* perfectly readable.                                                  */
+/* ==================================================================== */
+
+.wedding-shell,
+.wedding-shell--storybook,
+body { background: transparent; }
+body { background-color: #f2e2e2; }
+
+.wedding-shell .scene,
+.wedding-shell--storybook .scene,
+.wedding-shell--storybook .scene--welcome,
+.scene, .scene--blush, .scene--cinematic, .scene--confirmation, .scene--custom,
+.scene--faq, .scene--invitation, .scene--paper, .scene--pearl,
+.scene--recommendations, .scene--story, .scene--venue, .scene--welcome,
+.scene--wishes { background: transparent; }
+/* the painted textures and gradients each scene used to carry */
+.scene::before { opacity: .12; }
+
+/* a soft veil under each scene so text never fights the painting */
+.scene:not(.scene--story)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 92% 62% at 50% 50%, rgba(255, 250, 247, .82) 0%, rgba(255, 249, 246, .58) 52%, rgba(255, 248, 245, .18) 78%, transparent 100%);
+}
+
+/* the cards lift a little so they read against a busy painting */
+.scene .form-card,
+.scene .wishes-card,
+.scene .venue-card,
+.scene .dress-card,
+.scene .recommendations-card,
+.scene .faq-card,
+.scene .schedule-card,
+.scene .invitation-card,
+.scene .confirmation-card,
+.scene .custom-page-card,
+.scene .table-card {
+  background: rgba(255, 252, 249, .74);
+  box-shadow: 0 22px 56px rgba(104, 63, 76, .14);
+}
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  background: rgba(255, 253, 251, .72);
+}
+.scene .segmented-control,
+.scene fieldset,
+.scene .choice-card,
+.scene .table-plaques article,
+.scene .room-offer,
+.scene .hotel-list a,
+.scene .recommendation-grid a {
+  background: rgba(255, 253, 250, .68);
+}
+
+/* the story chapters stay bare — the painting is the picture there */
+.scene--story::after { content: none; }
+
+/* ==================================================================== */
+/* The painted world sits behind the whole site, not just the landing.  */
+/* Scenes go transparent so it shows through; their content panes are   */
+/* already frosted, which keeps every word legible over the paintings.  */
+/* ==================================================================== */
+.dream-skies--site { position: fixed; inset: 0; z-index: 0; }
+/* Scenes and chapters are already position:relative, so being later in the
+   document is enough to put them above the paintings. Do NOT blanket-set
+   position on every child of the shell — that overrides position:fixed on the
+   photo gate and the skip link, which pins the page at the top. */
+.scene, .dream-chapter { z-index: 1; }
+
+.wedding-shell { background: transparent; }
+.wedding-shell .scene { background: transparent !important; }
+/* the paper textures and washes that used to be the background become a
+   whisper on top of the painting instead of hiding it */
+.wedding-shell .scene::before { opacity: .18; }
+.wedding-shell .scene::after { opacity: .3; }
+
+/* a soft breath directly behind each scene's words */
+.wedding-shell .scene > .scene-content {
+  position: relative;
+  isolation: isolate;
+}
+.wedding-shell .scene > .scene-content::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8% -6%;
+  border-radius: 32px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 250, 247, .72) 0 46%, rgba(255, 250, 247, .34) 72%, transparent 88%);
+  pointer-events: none;
+}
+
+/* the bubbles drift above the page but never intercept a tap */
+canvas { pointer-events: none; }
+.invitation-only-note {
+  margin-top: .7rem;
+  font: italic 500 .96rem/1.55 var(--font-body);
+  color: rgba(74, 58, 60, .75);
+}
+
+/* ==================================================================== */
+/* The twirl film: the page loader, and the divider below the story.    */
+/* ==================================================================== */
+.twirl-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  gap: 1.4rem;
+  background: #f4e6e4;
+  animation: twirl-fade .7s ease .2s both;
+}
+.twirl-loader video {
+  width: min(62vw, 300px);
+  height: auto;
+  mix-blend-mode: multiply;
+}
+.twirl-loader p {
+  margin: 0;
+  font: 500 clamp(1.3rem, 5.4vw, 1.9rem)/1.2 var(--font-header);
+  letter-spacing: .02em;
+  color: #4a3a3c;
+}
+.twirl-loader p span { color: var(--rhapsodic, #C9A8A0); font-style: italic; }
+@keyframes twirl-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.twirl-divider {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 4svh 1rem 6svh;
+}
+.twirl-divider video {
+  width: min(58vw, 280px);
+  height: auto;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 18px 34px rgba(142, 66, 88, .14));
+}
+@media (prefers-reduced-motion: reduce) {
+  .twirl-loader { animation: none; }
+}
+
+/* ==================================================================== */
+/* The paintings are the decoration now. Every sticker, ribbon and      */
+/* pasted illustration steps aside so the artwork carries the page.     */
+/* ==================================================================== */
+.editable-decoration-overlay,
+.scene-art,
+.deco-wrap { display: none !important; }
+
+/* Words sit straight on the painting rather than on a pale slab */
+.wedding-shell .scene > .scene-content {
+  background: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.wedding-shell .scene > .scene-content::before {
+  inset: -6% -8%;
+  border-radius: 40px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 251, 249, .86) 0 38%, rgba(255, 251, 249, .55) 66%, transparent 86%);
+}
+/* the panes guests actually type into keep their frosted fill */
+.wedding-shell .scene .form-card,
+.wedding-shell .scene .wishes-card {
+  background: rgba(255, 252, 249, .5) !important;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+/* ==================================================================== */
+/* One guide page, four lists, opened by tapping. Shorter pages.        */
+/* ==================================================================== */
+.guide { display: grid; gap: .5rem; margin-top: 1.2rem; text-align: left; }
+.guide-group { border-radius: 14px; background: rgba(255, 252, 249, .46); overflow: hidden; }
+.guide-group > button {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: 54px; padding: 0 1.1rem;
+  border: 0; background: none; cursor: pointer;
+  font: 500 1.06rem/1.3 var(--font-header); color: var(--ink);
+  text-align: left;
+}
+.guide-group > button i { font: 300 1.4rem/1 var(--font-sans); color: var(--wine); font-style: normal; }
+.guide-group.is-open > button { color: var(--wine); }
+.guide-group ul { margin: 0; padding: 0 .8rem 1rem; list-style: none; display: grid; gap: .5rem; }
+.guide-group li a {
+  display: grid; gap: .12rem; padding: .7rem .8rem;
+  border-radius: 10px; background: rgba(255, 255, 255, .5); text-decoration: none;
+}
+.guide-group li strong { font: 500 .98rem/1.3 var(--font-header); color: var(--ink); }
+.guide-group li span { font: italic 500 .88rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+.guide-group li em {
+  font: 600 .55rem/1 var(--font-sans); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--wine); font-style: normal;
+}
+
+/* The apps page, pared back to three names and two links each */
+.app-list { margin: 1.3rem 0 0; padding: 0; list-style: none; display: grid; gap: .7rem; text-align: left; }
+.app-list li { display: grid; gap: .2rem; padding: .85rem 1rem; border-radius: 14px; background: rgba(255, 252, 249, .46); }
+.app-list strong { font: 500 1.06rem/1.2 var(--font-header); color: var(--ink); }
+.app-list > li > span { font: italic 500 .9rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+.app-links { display: flex; gap: .9rem; margin-top: .3rem; }
+.app-links a {
+  font: 600 .56rem/1 var(--font-sans); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--wine); text-decoration: none;
+}
+
+/* The map was taking most of a phone screen */
+.venue-map { height: 34svh !important; max-height: 300px; border-radius: 18px; overflow: hidden; }
+@media (min-width: 900px) { .venue-map { height: 42svh !important; max-height: 420px; } }
+.field-grid--single { grid-template-columns: 1fr !important; }
+
+/* The programme is two lines now — centre it rather than stretching it */
+.evening-timeline { display: grid; gap: 1.6rem; max-width: 26rem; margin: 2rem auto 0; }
+.evening-timeline li { display: grid; gap: .3rem; text-align: center; }
+.evening-timeline .timeline-time {
+  font: 500 clamp(1.6rem, 6vw, 2.1rem)/1.1 var(--font-header);
+  color: var(--wine);
+}
+.evening-timeline h3 {
+  margin: 0;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.2rem)/1.45 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.party-rsvp-list legend.is-quiet {
+  font: italic 500 1.02rem/1.4 var(--font-body);
+  color: rgba(74, 58, 60, .8);
+  letter-spacing: 0;
+  text-transform: none;
+}.guide-answer {
+  margin: 0;
+  padding: 0 1.1rem 1.1rem;
+  font: italic 500 .96rem/1.55 var(--font-body);
+  color: rgba(74, 58, 60, .85);
+  text-align: left;
+}
+.guide-app { display: grid; gap: .18rem; padding: .7rem .8rem; border-radius: 10px; background: rgba(255, 255, 255, .5); }
+.guide-app strong { font: 500 .98rem/1.3 var(--font-header); color: var(--ink); }
+.guide-app > span { font: italic 500 .88rem/1.45 var(--font-body); color: rgba(74, 58, 60, .82); }
+
+/* ==================================================================== */
+/* THE WELCOME — the invitation, and nothing else.                      */
+/* ==================================================================== */
+.welcome { position: relative; z-index: 0; }
+.welcome-track { position: relative; z-index: 1; }
+.welcome-page {
+  box-sizing: border-box;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 12svh 1.6rem;
+  opacity: 0;
+  will-change: opacity;
+}
+.welcome-words {
+  width: min(90vw, 620px);
+  text-align: center;
+  color: #4a3a3c;
+  transform: translateY(var(--rise, 0px));
+}
+.welcome-words .overline {
+  margin: 0 0 1.4rem;
+  font: 600 .58rem/1.7 var(--font-sans);
+  letter-spacing: .4em;
+  text-transform: uppercase;
+  color: #8e4258;
+}
+.welcome-words .script {
+  margin: 0;
+  font: 400 clamp(3.6rem, 17vw, 6.6rem)/1 var(--font-header);
+  font-style: italic;
+  color: #3f3235;
+  text-shadow: 0 1px 28px rgba(255, 250, 248, .92);
+}
+.welcome-words h1 {
+  margin: 0;
+  font: 500 clamp(2.1rem, 8.4vw, 3.4rem)/1.14 var(--font-header);
+  letter-spacing: -.015em;
+  color: #3f3235;
+  text-shadow: 0 1px 26px rgba(255, 250, 248, .92);
+}
+.welcome-words .line {
+  margin: 1.1rem auto 0;
+  max-width: 30ch;
+  font: italic 500 clamp(1.06rem, 4vw, 1.32rem)/1.7 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+  text-shadow: 0 1px 20px rgba(255, 250, 248, .95);
+}
+.welcome-cta {
+  display: inline-block;
+  margin-top: 2.6rem;
+  padding: 1.05rem 2.2rem;
+  border: 1px solid rgba(142, 66, 88, .5);
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .64rem/1 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform .25s ease-out, background .25s ease-out, border-color .25s ease-out;
+}
+.welcome-cta:hover { background: rgba(255, 246, 244, .9); border-color: #8e4258; }
+.welcome-cta:active { transform: translateY(1px); }
+.welcome-cue {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  transform: translateX(-50%);
+  font: 600 .55rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-shadow: 0 0 12px rgba(255, 250, 248, .95);
+  pointer-events: none;
+}
+.welcome-cue i {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(#8e4258, transparent);
+  animation: story-cue 2s ease-in-out infinite;
+}
+
+/* ==================================================================== */
+/* THE FORM AS WRITING                                                  */
+/*                                                                      */
+/* No boxes anywhere. A field is a pencil line a guest writes on, and a */
+/* label is the beginning of a sentence they finish. Choices are set in */
+/* the same type as the page, marked by a thin blush rule rather than a */
+/* filled pill.                                                         */
+/* ==================================================================== */
+
+.scene label {
+  display: block;
+  margin: 0 0 2.2rem;
+  text-align: left;
+}
+.scene label > span {
+  display: block;
+  margin: 0 0 .35rem;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.18rem)/1.5 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(74, 58, 60, .82);
+}
+
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  width: 100%;
+  padding: .45rem 0 .6rem;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(142, 66, 88, .3) !important;
+  border-radius: 0 !important;
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  color: #3f3235;
+  font: 400 clamp(1.06rem, 4.2vw, 1.22rem)/1.75 var(--font-body);
+  transition: border-color .25s ease-out, box-shadow .25s ease-out;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.scene textarea { min-height: 7.5rem; resize: none; line-height: 2.4; }
+.scene input:not([type="checkbox"]):not([type="radio"]):focus,
+.scene select:focus,
+.scene textarea:focus {
+  outline: none;
+  border-bottom-color: #c9788f !important;
+  box-shadow: 0 1px 0 0 #c9788f !important;   /* the second pixel of the line */
+}
+.scene ::placeholder { color: rgba(74, 58, 60, .34); font-style: italic; transition: opacity .25s ease-out; }
+.scene input:focus::placeholder, .scene textarea:focus::placeholder { opacity: .45; }
+.scene select {
+  background-image: linear-gradient(45deg, transparent 49%, rgba(142,66,88,.6) 50%),
+                    linear-gradient(-45deg, transparent 49%, rgba(142,66,88,.6) 50%) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-position: right 6px center, right 1px center !important;
+  background-repeat: no-repeat !important;
+  padding-right: 1.6rem;
+}
+
+/* choices: editorial, not buttons */
+.scene .segmented-control,
+.scene .choice-grid {
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  gap: .2rem;
+}
+.scene .segmented-control button {
+  position: relative;
+  min-height: 56px;
+  padding: .5rem .2rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  color: rgba(74, 58, 60, .6);
+  font: 400 clamp(1.04rem, 4vw, 1.2rem)/1.5 var(--font-body) !important;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color .25s ease-out;
+}
+.scene .segmented-control button::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: .55rem;
+  height: 1px;
+  background: #c9788f;
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform .25s ease-out, opacity .25s ease-out;
+  opacity: 0;
+}
+.scene .segmented-control button.is-selected {
+  color: #8e4258;
+  background: none !important;
+  box-shadow: none !important;
+}
+.scene .segmented-control button.is-selected::after { transform: scaleX(1); opacity: 1; }
+
+/* the dinner cards keep their descriptions but lose the box */
+.scene .choice-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(142, 66, 88, .16) !important;
+  transition: opacity .25s ease-out;
+}
+.scene .choice-card.is-selected { background: none !important; opacity: 1; }
+.scene .choice-card:not(.is-selected) { opacity: .62; }
+
+/* fieldsets are pages of writing, not panels */
+.scene fieldset {
+  margin: 0 0 2.4rem;
+  padding: 0;
+  border: 0 !important;
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.scene legend {
+  margin-bottom: .3rem;
+  padding: 0;
+  font: italic 500 clamp(1.02rem, 3.8vw, 1.18rem)/1.5 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(74, 58, 60, .82);
+}
+
+/* room to breathe */
+.scene .form-card,
+.scene .wishes-card { padding: 2.4rem 1.4rem 2.8rem; }
+.scene .field-grid { display: grid; gap: 0; }
+@media (min-width: 720px) {
+  .scene .field-grid { grid-template-columns: 1fr 1fr; gap: 0 2.4rem; }
+  .scene .field-grid--single { grid-template-columns: 1fr !important; }
+}
+
+/* the send button, cut like an invitation card */
+.primary-button {
+  min-height: 58px;
+  padding: 0 2.4rem;
+  border: 1px solid rgba(142, 66, 88, .5) !important;
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .7) !important;
+  color: #8e4258 !important;
+  font: 600 .64rem/1 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 22px rgba(142, 66, 88, .1);
+  transition: transform .2s ease-out, background .25s ease-out, border-color .25s ease-out;
+}
+.primary-button:hover { background: rgba(255, 246, 244, .92) !important; border-color: #8e4258 !important; }
+.primary-button:active { transform: translateY(1px); }
+
+
+/* Bodoni is a high-contrast face: it wants a little more room and slightly
+   tighter tracking at display sizes than Playfair did. */
+.welcome-words h1,
+.welcome-words .script,
+.scene h2,
+.dream-words h1,
+.dream-words h2 { letter-spacing: -.012em; }
+.scene h2 { line-height: 1.12; }
+.welcome-words .script { font-weight: 400; }
+
+/* What guests write is Inter, comfortably sized, as the brief asks */
+.scene input:not([type="checkbox"]):not([type="radio"]),
+.scene select,
+.scene textarea {
+  font-family: var(--font-sans) !important;
+  font-size: clamp(1.02rem, 4.1vw, 1.16rem) !important;
+  font-weight: 400;
+  letter-spacing: -.005em;
+}
+.scene ::placeholder { font-family: var(--font-sans); font-style: normal; }
+
+/* ==================================================================== */
+/* Fixed chrome: the menu, its overlay, and the RSVP always in reach.   */
+/* ==================================================================== */
+.heart-cursor, .heart-cursor a, .heart-cursor button,
+.heart-cursor input, .heart-cursor textarea, .heart-cursor select { cursor: none !important; }
+
+.site-menu-button {
+  position: fixed;
+  z-index: 260;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(142, 66, 88, .45);
+  border-radius: 50%;
+  background: rgba(255, 252, 250, .55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .56rem/1 var(--font-sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .25s ease-out, transform .2s ease-out;
+}
+.site-menu-button:hover { background: rgba(255, 246, 244, .9); }
+.site-menu-button:active { transform: scale(.94); }
+.site-menu-button.is-open { font-size: 1rem; }
+
+.site-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-content: center;
+  gap: 1.6rem;
+  /* .82 let the page beneath read straight through, so the menu links and
+     the RSVP questions appeared on top of one another. */
+  background: rgba(250, 241, 239, .985);
+  backdrop-filter: blur(22px) saturate(115%);
+  -webkit-backdrop-filter: blur(22px) saturate(115%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .45s ease-out;
+}
+.site-menu-overlay.is-open { opacity: 1; pointer-events: auto; }
+.site-menu-overlay a,
+.site-menu-overlay > button {
+  opacity: 0;
+  transform: translateY(14px);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: center;
+  font: 500 clamp(1.7rem, 7vw, 2.5rem)/1.25 var(--font-header);
+  letter-spacing: -.01em;
+  color: #4a3a3c;
+  text-decoration: none;
+  transition: color .25s ease-out;
+}
+.site-menu-overlay.is-open a,
+.site-menu-overlay.is-open > button {
+  animation: menu-link-in .5s ease-out both;
+  animation-delay: calc(.06s + var(--i, 0) * .07s);
+}
+.site-menu-overlay a:hover,
+.site-menu-overlay > button:hover { color: #8e4258; }
+@keyframes menu-link-in { to { opacity: 1; transform: translateY(0); } }
+
+.fixed-rsvp {
+  position: fixed;
+  z-index: 240;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.7rem;
+  border: 1px solid rgba(142, 66, 88, .5);
+  border-radius: 4px;
+  background: rgba(255, 252, 250, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8e4258;
+  font: 600 .62rem/1 var(--font-sans);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 10px 26px rgba(142, 66, 88, .14);
+  transition: background .25s ease-out, transform .2s ease-out;
+  animation: onward-breathe 3.6s ease-in-out infinite;
+}
+.fixed-rsvp:hover { background: rgba(255, 246, 244, .92); }
+.fixed-rsvp:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-overlay a,
+  .site-menu-overlay > button { animation: none; opacity: 1; transform: none; }
+  .fixed-rsvp { animation: none; }
+}
+
+/* ==================================================================== */
+/* THE WIZARD — the journey as a few full-screen pages.                 */
+/* ==================================================================== */
+.scene[hidden] { display: none !important; }
+.wizard { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+.wizard .scene { min-height: 100svh; }
+.wizard .scroll-on { display: none; }        /* Continue replaces the cue */
+.wizard #wishes .primary-button { display: inline-flex; }  /* wishes submits itself */
+
+/* arriving on a step: a light fade-and-rise, never a scroll hijack */
+.step-enter .scene:not([hidden]) { animation: step-in .5s cubic-bezier(.25, 1, .5, 1) both; }
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-enter .scene:not([hidden]) { animation: none; }
+}
+
+/* the questions as pull-quotes: Bodoni floating over the paintings */
+.wizard .scene legend,
+.wizard .scene label > span {
+  font: 500 clamp(1.3rem, 5.4vw, 1.75rem)/1.3 var(--font-header);
+  font-style: normal;
+  letter-spacing: -.01em;
+  color: #3f3235;
+  text-shadow: 0 1px 18px rgba(255, 250, 248, .9);
+}
+.wizard .party-rsvp-list legend.is-quiet {
+  font: 500 clamp(1.5rem, 6.4vw, 2.1rem)/1.25 var(--font-header);
+  color: #3f3235;
+}
+.wizard .scene input:not([type="checkbox"]):not([type="radio"]),
+.wizard .scene select,
+.wizard .scene textarea {
+  font-size: clamp(1.2rem, 5vw, 1.5rem) !important;
+  padding-top: .55rem;
+}
+
+/* choices float on frosted glass, chosen by a glow and the blush rule */
+.wizard .scene .choice-card,
+.wizard .scene .segmented-control {
+  background: rgba(255, 255, 255, .15) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 18px;
+  padding: .5rem .9rem;
+}
+.wizard .scene .choice-card { padding: 1.1rem 1rem; border-bottom: 0 !important; margin-bottom: .7rem; }
+.wizard .scene .choice-card.is-selected {
+  /* the earlier borderless pass sets box-shadow: none !important, so this
+     must carry the same weight to win */
+  box-shadow: 0 0 0 1px rgba(201, 120, 143, .5), 0 14px 40px rgba(201, 120, 143, .18) !important;
+  background: rgba(255, 250, 250, .3) !important;
+}
+
+/* the wizard's own navigation */
+.wizard-nav {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  pointer-events: none;
+}
+.wizard-nav > * { pointer-events: auto; }
+/* top left, opposite the sound control and well clear of the menu button */
+.wizard-back {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  min-height: 44px;
+  padding: 0 .4rem;
+  border: 0;
+  background: none;
+  color: rgba(74, 58, 60, .72);
+  font: 500 .92rem/1 var(--font-body);
+  font-style: italic;
+  cursor: pointer;
+  text-shadow: 0 1px 12px rgba(255, 250, 248, .95);
+  transition: color .25s ease-out;
+}
+.wizard-back::before { content: "← "; font-style: normal; }
+.wizard-back:hover { color: #8e4258; }
+.wizard-next {
+  isolation: isolate;
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  min-height: 54px;
+  padding: 0 2.1rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: #8e4258;
+  font: 600 .68rem/54px var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  cursor: pointer;
+  isolation: isolate;
+  transition: color .25s ease-out;
+  animation: none;
+}
+/* the notched frame, drawn as two clipped layers so the line survives the cut */
+.wizard-next::before,
+.wizard-next::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+  transition: background .25s ease-out;
+}
+.wizard-next::before { background: rgba(142, 66, 88, .55); }
+.wizard-next::after {
+  inset: 1px;
+  background: rgba(255, 252, 250, .82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.wizard-next:hover::after { background: rgba(255, 246, 244, .95); }
+.wizard-next:active { transform: translateY(1px); }
+.wizard-next:disabled { opacity: .32; cursor: default; }
+
+/* 5. choices as floating type inside notched frames */
+/* A clip-path cuts the border off along the diagonals, so a plain 1px border
+   would vanish exactly at the notches. The line is drawn as a filled layer
+   underneath instead, with the glass sitting 1px inside it. */
+.wizard .scene .choice-card {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  padding: 1.5rem 1.3rem !important;
+  margin-bottom: 1rem;
+  transition: opacity .3s ease-out;
+  isolation: isolate;
+}
+.wizard .scene .choice-card::before,
+.wizard .scene .choice-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  transition: background .3s ease-out;
+}
+.wizard .scene .choice-card::before {            /* the line */
+  inset: 0;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background: rgba(201, 120, 143, .42);
+}
+.wizard .scene .choice-card::after {             /* the glass, 1px inside it */
+  inset: 1px;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background: rgba(255, 255, 255, .14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.wizard .scene .choice-card h3 {
+  font: 500 clamp(1.5rem, 6.6vw, 2.2rem)/1.15 var(--font-header);
+  letter-spacing: -.015em;
+  color: #3f3235;
+}
+.wizard .scene .choice-card p { font-size: .95rem; opacity: .8; }
+.wizard .scene .choice-card.is-selected::before { background: rgba(201, 120, 143, .95); }
+.wizard .scene .choice-card.is-selected::after { background: rgba(255, 252, 252, .3); }
+.wizard .scene .choice-card.is-selected {
+  background: none !important;
+  filter: drop-shadow(0 0 14px rgba(201, 120, 143, .45)) drop-shadow(0 16px 34px rgba(201, 120, 143, .2));
+}
+.wizard .scene .choice-card.is-selected h3 { color: #8e4258; }
+
+/* 6. the horizontal gallery — snapping sideways inside its own rail only */
+.photo-rail {
+  display: flex;
+  gap: 1rem;
+  margin: 1.6rem -1.2rem 0;
+  padding: 0 1.2rem 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.photo-rail::-webkit-scrollbar { display: none; }
+.photo-rail figure {
+  flex: 0 0 min(74vw, 320px);
+  margin: 0;
+  scroll-snap-align: center;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+.photo-rail img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-rail figcaption {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 1rem;
+  font: italic 500 .95rem/1.5 var(--font-body);
+  color: rgba(74, 58, 60, .6);
+  text-align: center;
+}
+
+/* The way back, once everything else has been read */
+.return-to-start { position: relative; z-index: 1; margin: 0 0 4rem; text-align: center; }
+.return-to-start a {
+  font: 500 .6rem/1 var(--font-sans);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: #8e4258;
+  text-decoration: none;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+}
+
+/* ==================================================================== */
+/* By invitation only — what a visitor without a personal link sees.    */
+/* Deliberately says nothing about the day.                             */
+/* ==================================================================== */
+.locked-invitation {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.4rem;
+  background: linear-gradient(170deg, #f6ebe8, #efdedd 60%, #e9d6d8);
+}
+.locked-card {
+  width: min(92vw, 440px);
+  padding: 3rem 1.8rem 3.2rem;
+  border: 1px solid rgba(142, 66, 88, .22);
+  border-radius: 22px;
+  background: rgba(255, 252, 250, .6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 24px 60px rgba(142, 66, 88, .12);
+  text-align: center;
+}
+.locked-mark { margin: 0 0 1rem; color: var(--rhapsodic, #C9A8A0); font-size: 1.1rem; }
+.locked-card h1 {
+  margin: 0 0 1.1rem;
+  font: 500 clamp(1.9rem, 8vw, 2.6rem)/1.15 var(--font-header);
+  letter-spacing: -.01em;
+  color: #3f3235;
+}
+.locked-card p {
+  margin: 0 auto;
+  max-width: 30ch;
+  font: italic 500 clamp(1rem, 4vw, 1.14rem)/1.65 var(--font-body);
+  color: rgba(74, 58, 60, .85);
+}
+.locked-help { margin-top: 1.4rem !important; font-size: .95rem !important; opacity: .78; }
+
+/* Accordions open by sliding rather than snapping */
+.guide-group ul {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height .3s ease-in-out, opacity .3s ease-in-out;
+}
+.guide-group.is-open ul { max-height: 120svh; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .guide-group ul { transition: none; }
+}
+/* the FAQ answers slide in the same way */
+.guide-group .guide-answer {
+  overflow: hidden;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  transition: max-height .3s ease-in-out, opacity .3s ease-in-out, padding .3s ease-in-out;
+}
+.guide-group.is-open .guide-answer { max-height: 60svh; opacity: 1; padding-bottom: 1.1rem; }
+
+/* ==================================================================== */
+/* THE ARCHWAY — layer 0, the first thing anyone sees.                  */
+/* ==================================================================== */
+.portal {
+  position: relative;
+  min-height: 100svh;
+  width: 100vw;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2.6rem);
+  background: linear-gradient(180deg, #e7dcec 0%, #ecdfe6 46%, #f0e2e2 100%);
+  overflow: hidden;
+  transition: transform 1.2s cubic-bezier(.8, 0, .2, 1),
+              filter 1.2s cubic-bezier(.8, 0, .2, 1),
+              opacity 1.2s cubic-bezier(.8, 0, .2, 1);
+}
+.portal.is-crossing { transform: scale(1.5); filter: blur(10px); opacity: 0; }
+
+/* the window itself: tall, round-topped, the film visible only inside it */
+.portal-arch {
+  position: relative;
+  width: min(76vw, 460px);
+  height: min(82dvh, 720px);
+  border-radius: 50rem 50rem 2rem 2rem;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(120, 90, 110, .28), inset 0 0 0 1px rgba(255, 255, 255, .45);
+  display: grid;
+  place-items: center;
+}
+.portal-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* a soft veil so white type stays readable over moving water */
+.portal-arch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(80, 55, 70, .12) 0%, rgba(80, 55, 70, .3) 62%, rgba(80, 55, 70, .46) 100%);
+}
+.portal-words {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.4rem;
+  text-align: center;
+  color: #fff;
+}
+.portal-eyebrow {
+  margin: 0 0 1.1rem;
+  font: 500 .58rem/1.6 var(--font-sans);
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .9);
+}
+.portal-words h1 {
+  margin: 0;
+  font: 400 clamp(2.4rem, 11vw, 3.8rem)/1.08 var(--font-header);
+  letter-spacing: -.01em;
+  color: #fff;
+  text-shadow: 0 2px 26px rgba(70, 45, 60, .4);
+}
+.portal-words h1 span { font-style: italic; opacity: .9; }
+.portal-place {
+  margin: 1rem 0 0;
+  font: 500 .6rem/1.6 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .92);
+}
+.portal-enter {
+  isolation: isolate;
+  position: relative;
+  margin-top: 2.4rem;
+  min-height: 52px;
+  padding: 0 2.4rem;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: 500 .64rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .2s ease-out;
+}
+.portal-enter::before {                     /* the notched 1px frame */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 255, 255, .85);
+}
+.portal-enter::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 255, 255, .06);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  transition: background .25s ease-out;
+}
+.portal-enter:hover::after { background: rgba(255, 255, 255, .2); }
+.portal-enter:active { transform: translateY(1px); }
+.portal-refused {
+  margin: 1.4rem auto 0;
+  max-width: 24ch;
+  font: italic 500 .92rem/1.5 var(--font-body);
+  color: rgba(255, 255, 255, .94);
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal { transition-duration: 1ms; }
+}
+
+/* ==================================================================== */
+/* TOUCH DEVICES: fewer live blurs.                                     */
+/*                                                                      */
+/* backdrop-filter is composited every frame against whatever is behind */
+/* it. Fifty of them over a moving painting is affordable on a desktop  */
+/* GPU and is not on a mid-range Android phone — it is the main reason  */
+/* scrolling feels heavy there. On touch devices the frosted panes      */
+/* become plain translucent ones, which look near-identical and cost    */
+/* nothing per frame.                                                   */
+/* ==================================================================== */
+@media (hover: none) and (pointer: coarse) {
+  .scene .form-card,
+  .scene .wishes-card,
+  .wizard .scene .choice-card::after,
+  .wizard .scene .segmented-control,
+  .guide-group,
+  .guide-group li a,
+  .app-list li,
+  .photo-rail figure,
+  .table-card,
+  .fixed-rsvp,
+  .welcome-cta,
+  .wizard-next::after,
+  .portal-enter::after,
+  .site-menu-button {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* the two full-screen blurs are the most expensive of all */
+  .site-menu-overlay { background: rgba(250, 241, 239, .99) !important; }
+  .ethereal-loader { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(255, 245, 245, .97); }
+
+  /* a scrolling page should not also be running a slow zoom on a 4K painting */
+  .dream-sky { animation: none !important; }
+}
+
+/* The fog on the table page keeps its blur — it is the whole point of that
+   page, it is shown once, and nothing scrolls underneath it. */
+
+/* On a wide screen the venue page put its words in a left column with the map
+   floating right, which reads as off-centre now that every other page is a
+   single centred column. Stack it instead: words, then map, both centred. */
+@media (min-width: 900px) {
+  .wizard .scene--venue {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    align-content: center;
+    gap: 1.6rem;
+  }
+  .wizard .scene--venue > .scene-content {
+    grid-column: 1;
+    max-width: min(680px, 88vw);
+    margin-inline: auto;
+    text-align: center;
+  }
+  .wizard .scene--venue .venue-map {
+    position: static;
+    grid-column: 1;
+    width: min(680px, 88vw);
+    height: 340px !important;
+    margin-inline: auto;
+  }
+  /* every page keeps to one centred measure */
+  .wizard .scene > .scene-content { margin-inline: auto; }
+}
+
+/* ==================================================================== */
+/* EDITORIAL PASS                                                       */
+/* Centred type throughout; actions as underlined words, not buttons.   */
+/* ==================================================================== */
+.wizard .scene,
+.wizard .scene-content,
+.wizard .scene label,
+.wizard .scene legend,
+.wizard .scene fieldset,
+.wizard .scene p,
+.wizard .scene li,
+.portal-words { text-align: center; }
+.wizard .scene label > span,
+.wizard .scene legend { text-align: center; }
+.wizard .scene input,
+.wizard .scene textarea,
+.wizard .scene select { text-align: center; }
+.wizard .guide-group > button { justify-content: center; gap: .6rem; }
+.wizard .guide-group li a,
+.wizard .guide-app { text-align: center; }
+
+/* actions read as words with a fine rule beneath, not as boxes */
+.wizard-next,
+.wizard-back,
+.site-menu-button,
+.portal-enter,
+.fixed-rsvp,
+.primary-button,
+.return-to-start button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  padding-left: .2rem;
+  padding-right: .2rem;
+}
+.wizard-next::before, .wizard-next::after,
+.portal-enter::before, .portal-enter::after { display: none !important; }
+.site-menu-button { width: auto; height: auto; min-height: 44px; padding: 0 .3rem; }
+.portal-enter { color: #fff; text-shadow: 0 1px 12px rgba(70,45,60,.5); }
+
+/* prompts breathe rather than blink */
+@keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.wizard-next,
+.fixed-rsvp,
+.portal-enter,
+.table-fog span { animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite !important; }
+
+/* the panes behind words: whimsical, barely there */
+.wizard .scene .form-card,
+.wizard .scene .wishes-card,
+.wizard .scene .venue-card { background: rgba(255, 255, 255, .15) !important; }
+
+/* the country code sits tight against the number */
+.phone-grid {
+  display: grid !important;
+  grid-template-columns: 7.5rem minmax(0, 1fr) !important;
+  gap: 0 .6rem !important;
+  max-width: 24rem;
+  margin-inline: auto;
+}
+.phone-grid select { padding-right: 1.2rem; }
+
+/* the wishes headings were touching */
+.wizard #wishes .scene-content > label:first-of-type { margin-top: 2.4rem; }
+.wizard #wishes h2 { margin-bottom: .4rem; }
+.wizard #wishes .section-intro { margin-bottom: 2.6rem; }
+/* the number's label spans both fields */
+.phone-grid .phone-code { align-self: end; }
+.phone-grid > label:last-child > span { text-align: center; }
+/* the invitation's own way forward */
+.rsvp-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;            /* a comfortable target, not a 23px line of text */
+  margin: 2.6rem auto 0;
+  padding: .6rem 1rem;
+  border: 0;
+  background: none;
+  color: #8e4258;
+  font: 600 .68rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+  text-shadow: 0 1px 12px rgba(255, 250, 248, .95);
+}
+@media (prefers-reduced-motion: reduce) { .rsvp-trigger { animation: none; } }
+
+/* ==================================================================== */
+/* Two butterflies, crossing once as a guest steps through the archway. */
+/* Nothing renders until the animation begins: opacity starts at zero   */
+/* and only the keyframes lift it, so they cannot appear on load even   */
+/* if these styles were to load late.                                   */
+/* ==================================================================== */
+.butterflies {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  pointer-events: none;
+  overflow: hidden;
+}
+.butterfly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  opacity: 0;
+  visibility: hidden;
+  filter: drop-shadow(0 4px 12px rgba(142, 66, 88, .22));
+}
+.butterflies.is-flying .butterfly { visibility: visible; }
+.butterflies.is-flying .butterfly--1 { animation: flutter-1 2.4s cubic-bezier(.4, .1, .3, 1) both; }
+.butterflies.is-flying .butterfly--2 { animation: flutter-2 2.8s cubic-bezier(.4, .1, .3, 1) .25s both; }
+.butterfly i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+}
+.butterflies.is-flying .butterfly i { animation: wingbeat .3s ease-in-out infinite; }
+@keyframes flutter-1 {
+  0%   { opacity: 0; transform: translate(12vw, 82svh) rotate(-8deg) scale(.7); }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(76vw, 6svh) rotate(16deg) scale(1.15); }
+}
+@keyframes flutter-2 {
+  0%   { opacity: 0; transform: translate(74vw, 88svh) rotate(10deg) scale(.65); }
+  18%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(16vw, 4svh) rotate(-14deg) scale(1.1); }
+}
+@keyframes wingbeat { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.6); } }
+@media (prefers-reduced-motion: reduce) {
+  .butterflies { display: none; }
+}
+
+/* ==================================================================== */
+/* RESTORED: these blocks were removed as collateral by earlier regex   */
+/* cleanups. Without them the /table page has no fog and the background */
+/* films render inline instead of covering the screen.                  */
+/* ==================================================================== */
+
+/* the film layer inside each painting */
+.dream-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* /table — the dispersing mist */
+.table-reveal {
+  position: relative;
+  z-index: 0;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 8svh 1.4rem;
+}
+.table-reveal .table-card {
+  position: relative;
+  z-index: 40;
+  width: min(90vw, 460px);
+  padding: 3rem 1.8rem 3.2rem;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .16);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1), transform 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-reveal.is-cleared .table-card { opacity: 1; transform: none; }
+.table-welcome {
+  margin: 0 0 .6rem;
+  font: italic 500 clamp(1rem, 4vw, 1.2rem)/1.5 var(--font-body);
+  color: rgba(74, 58, 60, .88);
+}
+.table-number {
+  margin: 0;
+  font: 500 clamp(3rem, 16vw, 5.4rem)/1 var(--font-header);
+  letter-spacing: -.02em;
+  color: #3f3235;
+  text-shadow: 0 6px 30px rgba(201, 120, 143, .35);
+}
+.table-number--pending { font-size: clamp(1.5rem, 7vw, 2.1rem); color: rgba(74, 58, 60, .7); }
+.table-room {
+  margin: 1.1rem 0 0;
+  font: 500 .6rem/1.6 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #8e4258;
+}
+.table-fog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100svh;
+  padding: 2rem;
+  border: 0;
+  background: rgba(255, 245, 250, .4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 1200ms cubic-bezier(.25, 1, .5, 1),
+              backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1),
+              -webkit-backdrop-filter 1200ms cubic-bezier(.25, 1, .5, 1);
+}
+.table-fog span {
+  max-width: 22ch;
+  font: 400 clamp(1.15rem, 5vw, 1.6rem)/1.5 var(--font-header);
+  color: #4a3a3c;
+  text-align: center;
+}
+.table-fog.is-cleared {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
+
+/* small helpers the markup expects */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.phone-note { margin-bottom: .9rem; }
+@media (prefers-reduced-motion: reduce) {
+  .table-reveal .table-card { transition-duration: 1ms; }
+}
+
+/* ==================================================================== */
+/* ONE VOICE                                                            */
+/*                                                                      */
+/* The stylesheet had grown 113 distinct type sizes and 78 colours over */
+/* many rounds of changes, which is what makes a site feel assembled    */
+/* rather than composed. Everything a guest actually sees now draws     */
+/* from the small scale below.                                          */
+/* ==================================================================== */
+:root {
+  /* type — five sizes, nothing between */
+  --t-display: clamp(2.3rem, 10vw, 3.6rem);   /* page titles */
+  --t-title:   clamp(1.5rem, 6.4vw, 2.1rem);  /* questions, card titles */
+  --t-body:    clamp(1.02rem, 4vw, 1.18rem);  /* sentences */
+  --t-input:   clamp(1.2rem, 5vw, 1.5rem);    /* what guests write */
+  --t-label:   .62rem;                        /* tracked-out small caps */
+
+  /* ink and blush — four values carry the whole invitation */
+  --ink-strong: #3f3235;
+  --ink:        rgba(74, 58, 60, .88);
+  --blush:      #8e4258;
+  --blush-soft: #c9788f;
+
+  /* motion — one curve, three speeds */
+  --ease: cubic-bezier(.25, 1, .5, 1);
+  --quick: 250ms;
+  --settle: 500ms;
+  --cinematic: 1200ms;
+}
+
+/* titles and questions */
+.wizard .scene h2,
+.portal-words h1,
+.locked-card h1 { font-size: var(--t-display); color: var(--ink-strong); }
+.wizard .scene h3,
+.wizard .scene legend,
+.wizard .scene label > span,
+.table-number--pending { font-size: var(--t-title); }
+.wizard .scene p,
+.wizard .scene li,
+.locked-card p,
+.guide-group li span { font-size: var(--t-body); color: var(--ink); }
+.wizard .scene input:not([type="checkbox"]):not([type="radio"]),
+.wizard .scene textarea,
+.wizard .scene select { font-size: var(--t-input) !important; }
+.step-label,
+.portal-eyebrow,
+.portal-place,
+.table-room,
+.wizard-next,
+.rsvp-trigger,
+.site-menu-button,
+.guide-group li em,
+.app-links a {
+  font-size: var(--t-label);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+/* one curve for every state change a guest can cause */
+.wizard-next, .wizard-back, .site-menu-button, .portal-enter,
+.rsvp-trigger, .primary-button, .choice-card, .segmented-control button,
+.guide-group > button, .guide-group ul, .guide-answer {
+  transition-timing-function: var(--ease);
+  transition-duration: var(--quick);
+}
+.step-enter .scene:not([hidden]) { animation-duration: var(--settle); animation-timing-function: var(--ease); }
+.portal, .table-fog, .table-reveal .table-card { transition-timing-function: var(--ease); }
+
+/* These two lost the scale to older, more specific rules. */
+.wizard .scene .step-label,
+.wizard .scene-content .step-label {
+  font-size: var(--t-label) !important;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--blush);
+}
+.wizard .scene .choice-card p,
+.wizard .scene .section-intro { font-size: var(--t-body) !important; }
+
+/* ==================================================================== */
+/* CINEMATIC PASS — measured against the reference breakdown.           */
+/* ==================================================================== */
+
+/* 1. Glass: translucency plus a little saturation, so the paintings keep
+   their colour through the frost rather than going grey. */
+.wizard .scene .form-card,
+.wizard .scene .wishes-card,
+.wizard .scene .venue-card,
+.wizard .scene .choice-card::after,
+.wizard .scene .segmented-control,
+.guide-group,
+.app-list li,
+.photo-rail figure,
+.table-reveal .table-card,
+.site-menu-overlay,
+.ethereal-loader,
+.table-fog {
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+/* A blur only costs real work when what sits behind it is moving. These
+   overlays cover a still page, so they keep their frost even on a phone;
+   the cards that scroll over a drifting painting do not. */
+@media (hover: none) and (pointer: coarse) {
+  .site-menu-overlay,
+  .ethereal-loader,
+  .table-fog {
+    backdrop-filter: blur(14px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(115%) !important;
+  }
+  .site-menu-overlay { background: rgba(250, 240, 238, .72); }
+  .ethereal-loader { background: rgba(255, 245, 245, .85); }
+}
+
+/* 2. Entry: a longer, deeper drift upward — nothing arrives abruptly. */
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+.step-enter .scene:not([hidden]) {
+  animation: step-in 900ms var(--ease) both;
+}
+/* the page leaves before the next arrives, so there is never a bare frame */
+@keyframes step-out { to { opacity: 0; transform: translateY(-12px); } }
+.wizard.is-leaving .scene:not([hidden]) { animation: step-out 260ms var(--ease) both; }
+
+/* 3. Hover: a line drawn from the left, and the faintest lift. */
+.wizard-next,
+.wizard-back,
+.rsvp-trigger,
+.site-menu-button,
+.portal-enter,
+.primary-button,
+.welcome-cta {
+  /* position: relative was overriding position: absolute set earlier for
+     .wizard-next/.wizard-back/.site-menu-button, which is what pins them to
+     the corners of the screen. With it removed, "right"/"bottom" stopped
+     meaning "that corner" and started meaning "nudge from here" instead —
+     every fixed control piled up near the top-left. Each of these already
+     has its own position set where it needs one; this rule must not touch it. */
+  text-decoration: none;          /* the rule is drawn, not underlined */
+  transition: transform 400ms var(--ease), opacity 400ms var(--ease);
+}
+/* only the two that had no position of their own get one, so the hover
+   underline (an absolutely-positioned ::before) has somewhere to anchor */
+.rsvp-trigger, .portal-enter, .primary-button, .welcome-cta { position: relative; }
+.wizard-next::before,
+.wizard-back::before,
+.rsvp-trigger::before,
+.site-menu-button::before,
+.portal-enter::before,
+.primary-button::before,
+.welcome-cta::before {
+  content: "";
+  position: absolute;
+  left: .2rem;
+  right: .2rem;
+  bottom: .35rem;
+  height: 1px;
+  background: currentColor;
+  opacity: .55;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform 500ms var(--ease), opacity 500ms var(--ease);
+}
+@media (hover: hover) {
+  .wizard-next:hover, .wizard-back:hover, .rsvp-trigger:hover,
+  .site-menu-button:hover, .portal-enter:hover, .primary-button:hover,
+  .welcome-cta:hover { transform: scale(1.02); }
+  .wizard-next:hover::before, .wizard-back:hover::before, .rsvp-trigger:hover::before,
+  .site-menu-button:hover::before, .portal-enter:hover::before,
+  .primary-button:hover::before, .welcome-cta:hover::before { opacity: 1; }
+}
+.wizard-next:disabled::before { opacity: .25; }
+
+/* 4. Parallax: the paintings drift a little slower than the words above them. */
+.dream-skies { will-change: transform; }
+.dream-sky { transform: translate3d(0, var(--parallax, 0px), 0) scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  .dream-sky { transform: none; }
+  .step-enter .scene:not([hidden]),
+  .wizard.is-leaving .scene:not([hidden]) { animation: none; }
+}
+
+/* ==================================================================== */
+/* Corrections from the live site.                                      */
+/* ==================================================================== */
+
+/* 1. The number label sat inside the right-hand grid column, so it centred
+   itself over that column rather than over the page. It now spans both. */
+.wizard .phone-grid {
+  grid-template-columns: 7.5rem minmax(0, 12rem) !important;
+  justify-content: center;
+  row-gap: .3rem !important;
+}
+.wizard .phone-grid > label:last-child > span {
+  grid-column: 1 / -1;
+  order: -1;
+  text-align: center;
+  /* no negative margins — on a narrow screen they pushed the label off the
+     side of the page. Spanning both columns centres it honestly. */
+}
+.wizard .phone-grid > label:last-child {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+@supports not (grid-template-columns: subgrid) {
+  /* older browsers: the label simply sits above both fields */
+  .wizard .phone-grid { grid-template-columns: minmax(0, 1fr) !important; justify-items: center; }
+  .wizard .phone-grid > label:last-child { display: block; width: 100%; max-width: 14rem; }
+  .wizard .phone-code { max-width: 10rem; }
+}
+
+/* 2. The four fixed controls: their own corners, and legible.
+   Back bottom-left · Next bottom-right · Menu top-right · Sound top-left. */
+.wizard-back {
+  top: auto !important;
+  bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  left: max(18px, env(safe-area-inset-left)) !important;
+}
+.sound-control {
+  top: max(16px, env(safe-area-inset-top)) !important;
+  left: max(16px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+}
+.wizard-next,
+.wizard-back,
+.site-menu-button,
+.sound-control small,
+.rsvp-trigger {
+  font-size: .78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .18em !important;
+  color: #7d2f45 !important;
+  opacity: 1;
+  text-shadow: 0 1px 10px rgba(255, 252, 250, .95), 0 0 22px rgba(255, 252, 250, .8);
+}
+.wizard-back { font-style: normal !important; }
+.wizard-next::before, .wizard-back::before, .site-menu-button::before, .rsvp-trigger::before {
+  height: 1.5px;
+  opacity: .8;
+}
+
+/* 3 & 4. The venue: directions, then the map beneath — neither overlapping. */
+.wizard .scene--venue { display: block !important; padding-block: 8svh; }
+.wizard .scene--venue > .scene-content {
+  position: relative;
+  z-index: 2;
+  max-width: min(680px, 88vw);
+  margin: 0 auto;
+}
+.wizard .scene--venue .venue-map {
+  position: relative !important;
+  z-index: 1;
+  width: min(680px, 88vw);
+  height: 320px !important;
+  max-height: 40svh;
+  margin: 1.8rem auto 0 !important;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.wizard .scene--venue .venue-map::after { display: none; }
+
+/* 5. The closing pages sat a full screen apart. */
+.wizard #confirmation, .wizard #gallery, .wizard #venue { min-height: auto; padding-block: 7svh; }
+.wizard #gallery { padding-top: 2svh; }
+
+/* 6. The carousel could not scroll because every scene clips its overflow.
+   The rail is allowed to keep its own scrolling. */
+.scene { overflow: visible; }
+.scene .photo-rail {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  width: min(100%, 92vw);
+  margin-inline: auto;
+  padding-bottom: 1rem;
+}
+.scene .photo-rail figure { flex: 0 0 min(70vw, 280px); scroll-snap-align: center; }
+/* the sound toggle, matched to the other three */
+.sound-control {
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 .3rem !important;
+  min-width: 0 !important;
+}
+.sound-control > span { font-size: 1rem !important; color: #7d2f45; }
+.sound-control small {
+  font-size: .78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .18em !important;
+  text-transform: uppercase;
+  color: #7d2f45 !important;
+  text-shadow: 0 1px 10px rgba(255, 252, 250, .95);
+}
+.sound-control em { display: none; }
+@media (max-width: 620px) {
+  /* the word was hidden on phones; with the pill gone it should show */
+  .sound-control small { display: block !important; }
+  .sound-control { grid-template-columns: 1.1rem auto !important; }
+}
+
+/* ==================================================================== */
+/* LEGIBILITY                                                           */
+/* Every size up about 15%, ink darkened, and a soft light behind the   */
+/* words so nothing has to compete with the painting.                   */
+/* ==================================================================== */
+:root {
+  --t-display: clamp(2.65rem, 11.5vw, 4.1rem);
+  --t-title:   clamp(1.72rem, 7.4vw, 2.4rem);
+  --t-body:    clamp(1.17rem, 4.6vw, 1.36rem);
+  --t-input:   clamp(1.38rem, 5.75vw, 1.72rem);
+  --t-label:   .72rem;
+
+  --ink-strong: #33282b;      /* was #3f3235 */
+  --ink:        rgba(52, 40, 43, .95);
+  --blush:      #7d2f45;      /* was #8e4258 */
+  --blush-soft: #b8536f;
+}
+
+/* the secret chapter: it was cream, from when this page had a dark
+   background, so it all but vanished on the paintings */
+.after-party-reveal {
+  margin: 2.2rem auto 0 !important;
+  padding: .95rem 1.9rem !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: .5rem;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  color: #7d2f45 !important;
+  font-family: var(--font-sans);
+  font-size: .78rem !important;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  position: relative;
+  isolation: isolate;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.after-party-reveal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(125, 47, 69, .55);
+}
+.after-party-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 252, 250, .88);
+}
+
+/* words carry a little light of their own over the paintings */
+.wizard .scene h2,
+.wizard .scene h3,
+.wizard .scene p,
+.wizard .scene li,
+.wizard .scene legend,
+.wizard .scene label > span,
+.portal-words h1,
+.portal-eyebrow,
+.portal-place,
+.locked-card h1,
+.locked-card p,
+.step-label,
+.table-welcome,
+.table-number,
+.table-room {
+  text-shadow: 0 1px 14px rgba(255, 252, 250, .95), 0 0 30px rgba(255, 252, 250, .75);
+}
+.portal-words h1,
+.portal-eyebrow,
+.portal-place {
+  text-shadow: 0 2px 18px rgba(70, 45, 60, .55), 0 0 40px rgba(70, 45, 60, .3);
+}
+
+/* the faint supporting lines were the hardest to read of all */
+.wizard .scene .section-intro,
+.wizard .scene .help-note,
+.wizard .scene .import-help,
+.guide-group li span,
+.app-list > li > span { color: rgba(52, 40, 43, .92) !important; }
+.palette-note, .rsvp-deadline-note { color: rgba(52, 40, 43, .9) !important; }
+
+/* the close ✕ needs to read as clearly as the links behind it */
+.site-menu-button.is-open {
+  font-size: 1.4rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+.site-menu-button.is-open::before { display: none; }
+/* the menu links, given room */
+.site-menu-overlay a,
+.site-menu-overlay > button { padding: .5rem 1rem; }
+
+
+/* Back and Next were set in different faces — one serif, one sans — which is
+   why they never looked like a pair. Both are Inter now, and larger. */
+.wizard-back,
+.wizard-next,
+.site-menu-button,
+.sound-control small,
+.rsvp-trigger {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+}
+.wizard-back::before { content: "\2190\00a0"; }
+
+/* ==================================================================== */
+/* The secret chapter — its own page, framed like the archway.          */
+/* ==================================================================== */
+.afterparty-arch {
+  position: relative;
+  width: min(86vw, 460px);
+  margin: 0 auto;
+  padding: 3.2rem 1.6rem 3rem;
+  border-radius: 50rem 50rem 20px 20px;
+  background: rgba(255, 252, 250, .5);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .18), inset 0 0 0 1px rgba(255, 255, 255, .5);
+  text-align: center;
+}
+.afterparty-arch .section-intro { max-width: 26ch; margin-inline: auto; }
+.afterparty-enter {
+  isolation: isolate;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.2rem;
+  min-height: 52px;
+  padding: 0 2.6rem;
+  color: #7d2f45;
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.afterparty-enter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px);
+  background: rgba(125, 47, 69, .6);
+}
+.afterparty-enter::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px);
+  background: rgba(255, 252, 250, .92);
+}
+@media (prefers-reduced-motion: reduce) { .afterparty-enter { animation: none; } }
+
+/* ==================================================================== */
+/* FINAL POSITIONING — written last so nothing above can override it.   */
+/* ==================================================================== */
+
+/* Back sits bottom-left, opposite Next. It kept appearing top-left
+   because an earlier rule set `top` and nothing cleared it. */
+.wizard-nav .wizard-back {
+  position: absolute !important;
+  top: auto !important;
+  bottom: max(22px, env(safe-area-inset-bottom)) !important;
+  left: max(20px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+}
+.wizard-nav .wizard-next {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  bottom: max(22px, env(safe-area-inset-bottom)) !important;
+  right: max(20px, env(safe-area-inset-right)) !important;
+}
+/* one voice for both, and for the menu */
+.wizard-back, .wizard-next, .site-menu-button, .sound-control small {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  color: #7d2f45 !important;
+}
+/* the arrow moves to ::after — ::before is the hover rule and was being
+   overwritten, which turned the underline into the arrow glyph */
+.wizard-back::before { content: "" !important; }
+.wizard-back { padding-left: 1.1rem !important; }
+.wizard-back::after {
+  content: "\2190";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+}
+
+/* The map goes below the directions, in normal flow, so it cannot sit on
+   top of them. It reads correctly on iOS already; this makes every browser
+   agree. */
+.wizard .scene--venue { display: block !important; }
+.wizard .scene--venue > .scene-content,
+.wizard .scene--venue > .venue-card {
+  position: static !important;
+  max-width: min(680px, 90vw);
+  margin: 0 auto !important;
+}
+.wizard .scene--venue .venue-map {
+  position: static !important;
+  float: none !important;
+  width: min(680px, 90vw) !important;
+  height: 300px !important;
+  max-height: 38svh !important;
+  margin: 2rem auto 0 !important;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* The carousel: nothing between it and the screen may clip it. */
+.wizard #gallery,
+.wizard #gallery .scene-content { overflow: visible !important; }
+.wizard #gallery .photo-rail {
+  display: flex !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  width: min(92vw, 900px);
+  margin-inline: auto;
+  padding: 0 .5rem 1rem;
+  scrollbar-width: thin;
+}
+.wizard #gallery .photo-rail figure {
+  flex: 0 0 min(66vw, 260px) !important;
+  scroll-snap-align: center;
+  margin: 0;
+}
+
+/* The after-party invitation, given a page of its own. */
+.after-party-page {
+  display: grid;
+  place-items: center;
+  gap: 1.2rem;
+  padding: 3rem 1.2rem;
+  text-align: center;
+}
+.after-party-page .after-party-reveal {
+  font-size: .92rem !important;
+  padding: 1.15rem 2.4rem !important;
+}
+
+/* ==================================================================== */
+/* The secret chapter: a page of its own, framed like the archway.      */
+/* ==================================================================== */
+.afterparty-arch {
+  width: min(88vw, 460px);
+  margin: 0 auto;
+  padding: 3rem 1.6rem 3.2rem;
+  border-radius: 50rem 50rem 22px 22px;
+  background: rgba(255, 252, 250, .72);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .18), inset 0 0 0 1px rgba(255, 255, 255, .6);
+  text-align: center;
+}
+.afterparty-enter {
+  isolation: isolate;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin-top: 2rem;
+  padding: 0 2rem;
+  color: #7d2f45;
+  font: 700 .8rem/1 var(--font-sans);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.afterparty-enter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(125, 47, 69, .6);
+}
+.afterparty-enter::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 253, 252, .94);
+}
+
+/* the menu, in blush rather than white — the white heart cursor vanished on it */
+.site-menu-overlay { background: rgba(243, 219, 222, .985) !important; }
+@media (hover: none) and (pointer: coarse) {
+  .site-menu-overlay { background: rgba(243, 219, 222, .99) !important; }
+}
+
+/* Back and Next: same face, same size, easy to read */
+.wizard-next,
+.wizard-back {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase;
+}
