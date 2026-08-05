@@ -5263,10 +5263,18 @@ canvas { pointer-events: none; }
 .portal-enter,
 .primary-button,
 .welcome-cta {
-  position: relative;
+  /* position: relative was overriding position: absolute set earlier for
+     .wizard-next/.wizard-back/.site-menu-button, which is what pins them to
+     the corners of the screen. With it removed, "right"/"bottom" stopped
+     meaning "that corner" and started meaning "nudge from here" instead —
+     every fixed control piled up near the top-left. Each of these already
+     has its own position set where it needs one; this rule must not touch it. */
   text-decoration: none;          /* the rule is drawn, not underlined */
   transition: transform 400ms var(--ease), opacity 400ms var(--ease);
 }
+/* only the two that had no position of their own get one, so the hover
+   underline (an absolutely-positioned ::before) has somewhere to anchor */
+.rsvp-trigger, .portal-enter, .primary-button, .welcome-cta { position: relative; }
 .wizard-next::before,
 .wizard-back::before,
 .rsvp-trigger::before,
