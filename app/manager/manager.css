@@ -646,3 +646,77 @@
 .health-list strong { display: block; font-size: .85rem; }
 .health-list p { margin: .15rem 0 0; color: var(--m-muted); font-size: .76rem; }
 .health-affected { font-style: italic; }
+/* a button that is working says so, and cannot be pressed twice */
+.guest-modal button[type="submit"]:disabled,
+.manager-main button:disabled {
+  opacity: .55;
+  cursor: progress;
+}
+
+/* ==================================================================== */
+/* Invitation links on a phone.                                         */
+/*                                                                      */
+/* A four-column table pushed the buttons — the only part you actually  */
+/* press — off the right of the screen. Below 700px each household      */
+/* becomes a card instead, with its actions full width and reachable.   */
+/* ==================================================================== */
+@media (max-width: 700px) {
+  .link-table-panel .table-scroll { overflow: visible; }
+  .link-table { min-width: 0 !important; width: 100%; display: block; }
+  .link-table thead { display: none; }
+  .link-table tbody, .link-table tr, .link-table td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;   /* the card's own padding was pushing it wider
+                                 than the screen, taking the buttons with it */
+  }
+  .link-table .link-actions button,
+  .link-table .link-actions a { box-sizing: border-box; max-width: 100%; }
+
+  .link-table tr {
+    margin: 0 0 .9rem;
+    padding: 1rem 1rem 1.1rem;
+    border: 1px solid var(--m-line);
+    border-radius: 16px;
+    background: #fff;
+  }
+  .link-table td { border: 0 !important; padding: 0; }
+
+  .link-table td:first-child strong { font-size: 1.05rem; }
+  .link-table td:nth-child(2) { margin-top: .15rem; color: var(--m-muted); font-size: .82rem; }
+
+  .link-table .link-cell { margin: .6rem 0 .8rem; }
+  .link-table .link-cell span {
+    max-width: 100%;
+    padding: .5rem .6rem;
+    border-radius: 8px;
+    background: var(--m-tint, #fdf6f3);
+    font-size: .62rem;
+    overflow-wrap: anywhere;
+  }
+
+  /* the part that matters: two clear rows of full-width actions */
+  .link-table .link-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);   /* one per row: nothing can spill */
+    gap: .5rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .link-table .link-actions button,
+  .link-table .link-actions a {
+    width: 100%;
+    min-height: 46px;
+    justify-content: center;
+    font-size: .68rem;
+    white-space: nowrap;
+  }
+  /* Copy the message is the one used most, so it leads and spans the row */
+  .link-table .link-actions button:nth-child(2) {
+    order: -1;
+    background: var(--m-wine, #7d2f45);
+    border-color: var(--m-wine, #7d2f45);
+    color: #fff;
+  }
+}
