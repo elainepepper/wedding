@@ -144,13 +144,31 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const act = async (payload: Record<string, unknown>, success: string) => {
     if (inFlight.current) return;
     inFlight.current = true;
+    // Take the row off the screen at once. If the save fails the background
+    // reload puts it straight back, and the error message explains why.
+    if (payload.action === "deleteGuest" || payload.action === "archiveGuest") {
+      const id = Number(payload.guestId);
+      setData((current) => current ? { ...current, guests: current.guests.filter((guest) => guest.id !== id) } : current);
+    }
+    if (payload.action === "deleteHousehold") {
+      const id = Number(payload.householdId);
+      setData((current) => current ? {
+        ...current,
+        households: current.households.filter((household) => household.id !== id),
+        guests: current.guests.filter((guest) => Number(guest.household_id) !== id),
+      } : current);
+    }
     try {
       const response = await fetch("/api/manager", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(payload) });
       const result = await readApiResponse<{ summary?: { added: number; updated: number; skipped: number; errors: string[] } }>(response);
       if (!response.ok) throw new Error(result.error || "The change could not be saved.");
-      await load(true);
       setError("");
       notify(result.summary ? `${result.summary.added} added · ${result.summary.updated} updated · ${result.summary.skipped} skipped` : success);
+      // The screen used to wait for a full reload of every guest, household,
+      // table and activity before it would respond — several seconds on a
+      // list this size. The change is already saved; refresh in the
+      // background and let the interface answer immediately.
+      void load(true);
       return result;
     } catch (failure) {
       // Most callers do not catch. Without this the failure was invisible:
@@ -347,6 +365,31 @@ function invitationMessage(names: string, link: string) {
 }
 
 function Households({ households, guests, act, notify , setUndo }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void }) {
+  const [picked, setPicked] = useState<number[]>([]);
+  const [progress, setProgress] = useState("");
+  const toggle = (id: number) => setPicked((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  const removePicked = async () => {
+    const chosen = households.filter((household) => picked.includes(household.id));
+    const count = chosen.reduce((total, household) => total + guests.filter((g) => Number(g.household_id) === Number(household.id)).length, 0);
+    if (!window.confirm(`Delete ${chosen.length} invitation${chosen.length === 1 ? "" : "s"} and ${count} guest${count === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    // Deleting 120 invitations one after another can outlast the hosting
+    // timeout, so progress is reported and a failure says how far it reached
+    // rather than leaving you guessing.
+    let done = 0;
+    try {
+      for (const household of chosen) {
+        await act({ action: "deleteHousehold", householdId: household.id }, "");
+        done += 1;
+        setProgress(`Deleting… ${done} of ${chosen.length}`);
+      }
+      notify(`${chosen.length} invitation${chosen.length === 1 ? "" : "s"} deleted`);
+    } catch (failure) {
+      notify(`Stopped after ${done} of ${chosen.length}. ${failure instanceof Error ? failure.message : ""}`);
+    } finally {
+      setProgress("");
+      setPicked([]);
+    }
+  };
   const copyLink = async (household: Household, afterParty = false) => {
     const link = afterParty
       ? `${window.location.origin}/after-party?token=${household.invitation_token}`
@@ -354,10 +397,28 @@ function Households({ households, guests, act, notify , setUndo }: { households:
     await navigator.clipboard.writeText(link);
     notify(afterParty ? "Private after-party link copied" : "Invitation link copied");
   };
-  return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>A household is one invitation link, shared by everyone on it. A couple is one household with two people; a single guest is a household of one.</span></div></div><section className="household-grid">{households.map((household) => {
-    const members = guests.filter((guest) => guest.household_id === household.id);
+  return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>A household is one invitation link, shared by everyone on it. A couple is one household with two people; a single guest is a household of one.</span></div></div>
+    <div className="household-tools">
+      <label className="select-all">
+        <input
+          type="checkbox"
+          checked={picked.length > 0 && picked.length === households.length}
+          ref={(box) => { if (box) box.indeterminate = picked.length > 0 && picked.length < households.length; }}
+          onChange={() => setPicked(picked.length === households.length ? [] : households.map((household) => household.id))}
+        />
+        <span>{picked.length === households.length && households.length ? "Deselect all" : `Select all ${households.length}`}</span>
+      </label>
+      {progress ? <span className="picked-count">{progress}</span> : picked.length ? <span className="picked-count">{picked.length} selected</span> : null}
+    </div>
+    {picked.length ? <div className="bulk-bar"><strong>{picked.length} selected</strong>
+      <button type="button" onClick={() => setPicked([])}>Clear</button>
+      <button type="button" className="bulk-delete" onClick={removePicked}>Delete invitations</button>
+    </div> : null}<section className="household-grid">{households.map((household) => {
+    const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
     const afterParty = members.some((guest) => guest.after_party_invited);
-    return <article className="household-card" key={household.id}><header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
+    return <article className={`household-card${picked.includes(household.id) ? " is-picked" : ""}`} key={household.id}>
+      <label className="household-pick"><input type="checkbox" checked={picked.includes(household.id)} onChange={() => toggle(household.id)} aria-label={`Select ${household.name}`} /><span>Select</span></label>
+      <header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
         const members = guests.filter((g) => g.household_id === household.id);
         const warning = members.length
           ? `Delete ${household.name} and its ${members.length} guest${members.length === 1 ? "" : "s"}? Their invitation link will stop working. This cannot be undone.`

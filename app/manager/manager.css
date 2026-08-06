@@ -925,3 +925,29 @@
   opacity: 0; cursor: pointer;
 }
 .drop-zone { position: relative; }
+
+/* selecting several invitations at once */
+.household-card { position: relative; }
+.household-card.is-picked { box-shadow: 0 0 0 2px var(--m-wine, #7d2f45); }
+.household-pick {
+  display: inline-flex; align-items: center; gap: .45rem;
+  margin-bottom: .6rem; min-height: 40px;
+  font-size: .68rem; font-weight: 700; color: var(--m-muted); cursor: pointer;
+}
+.household-pick input { width: 20px; height: 20px; }
+
+/* Choosing several invitations at once */
+.household-tools {
+  display: flex; flex-wrap: wrap; gap: .8rem; align-items: center;
+  margin: 0 0 .9rem; padding: .7rem .9rem;
+  border: 1px solid var(--m-line); border-radius: 12px; background: #fff;
+}
+.select-all { display: flex; align-items: center; gap: .55rem; min-height: 44px; cursor: pointer; }
+.select-all input { width: 20px; height: 20px; accent-color: var(--m-wine, #7d2f45); }
+.select-all span { font-size: .8rem; font-weight: 700; }
+.picked-count { margin-left: auto; color: var(--m-wine); font-size: .78rem; font-weight: 700; }
+/* the per-card control, made obvious */
+.household-pick { display: flex; align-items: center; gap: .5rem; min-height: 44px; cursor: pointer; }
+.household-pick input { width: 20px; height: 20px; accent-color: var(--m-wine, #7d2f45); }
+.household-pick span { font-size: .72rem; font-weight: 700; color: var(--m-muted); }
+.household-card.is-picked { outline: 2px solid var(--m-wine, #7d2f45); outline-offset: -2px; }
