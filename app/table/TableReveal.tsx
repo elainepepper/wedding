@@ -49,7 +49,7 @@ export function TableReveal({ token }: { token?: string }) {
   return (
     <main className={`table-reveal${cleared ? " is-cleared" : ""}`}>
       <Dreamscape />
-      <BubbleCursor zIndex={95} />
+      <BubbleCursor zIndex={9998} />
 
       <section className="table-card" data-sky="dream-3" aria-live="polite">
         {error ? (

@@ -82,7 +82,11 @@ export async function POST(request: Request) {
       const lastName = clean(payload.lastName, 100);
       const mobile = clean(payload.mobile, 60);
       if (!firstName) return Response.json({ error: "First name is required." }, { status: 400 });
-      if (!/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) return Response.json({ error: "A mobile number with country code is required." }, { status: 400 });
+      // A number is welcome but not required — the import allows guests without
+      // one, and a guest gives their own when they reply. Only the shape is checked.
+      if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) {
+        return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
+      }
       let householdId = integer(payload.householdId);
       if (!householdId) {
         householdId = await nextId("households");
@@ -100,14 +104,47 @@ export async function POST(request: Request) {
       if (!guestId) return Response.json({ error: "Guest not found." }, { status: 400 });
       const guestDoc = await docById("guests", guestId);
       if (!guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
-      if ("mobile" in payload && !/^\+[0-9][0-9\s()-]{7,20}$/.test(clean(payload.mobile, 60))) return Response.json({ error: "A mobile number with country code is required." }, { status: 400 });
+      const editMobile = clean(payload.mobile, 60);
+      if ("mobile" in payload && editMobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(editMobile)) {
+        return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
+      }
       const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", rsvpStatus: "rsvp_status", mealSelection: "meal_selection", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", afterPartyAttending: "after_party_attending", accommodationName: "accommodation_name" };
       const update: Record<string, unknown> = { age_group: "Adult", updated_at: serverTimestamp() };
       Object.entries(fields).forEach(([key, field]) => { if (key in payload) update[field] = clean(payload[key], key === "internalNotes" ? 1500 : 800) || null; });
       const booleans: Record<string, string> = { ceremonyInvited: "ceremony_invited", receptionInvited: "reception_invited", afterPartyEligible: "after_party_eligible", afterPartyInvited: "after_party_invited", transportRequired: "transport_required", accommodationRequired: "accommodation_required" };
       Object.entries(booleans).forEach(([key, field]) => { if (key in payload) update[field] = payload[key] ? 1 : 0; });
+      // Moving a guest to another invitation — this was never handled, so
+      // changing the household in the form appeared to save and did nothing.
+      if ("householdId" in payload) {
+        let householdId = integer(payload.householdId);
+        if (!householdId) {
+          // "Create new household" — give them an invitation of their own
+          householdId = await nextId("households");
+          const first = clean(payload.firstName, 100) || String(guestDoc.data().first_name ?? "");
+          const last = clean(payload.lastName, 100) || String(guestDoc.data().last_name ?? "");
+          const householdName = clean(payload.householdName, 180) || `${first} ${last}`.trim() || "New invitation";
+          await weddingRef.collection("households").doc(String(householdId)).set({
+            id: householdId, name: householdName, mobile: editMobile || null, max_guests: 1,
+            invitation_token: randomToken(), invitation_enabled: true, archived: 0,
+            created_at: serverTimestamp(), updated_at: serverTimestamp(),
+          }, { merge: true });
+        }
+        update.household_id = householdId;
+      }
+
       await guestDoc.ref.set(update, { merge: true });
       await addActivity(admin.displayName, "Guest edited", "guest", guestId, "Guest details updated");
+      return Response.json({ ok: true });
+    }
+
+    // Restoring an archived guest — what makes an "undo" possible after a
+    // deletion, so one mis-tap does not cost a family their invitation.
+    if (action === "restoreGuest") {
+      const guestId = integer(payload.guestId);
+      const guestDoc = guestId ? await docById("guests", guestId) : null;
+      if (!guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
+      await guestDoc.ref.set({ archived: 0, updated_at: serverTimestamp() }, { merge: true });
+      await addActivity(admin.displayName, "Guest restored", "guest", guestId as number, "Brought back from the archive");
       return Response.json({ ok: true });
     }
 
@@ -143,6 +180,21 @@ export async function POST(request: Request) {
       await weddingRef.collection("tables").doc(String(id)).set({ id, name, shape: ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round", capacity: Math.max(1, Math.min(200, integer(payload.capacity) ?? 10)), x: Number(payload.x) || 50, y: Number(payload.y) || 50, locked: 0, notes: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Table created", "table", id, name);
       return Response.json({ ok: true });
+    }
+
+    if (action === "deleteHousehold") {
+      const householdId = integer(payload.householdId);
+      const householdDoc = householdId ? await docById("households", householdId) : null;
+      if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
+      // Everyone on the invitation goes with it — a household without guests
+      // is meaningless, and a guest without a household can never be reached.
+      const members = await weddingRef.collection("guests")
+        .where("household_id", "in", [Number(householdId), String(householdId)]).get();
+      await Promise.all(members.docs.map((doc) => doc.ref.delete()));
+      await householdDoc.ref.delete();
+      await addActivity(admin.displayName, "Household removed", "household", householdId as number,
+        `${String(householdDoc.data().name ?? "")} and ${members.size} guest${members.size === 1 ? "" : "s"}`);
+      return Response.json({ ok: true, removedGuests: members.size });
     }
 
     if (action === "editTable") {
@@ -212,7 +264,7 @@ export async function POST(request: Request) {
     }
 
     if (action === "saveSettings") {
-      await weddingRef.set({ wedding_name: clean(payload.weddingName, 180) || "Elaine & Haykal", couple_names: clean(payload.coupleNames, 180) || "Elaine and Haykal", wedding_date: clean(payload.weddingDate, 20) || "2026-11-07", rsvp_deadline: clean(payload.rsvpDeadline, 20) || "2026-09-30", website_url: clean(payload.websiteUrl, 300) || null, invitation_wording: clean(payload.invitationWording, 1000) || null, confirmation_message: clean(payload.confirmationMessage, 1000) || null, timezone: clean(payload.timezone, 80) || "Australia/Perth", date_format: clean(payload.dateFormat, 40) || "D MMMM YYYY", formspree_form_id: clean(payload.formspreeFormId, 180) || null, cloudinary_cloud_name: clean(payload.cloudinaryCloudName, 180) || null, music_url: clean(payload.musicUrl, 600) || null, music_title: clean(payload.musicTitle, 180) || null, after_party_when: clean(payload.afterPartyWhen, 200) || null, after_party_where: clean(payload.afterPartyWhere, 300) || null, after_party_dress: clean(payload.afterPartyDress, 300) || null, after_party_entry: clean(payload.afterPartyEntry, 300) || null, updated_at: serverTimestamp() }, { merge: true });
+      await weddingRef.set({ wedding_name: clean(payload.weddingName, 180) || "Elaine & Haykal", couple_names: clean(payload.coupleNames, 180) || "Elaine and Haykal", wedding_date: clean(payload.weddingDate, 20) || "2026-11-07", rsvp_deadline: clean(payload.rsvpDeadline, 20) || "2026-09-15", website_url: clean(payload.websiteUrl, 300) || null, invitation_wording: clean(payload.invitationWording, 1000) || null, confirmation_message: clean(payload.confirmationMessage, 1000) || null, timezone: clean(payload.timezone, 80) || "Australia/Perth", date_format: clean(payload.dateFormat, 40) || "D MMMM YYYY", formspree_form_id: clean(payload.formspreeFormId, 180) || null, cloudinary_cloud_name: clean(payload.cloudinaryCloudName, 180) || null, music_url: clean(payload.musicUrl, 600) || null, music_title: clean(payload.musicTitle, 180) || null, after_party_when: clean(payload.afterPartyWhen, 200) || null, after_party_where: clean(payload.afterPartyWhere, 300) || null, after_party_dress: clean(payload.afterPartyDress, 300) || null, after_party_entry: clean(payload.afterPartyEntry, 300) || null, updated_at: serverTimestamp() }, { merge: true });
       await addActivity(admin.displayName, "Wedding settings updated", "settings", "elaine-haykal-2026", "Settings saved");
       return Response.json({ ok: true });
     }

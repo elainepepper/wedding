@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readToken } from "./invite-token";
 import { Butterflies } from "./Butterflies";
+import BubbleCursor from "./BubbleCursor";
 
 /**
  * The archway — the first thing anyone sees.
@@ -59,6 +60,7 @@ export function HeroPortal() {
           ) : null}
         </div>
       </div>
+      <BubbleCursor zIndex={9998} />
       <Butterflies flying={crossing} />
     </main>
   );

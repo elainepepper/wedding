@@ -507,8 +507,12 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     if (anyYes) steps.push({ id: "meal", sections: ["meal"], ready: mealComplete, cta: "Continue" });
     if (anyYes) steps.push({ id: "travel", sections: ["travel"], ready: travelComplete, cta: "Continue" });
     if (flyingIn) steps.push({ id: "guide", sections: ["recommendations"], ready: true, cta: "Continue" });
+    steps.push({ id: "venue", sections: ["venue"], ready: true, cta: "Continue" });
     steps.push({ id: "wishes", sections: ["wishes"], ready: journeyDone, cta: "" });
-    steps.push({ id: "final", sections: ["confirmation", "venue", "gallery"], ready: false, cta: "" });
+    // The venue was sharing the closing page, and because it sits earlier in
+    // the document it appeared above the confirmation — which is what buried
+    // the secret chapter. It gets a page of its own.
+    steps.push({ id: "final", sections: ["confirmation", "afterparty", "gallery"], ready: false, cta: "" });
     return steps;
   }, [anyYes, flyingIn, rsvpComplete, mealComplete, travelComplete, journeyDone]);
   const stepIndex = Math.min(step, wizardSteps.length - 1);
@@ -532,7 +536,13 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
   const goToSection = (id: string) => {
     const index = wizardSteps.findIndex((entry) => entry.sections.includes(id));
-    if (index >= 0) setStep(index);
+    if (index < 0) return;
+    // A step only has something to show once its sections are on the page.
+    // The confirmation, for one, does not exist until a reply has been sent —
+    // jumping there early left a guest on a blank screen.
+    const rendered = wizardSteps[index].sections.some((section) => document.getElementById(section));
+    if (!rendered) return;
+    setStep(index);
   };
   useEffect(() => {
     if (submitted) setStep(wizardSteps.length - 1);
@@ -540,13 +550,28 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   // Which sections are on screen. This runs whenever the steps are rebuilt —
   // which is on every answer, since answers open gates — so it must do nothing
   // but show and hide.
+  // A last resort: if the current step somehow has nothing on it, return to
+  // the invitation rather than leaving a guest on an empty screen.
+  useEffect(() => {
+    if (inviteLoading || !personalised) return;
+    const present = wizardSteps[stepIndex].sections.some((section) => document.getElementById(section));
+    if (!present && stepIndex !== 0) setStep(0);
+  }, [stepIndex, wizardSteps, inviteLoading, personalised]);
+
   useEffect(() => {
     const active = new Set(wizardSteps[stepIndex].sections);
     const extras = new Set<string>();
     active.forEach((id) => (customAfter.get(id) ?? []).forEach((page) => extras.add(page.id)));
+    // An answer can reveal or hide part of the page — a room offer, say. That
+    // changes the page's height, and the browser shifts the scroll to
+    // compensate, which reads as a jump. Hold the position across the change.
+    const held = window.scrollY;
     document.querySelectorAll<HTMLElement>("[data-scene]").forEach((el) => {
       el.hidden = !(active.has(el.id) || extras.has(el.id));
     });
+    if (shownStep.current === stepIndex && Math.abs(window.scrollY - held) > 1) {
+      window.scrollTo({ top: held, behavior: "instant" as ScrollBehavior });
+    }
   }, [stepIndex, wizardSteps, customAfter, submitted]);
 
   // Turning to a new page: only here does the view move. Keeping this apart
@@ -590,6 +615,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     if (flyingIn) ids.push("recommendations");
     if (journeyDone) ids.push("wishes");
     if (submitted) ids.push("confirmation");
+    if (inviteData?.afterPartyInvited) ids.push("afterparty");
     if (journeyDone) ids.push("gallery");
     // Editor-hidden chapters drop out; editor-added pages slide in after their anchor.
     return ids.flatMap((id) => [...(hiddenScenes.has(id) ? [] : [id]), ...(customAfter.get(id) ?? []).map((page) => page.id)]);
@@ -658,8 +684,15 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   useEffect(() => {
     const onFocus = (event: FocusEvent) => {
       const target = event.target as HTMLElement | null;
-      if (!target || !target.matches("input, textarea, select")) return;
-      window.setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 280);
+      // Only fields that raise the keyboard, and only when the keyboard would
+      // actually cover them. Scrolling on every focus — a country-code menu,
+      // say — made the page jump for no reason.
+      if (!target || !target.matches("input:not([type='checkbox']):not([type='radio']), textarea")) return;
+      window.setTimeout(() => {
+        const box = target.getBoundingClientRect();
+        const keyboardTop = window.innerHeight * 0.55;
+        if (box.bottom > keyboardTop) target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 280);
     };
     window.addEventListener("focusin", onFocus);
     return () => window.removeEventListener("focusin", onFocus);
@@ -726,7 +759,16 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     setSubmitting(true);
     setError("");
     try {
-      const mobile = `${rsvp.countryCode}${rsvp.phoneNumber.replace(/\D/g, "")}`;
+      // Guests type their number the way they say it: "0412 345 678", or
+      // sometimes with the country code repeated. Both would be saved as a
+      // number nobody can ring.
+      const codeDigits = rsvp.countryCode.replace(/\D/g, "");
+      let localDigits = rsvp.phoneNumber.replace(/\D/g, "");
+      if (localDigits.startsWith(codeDigits) && localDigits.length > codeDigits.length + 6) {
+        localDigits = localDigits.slice(codeDigits.length);        // code typed twice
+      }
+      localDigits = localDigits.replace(/^0+/, "");                 // local trunk zero
+      const mobile = `${rsvp.countryCode}${localDigits}`;
       const firstConfirmedId = guestResponses.find((guest) => guest.rsvpStatus === "Confirmed")?.id;
       const guests = guestResponses.map((guest) => ({
         ...guest,
@@ -781,15 +823,16 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       // these move between steps rather than jumping to anchors, which cannot
       // reach a section the wizard is currently holding hidden
       { label: "RSVP", onSelect: () => goToSection("rsvp") },
-      { label: "Confirmation page", onSelect: () => goToSection("confirmation") },
+      ...(submitted ? [{ label: "Confirmation page", onSelect: () => goToSection("confirmation") }] : []),
+      ...(inviteData?.afterPartyInvited ? [{ label: "The secret chapter", onSelect: () => goToSection("afterparty") }] : []),
     ]} /> : null}
     <Dreamscape onReady={() => setFilmReady(true)} />
-    <BubbleCursor zIndex={95} />
+    <BubbleCursor zIndex={9998} />
     <a className="skip-experience" href="#rsvp">Go straight to your reply</a>
     {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
     {activeSection !== "welcome" ? <>
       <div className="scroll-progress" aria-hidden="true"><i style={{ height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%` }} /></div>
-      <nav className="scene-nav" aria-label="Your progress">{wizardSteps.slice(0, -1).map((entry, index) => <button key={entry.id} type="button" className={index === stepIndex ? "is-active" : ""} onClick={() => { if (index <= stepIndex) setStep(index); }} aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`} aria-current={index === stepIndex ? "step" : undefined}><span /><b>{entry.cta === "Begin" ? "The invitation" : entry.id === "reply" ? "Your reply" : entry.id === "dress" ? "Dress code" : entry.id === "meal" ? "Dinner" : entry.id === "travel" ? "Travel" : entry.id === "guide" ? "Kuala Lumpur" : "Wishes"}</b></button>)}</nav>
+      <nav className="scene-nav" aria-label="Your progress">{wizardSteps.slice(0, -1).map((entry, index) => <button key={entry.id} type="button" className={index === stepIndex ? "is-active" : ""} onClick={() => { if (index <= stepIndex) setStep(index); }} aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`} aria-current={index === stepIndex ? "step" : undefined}><span /><b>{entry.cta === "Begin" ? "The invitation" : entry.id === "reply" ? "Your reply" : entry.id === "dress" ? "Dress code" : entry.id === "meal" ? "Dinner" : entry.id === "travel" ? "Travel" : entry.id === "guide" ? "Kuala Lumpur" : entry.id === "venue" ? "The Grand Salon" : "Wishes"}</b></button>)}</nav>
 
     </> : null}
     <EditableDecorationOverlay design={siteDesign} activeScene={activeSection} />
@@ -923,7 +966,18 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       <p className="help-note private-note">Only Elaine and Haykal will ever read this one.</p>{error && activeSection === "wishes" ? <p className="form-error" role="alert">{error}</p> : null}<button className="primary-button" type="button" onClick={submitRsvp} disabled={submitting || submitted}>{submitting ? "Sending with love…" : submitted ? "RSVP sent" : previewMode ? "Preview confirmation" : "Send our RSVP"}{!submitting && !submitted ? <span aria-hidden="true">♡</span> : null}</button><small className="privacy-note">{previewMode ? "Preview only — no response or personal information will be saved." : "Your details are used only to plan Elaine and Haykal’s celebration."}</small></> : <div className="invitation-only compact"><p>Your personal invitation link unlocks the RSVP and wishes form.</p></div>}</div></section> : null}
     {renderCustomPages("wishes")}
 
-    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}{inviteData?.afterPartyInvited && token ? <a className="after-party-reveal" href={`/after-party?token=${encodeURIComponent(token)}`}>A secret chapter awaits ✦</a> : null}</div></section> : null}
+    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}</div></section> : null}
+    {inviteData?.afterPartyInvited && token ? <section id="afterparty" data-sky="dream-3" style={textStyle("afterparty")} className="scene scene--afterparty" data-scene>
+      <div className="scene-content reveal">
+        <div className="afterparty-arch">
+          <p className="step-label">Only for a chosen few</p>
+          <h2>A secret chapter</h2>
+          <p className="section-intro">When the last dance is done, a few of you are invited to carry the night a little further.</p>
+          <a className="afterparty-enter" href={`/after-party?token=${encodeURIComponent(token)}`}>Open your invitation</a>
+        </div>
+      </div>
+    </section> : null}
+
     {journeyDone ? <section id="gallery" data-sky="dream-2" style={textStyle("gallery")} className="scene scene--paper" data-scene>
       <div className="scene-content reveal">
         <p className="step-label">The two of us</p>

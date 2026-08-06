@@ -4339,9 +4339,11 @@ canvas { pointer-events: none; }
   display: grid;
   place-content: center;
   gap: 1.6rem;
-  background: rgba(250, 240, 238, .82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* .82 let the page beneath read straight through, so the menu links and
+     the RSVP questions appeared on top of one another. */
+  background: rgba(250, 241, 239, .985);
+  backdrop-filter: blur(22px) saturate(115%);
+  -webkit-backdrop-filter: blur(22px) saturate(115%);
   opacity: 0;
   pointer-events: none;
   transition: opacity .45s ease-out;
@@ -4827,7 +4829,7 @@ canvas { pointer-events: none; }
   }
 
   /* the two full-screen blurs are the most expensive of all */
-  .site-menu-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(250, 240, 238, .97); }
+  .site-menu-overlay { background: rgba(250, 241, 239, .99) !important; }
   .ethereal-loader { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(255, 245, 245, .97); }
 
   /* a scrolling page should not also be running a slow zoom on a 4K painting */
@@ -5312,3 +5314,461 @@ canvas { pointer-events: none; }
   .step-enter .scene:not([hidden]),
   .wizard.is-leaving .scene:not([hidden]) { animation: none; }
 }
+
+/* ==================================================================== */
+/* Corrections from the live site.                                      */
+/* ==================================================================== */
+
+/* 1. The number label sat inside the right-hand grid column, so it centred
+   itself over that column rather than over the page. It now spans both. */
+.wizard .phone-grid {
+  grid-template-columns: 7.5rem minmax(0, 12rem) !important;
+  justify-content: center;
+  row-gap: .3rem !important;
+}
+.wizard .phone-grid > label:last-child > span {
+  grid-column: 1 / -1;
+  order: -1;
+  text-align: center;
+  /* no negative margins — on a narrow screen they pushed the label off the
+     side of the page. Spanning both columns centres it honestly. */
+}
+.wizard .phone-grid > label:last-child {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+@supports not (grid-template-columns: subgrid) {
+  /* older browsers: the label simply sits above both fields */
+  .wizard .phone-grid { grid-template-columns: minmax(0, 1fr) !important; justify-items: center; }
+  .wizard .phone-grid > label:last-child { display: block; width: 100%; max-width: 14rem; }
+  .wizard .phone-code { max-width: 10rem; }
+}
+
+/* 2. The four fixed controls: their own corners, and legible.
+   Back bottom-left · Next bottom-right · Menu top-right · Sound top-left. */
+.wizard-back {
+  top: auto !important;
+  bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  left: max(18px, env(safe-area-inset-left)) !important;
+}
+.sound-control {
+  top: max(16px, env(safe-area-inset-top)) !important;
+  left: max(16px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+}
+.wizard-next,
+.wizard-back,
+.site-menu-button,
+.sound-control small,
+.rsvp-trigger {
+  font-size: .78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .18em !important;
+  color: #7d2f45 !important;
+  opacity: 1;
+  text-shadow: 0 1px 10px rgba(255, 252, 250, .95), 0 0 22px rgba(255, 252, 250, .8);
+}
+.wizard-back { font-style: normal !important; }
+.wizard-next::before, .wizard-back::before, .site-menu-button::before, .rsvp-trigger::before {
+  height: 1.5px;
+  opacity: .8;
+}
+
+/* 3 & 4. The venue: directions, then the map beneath — neither overlapping. */
+.wizard .scene--venue { display: block !important; padding-block: 8svh; }
+.wizard .scene--venue > .scene-content {
+  position: relative;
+  z-index: 2;
+  max-width: min(680px, 88vw);
+  margin: 0 auto;
+}
+.wizard .scene--venue .venue-map {
+  position: relative !important;
+  z-index: 1;
+  width: min(680px, 88vw);
+  height: 320px !important;
+  max-height: 40svh;
+  margin: 1.8rem auto 0 !important;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.wizard .scene--venue .venue-map::after { display: none; }
+
+/* 5. The closing pages sat a full screen apart. */
+.wizard #confirmation, .wizard #gallery, .wizard #venue { min-height: auto; padding-block: 7svh; }
+.wizard #gallery { padding-top: 2svh; }
+
+/* 6. The carousel could not scroll because every scene clips its overflow.
+   The rail is allowed to keep its own scrolling. */
+.scene { overflow: visible; }
+.scene .photo-rail {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  width: min(100%, 92vw);
+  margin-inline: auto;
+  padding-bottom: 1rem;
+}
+.scene .photo-rail figure { flex: 0 0 min(70vw, 280px); scroll-snap-align: center; }
+/* the sound toggle, matched to the other three */
+.sound-control {
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 .3rem !important;
+  min-width: 0 !important;
+}
+.sound-control > span { font-size: 1rem !important; color: #7d2f45; }
+.sound-control small {
+  font-size: .78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .18em !important;
+  text-transform: uppercase;
+  color: #7d2f45 !important;
+  text-shadow: 0 1px 10px rgba(255, 252, 250, .95);
+}
+.sound-control em { display: none; }
+@media (max-width: 620px) {
+  /* the word was hidden on phones; with the pill gone it should show */
+  .sound-control small { display: block !important; }
+  .sound-control { grid-template-columns: 1.1rem auto !important; }
+}
+
+/* ==================================================================== */
+/* LEGIBILITY                                                           */
+/* Every size up about 15%, ink darkened, and a soft light behind the   */
+/* words so nothing has to compete with the painting.                   */
+/* ==================================================================== */
+:root {
+  --t-display: clamp(2.65rem, 11.5vw, 4.1rem);
+  --t-title:   clamp(1.72rem, 7.4vw, 2.4rem);
+  --t-body:    clamp(1.17rem, 4.6vw, 1.36rem);
+  --t-input:   clamp(1.38rem, 5.75vw, 1.72rem);
+  --t-label:   .72rem;
+
+  --ink-strong: #33282b;      /* was #3f3235 */
+  --ink:        rgba(52, 40, 43, .95);
+  --blush:      #7d2f45;      /* was #8e4258 */
+  --blush-soft: #b8536f;
+}
+
+/* the secret chapter: it was cream, from when this page had a dark
+   background, so it all but vanished on the paintings */
+.after-party-reveal {
+  margin: 2.2rem auto 0 !important;
+  padding: .95rem 1.9rem !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: .5rem;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  color: #7d2f45 !important;
+  font-family: var(--font-sans);
+  font-size: .78rem !important;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  position: relative;
+  isolation: isolate;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.after-party-reveal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(125, 47, 69, .55);
+}
+.after-party-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 252, 250, .88);
+}
+
+/* words carry a little light of their own over the paintings */
+.wizard .scene h2,
+.wizard .scene h3,
+.wizard .scene p,
+.wizard .scene li,
+.wizard .scene legend,
+.wizard .scene label > span,
+.portal-words h1,
+.portal-eyebrow,
+.portal-place,
+.locked-card h1,
+.locked-card p,
+.step-label,
+.table-welcome,
+.table-number,
+.table-room {
+  text-shadow: 0 1px 14px rgba(255, 252, 250, .95), 0 0 30px rgba(255, 252, 250, .75);
+}
+.portal-words h1,
+.portal-eyebrow,
+.portal-place {
+  text-shadow: 0 2px 18px rgba(70, 45, 60, .55), 0 0 40px rgba(70, 45, 60, .3);
+}
+
+/* the faint supporting lines were the hardest to read of all */
+.wizard .scene .section-intro,
+.wizard .scene .help-note,
+.wizard .scene .import-help,
+.guide-group li span,
+.app-list > li > span { color: rgba(52, 40, 43, .92) !important; }
+.palette-note, .rsvp-deadline-note { color: rgba(52, 40, 43, .9) !important; }
+
+/* the close ✕ needs to read as clearly as the links behind it */
+.site-menu-button.is-open {
+  font-size: 1.4rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+.site-menu-button.is-open::before { display: none; }
+/* the menu links, given room */
+.site-menu-overlay a,
+.site-menu-overlay > button { padding: .5rem 1rem; }
+
+
+/* Back and Next were set in different faces — one serif, one sans — which is
+   why they never looked like a pair. Both are Inter now, and larger. */
+.wizard-back,
+.wizard-next,
+.site-menu-button,
+.sound-control small,
+.rsvp-trigger {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+}
+.wizard-back::before { content: "\2190\00a0"; }
+
+/* ==================================================================== */
+/* The secret chapter — its own page, framed like the archway.          */
+/* ==================================================================== */
+.afterparty-arch {
+  position: relative;
+  width: min(86vw, 460px);
+  margin: 0 auto;
+  padding: 3.2rem 1.6rem 3rem;
+  border-radius: 50rem 50rem 20px 20px;
+  background: rgba(255, 252, 250, .5);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .18), inset 0 0 0 1px rgba(255, 255, 255, .5);
+  text-align: center;
+}
+.afterparty-arch .section-intro { max-width: 26ch; margin-inline: auto; }
+.afterparty-enter {
+  isolation: isolate;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.2rem;
+  min-height: 52px;
+  padding: 0 2.6rem;
+  color: #7d2f45;
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.afterparty-enter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px);
+  background: rgba(125, 47, 69, .6);
+}
+.afterparty-enter::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px);
+  background: rgba(255, 252, 250, .92);
+}
+@media (prefers-reduced-motion: reduce) { .afterparty-enter { animation: none; } }
+
+/* ==================================================================== */
+/* FINAL POSITIONING — written last so nothing above can override it.   */
+/* ==================================================================== */
+
+/* Back sits bottom-left, opposite Next. It kept appearing top-left
+   because an earlier rule set `top` and nothing cleared it. */
+.wizard-nav .wizard-back {
+  position: absolute !important;
+  top: auto !important;
+  bottom: max(22px, env(safe-area-inset-bottom)) !important;
+  left: max(20px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+}
+.wizard-nav .wizard-next {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  bottom: max(22px, env(safe-area-inset-bottom)) !important;
+  right: max(20px, env(safe-area-inset-right)) !important;
+}
+/* one voice for both, and for the menu */
+.wizard-back, .wizard-next, .site-menu-button, .sound-control small {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  color: #7d2f45 !important;
+}
+/* the arrow moves to ::after — ::before is the hover rule and was being
+   overwritten, which turned the underline into the arrow glyph */
+.wizard-back::before { content: "" !important; }
+.wizard-back { padding-left: 1.1rem !important; }
+.wizard-back::after {
+  content: "\2190";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+}
+
+/* The map goes below the directions, in normal flow, so it cannot sit on
+   top of them. It reads correctly on iOS already; this makes every browser
+   agree. */
+.wizard .scene--venue { display: block !important; }
+.wizard .scene--venue > .scene-content,
+.wizard .scene--venue > .venue-card {
+  position: static !important;
+  max-width: min(680px, 90vw);
+  margin: 0 auto !important;
+}
+.wizard .scene--venue .venue-map {
+  position: static !important;
+  float: none !important;
+  width: min(680px, 90vw) !important;
+  height: 300px !important;
+  max-height: 38svh !important;
+  margin: 2rem auto 0 !important;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* The carousel: nothing between it and the screen may clip it. */
+.wizard #gallery,
+.wizard #gallery .scene-content { overflow: visible !important; }
+.wizard #gallery .photo-rail {
+  display: flex !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  width: min(92vw, 900px);
+  margin-inline: auto;
+  padding: 0 .5rem 1rem;
+  scrollbar-width: thin;
+}
+.wizard #gallery .photo-rail figure {
+  flex: 0 0 min(66vw, 260px) !important;
+  scroll-snap-align: center;
+  margin: 0;
+}
+
+/* The after-party invitation, given a page of its own. */
+.after-party-page {
+  display: grid;
+  place-items: center;
+  gap: 1.2rem;
+  padding: 3rem 1.2rem;
+  text-align: center;
+}
+.after-party-page .after-party-reveal {
+  font-size: .92rem !important;
+  padding: 1.15rem 2.4rem !important;
+}
+
+/* ==================================================================== */
+/* The secret chapter: a page of its own, framed like the archway.      */
+/* ==================================================================== */
+.afterparty-arch {
+  width: min(88vw, 460px);
+  margin: 0 auto;
+  padding: 3rem 1.6rem 3.2rem;
+  border-radius: 50rem 50rem 22px 22px;
+  background: rgba(255, 252, 250, .72);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  box-shadow: 0 26px 70px rgba(142, 66, 88, .18), inset 0 0 0 1px rgba(255, 255, 255, .6);
+  text-align: center;
+}
+.afterparty-enter {
+  isolation: isolate;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin-top: 2rem;
+  padding: 0 2rem;
+  color: #7d2f45;
+  font: 700 .8rem/1 var(--font-sans);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: soft-pulse 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.afterparty-enter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(125, 47, 69, .6);
+}
+.afterparty-enter::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background: rgba(255, 253, 252, .94);
+}
+
+/* the menu, in blush rather than white — the white heart cursor vanished on it */
+.site-menu-overlay { background: rgba(243, 219, 222, .985) !important; }
+@media (hover: none) and (pointer: coarse) {
+  .site-menu-overlay { background: rgba(243, 219, 222, .99) !important; }
+}
+
+/* Back and Next: same face, same size, easy to read */
+.wizard-next,
+.wizard-back {
+  font-family: var(--font-sans) !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase;
+}
+
+/* Modifier hooks that had no rules of their own */
+.scene--schedule .scene-content { max-width: min(620px, 92vw); }
+.scene--afterparty { padding-block: 6svh; }
+.scene-art--schedule { display: none; }   /* decorations are off site-wide */
+.photo-gate.is-unlocked { opacity: 0; pointer-events: none; }

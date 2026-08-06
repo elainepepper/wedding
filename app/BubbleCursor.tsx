@@ -27,7 +27,7 @@ class Particle {
       y: -0.4 + Math.random() * -1,
     };
     this.position = { x, y };
-    this.baseDimension = 4;
+    this.baseDimension = 13;  // grows to about 60% of the 45px heart
     this.fill = fill;
     this.stroke = stroke;
   }
@@ -44,9 +44,24 @@ class Particle {
     const life = Math.max(0, this.lifeSpan / this.initialLifeSpan);
 
     context.globalAlpha = Math.min(1, life * 1.4);
-    context.fillStyle = this.fill;
+    // Each bubble carries its own soft light, the way the reference trail
+    // glows, rather than being a flat outlined circle.
+    const glow = context.createRadialGradient(
+      this.position.x - (this.baseDimension / 2) * scale,
+      this.position.y - this.baseDimension / 2,
+      0,
+      this.position.x - (this.baseDimension / 2) * scale,
+      this.position.y - this.baseDimension / 2,
+      Math.max(1, this.baseDimension * scale)
+    );
+    glow.addColorStop(0, "rgba(255, 255, 255, .95)");
+    glow.addColorStop(0.5, this.fill);
+    glow.addColorStop(1, "rgba(255, 208, 222, 0)");
+    context.fillStyle = glow;
     context.strokeStyle = this.stroke;
     context.lineWidth = 1;
+    context.shadowColor = "rgba(214, 132, 160, .45)";
+    context.shadowBlur = 8;
     context.beginPath();
     context.arc(
       this.position.x - (this.baseDimension / 2) * scale,
@@ -58,6 +73,7 @@ class Particle {
     context.stroke();
     context.fill();
     context.closePath();
+    context.shadowBlur = 0;
     context.globalAlpha = 1;
   }
 }
@@ -136,9 +152,15 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
       ctx.bezierCurveTo(17.8, 6, 20, 7.8, 20, 10.6);
       ctx.bezierCurveTo(20, 14.2, 17, 17.5, 12, 21);
       ctx.closePath();
-      ctx.fillStyle = "#ffffff";
-      ctx.shadowColor = "rgba(120, 70, 85, .45)";
-      ctx.shadowBlur = 6;
+      // a warm halo behind the heart, so it reads over pale paintings and
+      // dark ones alike
+      const halo = ctx.createRadialGradient(12, 13, 1, 12, 13, 20);
+      halo.addColorStop(0, "rgba(255, 255, 255, 1)");
+      halo.addColorStop(0.55, "rgba(255, 246, 248, .96)");
+      halo.addColorStop(1, "rgba(255, 214, 226, .85)");
+      ctx.fillStyle = halo;
+      ctx.shadowColor = "rgba(190, 90, 120, .55)";
+      ctx.shadowBlur = 14;
       ctx.fill();
       ctx.restore();
     };
@@ -154,7 +176,7 @@ const BubbleCursor: React.FC<BubbleCursorProps> = ({
       }
       // touch screens have no resting pointer, so no heart is drawn there
       if (finePointer && (cursorRef.current.x || cursorRef.current.y)) {
-        drawHeart(context, cursorRef.current.x, cursorRef.current.y - 2, 20);
+        drawHeart(context, cursorRef.current.x, cursorRef.current.y - 3, 45);
       }
     };
 
