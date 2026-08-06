@@ -54,13 +54,13 @@ class Particle {
       this.position.y - this.baseDimension / 2,
       Math.max(1, this.baseDimension * scale)
     );
-    glow.addColorStop(0, "rgba(255, 255, 255, .95)");
+    glow.addColorStop(0, "rgba(255, 255, 255, .9)");
     glow.addColorStop(0.5, this.fill);
-    glow.addColorStop(1, "rgba(255, 208, 222, 0)");
+    glow.addColorStop(1, "rgba(178, 216, 240, 0)");
     context.fillStyle = glow;
     context.strokeStyle = this.stroke;
     context.lineWidth = 1;
-    context.shadowColor = "rgba(214, 132, 160, .45)";
+    context.shadowColor = "rgba(140, 190, 225, .5)";
     context.shadowBlur = 8;
     context.beginPath();
     context.arc(
@@ -81,8 +81,8 @@ class Particle {
 const BubbleCursor: React.FC<BubbleCursorProps> = ({
   wrapperElement,
   zIndex,
-  fill = "rgba(255, 248, 246, 0.72)",
-  stroke = "rgba(201, 168, 160, 0.85)",
+  fill = "rgba(196, 226, 245, 0.42)",
+  stroke = "rgba(150, 200, 235, 0.75)",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);

@@ -5772,3 +5772,59 @@ canvas { pointer-events: none; }
 .scene--afterparty { padding-block: 6svh; }
 .scene-art--schedule { display: none; }   /* decorations are off site-wide */
 .photo-gate.is-unlocked { opacity: 0; pointer-events: none; }
+
+
+/* ==================================================================== */
+/* Corrections from the live pages.                                     */
+/* ==================================================================== */
+
+/* The number field: label on its own line above, the short code beside the
+   number. `display: contents` lets the label's parts become grid items, so
+   this holds without relying on subgrid. */
+.wizard .phone-grid {
+  display: grid !important;
+  grid-template-columns: 6rem minmax(0, 11rem) !important;
+  gap: .35rem .6rem !important;
+  justify-content: center;
+  max-width: none;
+}
+.wizard .phone-grid > label:last-child { display: contents; }
+.wizard .phone-grid > label:last-child > span {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  text-align: center;
+  margin: 0 0 .2rem;
+}
+.wizard .phone-code { grid-column: 1; grid-row: 2; }
+.wizard .phone-grid > label:last-child > input { grid-column: 2; grid-row: 2; }
+.wizard .phone-grid select { text-align: center; padding-right: 1rem; }
+
+/* the app store links sat left of the card they belong to */
+.app-links,
+.guide-app .app-links {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.1rem;
+  margin-top: .5rem;
+}
+.guide-app { text-align: center; }
+
+/* "Open directions" was hugging the left edge of the venue page */
+.wizard .scene--venue .scene-content a[href*="maps"],
+.wizard .scene--venue .venue-directions-link,
+.wizard .scene--venue .scene-content > a {
+  display: inline-flex;
+  justify-content: center;
+  margin-inline: auto;
+}
+
+/* The app links and the directions link sat against the left edge while
+   everything around them was centred. */
+.app-links { justify-content: center; }
+.guide-app, .app-list li { text-align: center; }
+.venue-card .primary-button,
+.venue-card .text-link,
+.scene--venue .scene-content > a { margin-inline: auto; }
+.wizard .scene--venue .scene-content > a,
+.wizard .scene--venue .scene-content > p > a { display: inline-flex; justify-content: center; }
