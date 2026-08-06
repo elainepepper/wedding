@@ -307,10 +307,21 @@ export async function POST(request: Request) {
         // every number filled in.
         if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) { errors.push(`Row ${index + 1}: ${firstName || "guest"} has a number that is missing its country code`); continue; }
         // match on the number when there is one, otherwise on the name
+        // Finding someone already on the list. The old version added
+        // "archived == 0" as a third condition, and Firestore drops any record
+        // missing that field — so a guest written by an older version was
+        // never found, and every re-import added them again.
         const byMobile = mobile
           ? await weddingRef.collection("guests").where("mobile", "==", mobile).limit(1).get()
-          : await weddingRef.collection("guests").where("first_name", "==", firstName).where("last_name", "==", lastName).limit(1).get();
-        const existing = !byMobile.empty ? byMobile.docs[0] : (await weddingRef.collection("guests").where("first_name", "==", firstName).where("last_name", "==", lastName).where("archived", "==", 0).limit(1).get()).docs[0];
+          : null;
+        let existing = byMobile && !byMobile.empty ? byMobile.docs[0] : undefined;
+        if (!existing) {
+          const byName = await weddingRef.collection("guests")
+            .where("first_name", "==", firstName)
+            .where("last_name", "==", lastName)
+            .get();
+          existing = byName.docs.find((doc) => !Number(doc.data().archived ?? 0));
+        }
         if (existing && duplicateMode === "skip") { skipped += 1; continue; }
         const shared = { preferred_name: clean(row.preferredName, 100) || null, mobile: mobile || null, category: clean(row.category, 80) || "Friends", side: clean(row.side, 40) || "Shared", age_group: "Adult", internal_notes: clean(row.notes, 1500) || null, updated_at: serverTimestamp() };
         if (existing) { await existing.ref.set(shared, { merge: true }); updated += 1; continue; }
