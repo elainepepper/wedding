@@ -87,13 +87,27 @@ function Status({ value }: { value: string }) {
 
 async function readApiResponse<T>(response: Response): Promise<T & { error?: string }> {
   const body = await response.text();
-  if (!body.trim()) {
-    throw new Error("The Guest Manager server returned no response. In Netlify, check that FIREBASE_SERVICE_ACCOUNT_JSON contains the complete service-account file, then clear the deploy cache and redeploy.");
+
+  // The old message blamed FIREBASE_SERVICE_ACCOUNT_JSON for anything it could
+  // not parse. If the manager loaded at all that key is fine, and the real
+  // cause is almost always a request that took too long and was cut off.
+  if (!body.trim() || body.trimStart().startsWith("<")) {
+    if (response.status === 504 || response.status === 502 || response.status === 408) {
+      throw new Error("That took too long and the server gave up part-way. Nothing further was saved. Try again — anything already brought in will be skipped.");
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Your sign-in has expired. Reload the page and sign in again.");
+    }
+    if (response.status >= 500) {
+      throw new Error(`The server stopped with an error (${response.status}). If it happens again, tell Claude the number.`);
+    }
+    throw new Error(`The server sent something unreadable (${response.status || "no status"}).`);
   }
+
   try {
     return JSON.parse(body) as T & { error?: string };
   } catch {
-    throw new Error("The Guest Manager server returned an unreadable response. Check FIREBASE_SERVICE_ACCOUNT_JSON in Netlify, then clear the deploy cache and redeploy.");
+    throw new Error(`The server sent something unreadable (${response.status}): ${body.slice(0, 120)}`);
   }
 }
 
@@ -732,7 +746,9 @@ function Imports({ act, notify }: { act: (payload: Record<string, unknown>, succ
       // through — which writes some guests, fails, and writes them again on
       // the next attempt. That is what produced the repeats.
       setImporting(true); setImportDone(0); setImportError("");
-      const size = 20;
+      // The server now reads the existing list once per request and writes in
+      // one batch, so larger chunks are both safe and fewer round trips.
+      const size = 40;
       let added = 0, updated = 0, skipped = 0;
       try {
         for (let start = 0; start < rows.length; start += size) {

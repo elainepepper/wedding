@@ -101,13 +101,16 @@ export function plainDoc(snapshot: FirebaseFirestore.DocumentSnapshot): Record<s
   return { id: snapshot.data()?.id ?? snapshot.id, ...plainValue(snapshot.data()) as Record<string, unknown> };
 }
 
-export async function nextId(collection: string) {
+export async function nextId(collection: string, reserve = 1) {
+  // Reserving a block of ids in one transaction lets an import allocate every
+  // id it needs up front instead of a round-trip per row.
   const counter = weddingRef.collection("counters").doc(collection);
   return firestore.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(counter);
-    const value = Number(snapshot.data()?.value ?? 0) + 1;
-    transaction.set(counter, { value }, { merge: true });
-    return value;
+    const current = Number(snapshot.data()?.value ?? 0);
+    const first = current + 1;
+    transaction.set(counter, { value: current + Math.max(1, reserve) }, { merge: true });
+    return first;
   });
 }
 
