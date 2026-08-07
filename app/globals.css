@@ -5395,6 +5395,19 @@ canvas { pointer-events: none; }
   overflow: hidden;
 }
 .wizard .scene--venue .venue-map::after { display: none; }
+/* Google's embed pins the venue at its own centre, but its white place card
+   and controls crowd a phone-sized frame and drag the eye off-centre. The
+   film is drawn 40% larger and cropped evenly on every side, so the pin sits
+   in the exact middle of the frame and the chrome falls outside it. Plain
+   offsets rather than a transform — the reduced-motion rules reset
+   transforms on this element. */
+.wizard .scene--venue .venue-map iframe {
+  position: absolute;
+  left: -20%;
+  top: -20%;
+  width: 140%;
+  height: 140%;
+}
 
 /* 5. The closing pages sat a full screen apart. */
 .wizard #confirmation, .wizard #gallery, .wizard #venue { min-height: auto; padding-block: 7svh; }

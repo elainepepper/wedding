@@ -78,6 +78,18 @@ for (const [label, device] of Object.entries(DEVICES)) {
     check(label, "travel step reached", await nextUntil(/04 · YOUR JOURNEY/i));
     await clickByText("No");                         // not flying in
     check(label, "venue step reached", await nextUntil(/FINDING YOUR WAY/i));
+    // the map must sit centred in its frame, cropped evenly on both sides
+    const mapInfo = await page.evaluate(() => {
+      const map = document.querySelector(".venue-map");
+      const film = map ? map.querySelector("iframe") : null;
+      if (!map || !film) return null;
+      const mr = map.getBoundingClientRect();
+      const fr = film.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth;
+      return { boxOff: Math.round(mr.left - (vw - mr.right)), cropDiff: Math.round((mr.left - fr.left) - (fr.right - mr.right)) };
+    });
+    // a few px of box offset is scrollbar rounding, not a layout fault
+    check(label, "venue map centred", !!mapInfo && Math.abs(mapInfo.boxOff) <= 6 && Math.abs(mapInfo.cropDiff) <= 2, JSON.stringify(mapInfo));
     check(label, "wishes step reached", await nextUntil(/05 · FROM THE HEART/i));
     const confirm = page.locator("button:visible", { hasText: /preview confirmation/i }).first();
     await confirm.scrollIntoViewIfNeeded();
@@ -93,6 +105,16 @@ for (const [label, device] of Object.entries(DEVICES)) {
     check(label, "page alive after films play", !crashed && (await page.title()).length > 0);
     const playing = await page.evaluate(() => [...document.querySelectorAll("video")].filter((v) => !v.paused).length);
     check(label, "only one background film plays", playing <= 1, `${playing} playing`);
+
+    // ---- 1b. Guests who decline go straight on to the wishes page ----
+    // (steps are identical whether one guest or a whole couple declines)
+    await page.goto(`${BASE}/invitation-preview`, { waitUntil: "networkidle", timeout: 45000 });
+    await page.waitForTimeout(2000);
+    await clickByText("RSVP");
+    await page.locator("button:visible", { hasText: /Regretfully decline/ }).first().click({ timeout: 8000, force: true });
+    await page.waitForTimeout(900);
+    check(label, "declined guests reach the wishes page", await nextUntil(/0\d · FROM THE HEART/i));
+    check(label, "declined guests can still leave wishes and send", /preview confirmation/i.test(await page.locator("main").innerText()));
 
     // ---- 2. The archway (home) ----
     await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 30000 });

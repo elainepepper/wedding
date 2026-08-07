@@ -1005,7 +1005,14 @@ export function WeddingExperience({
       },
       { id: "reply", sections: ["rsvp"], ready: rsvpComplete, cta: "Continue" },
     ];
-    if (anyYes)
+    // Each step may only exist while its section is actually on the page —
+    // these conditions mirror the render gates below. A step whose section
+    // is missing showed an empty screen, and the blank-page safety net then
+    // returned the guest to the very beginning. A couple who both declined
+    // met exactly that: "venue" never renders for them (it waits for
+    // travelComplete), so Next bounced them home instead of onward to the
+    // wishes page.
+    if (anyYes && !hiddenScenes.has("dress"))
       steps.push({
         id: "dress",
         sections: ["dress"],
@@ -1019,26 +1026,27 @@ export function WeddingExperience({
         ready: mealComplete,
         cta: "Continue",
       });
-    if (anyYes)
+    if (anyYes && !hiddenScenes.has("travel"))
       steps.push({
         id: "travel",
         sections: ["travel"],
         ready: travelComplete,
         cta: "Continue",
       });
-    if (flyingIn)
+    if (flyingIn && !hiddenScenes.has("recommendations"))
       steps.push({
         id: "guide",
         sections: ["recommendations"],
         ready: true,
         cta: "Continue",
       });
-    steps.push({
-      id: "venue",
-      sections: ["venue"],
-      ready: true,
-      cta: "Continue",
-    });
+    if (travelComplete && !hiddenScenes.has("venue"))
+      steps.push({
+        id: "venue",
+        sections: ["venue"],
+        ready: true,
+        cta: "Continue",
+      });
     steps.push({
       id: "wishes",
       sections: ["wishes"],
@@ -1062,6 +1070,7 @@ export function WeddingExperience({
     mealComplete,
     travelComplete,
     journeyDone,
+    hiddenScenes,
   ]);
   const stepIndex = Math.min(step, wizardSteps.length - 1);
   // If part of this page is still below the fold, carry the guest there
