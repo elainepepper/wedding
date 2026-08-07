@@ -66,7 +66,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     // a numeric comparison. Either case returned an empty guest list, which
     // left the RSVP page impossible to complete.
     weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get(),
-    weddingRef.collection("events").where("is_enabled", "==", 1).get(),
+    weddingRef.collection("events").get(),   // enabled is judged in code: a where() drops records missing the field
     weddingRef.get(),
   ]);
   const guests = guestSnapshot.docs.map((doc) => doc.data())
@@ -87,6 +87,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
   guests.forEach((guest) => { guest.table_name = tableNames.get(Number(guest.table_id)) ?? null; });
   const afterPartyInvited = guests.some((guest) => Boolean(guest.after_party_invited));
   const events = eventSnapshot.docs.map((doc) => doc.data())
+    .filter((event) => Number(event.is_enabled ?? 1) !== 0)
     // The private after-party must not exist at all for guests who are not
     // invited to it — it is never sent to the browser, not merely hidden.
     .filter((event) => afterPartyInvited || !/after[\s-]?party/i.test(String(event.name ?? "")))
@@ -98,13 +99,55 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     guests: guests.map(publicGuest),
     events,
     settings: {
-      rsvp_deadline: settings.rsvp_deadline ?? null,
+      // A regenerated link reopens this household after the deadline; hiding
+      // the date from the page keeps the form usable for them alone.
+      rsvp_deadline: reopenedAfterDeadline((household as unknown as { rsvp_reopened_at?: unknown }).rsvp_reopened_at, settings.rsvp_deadline) ? null : settings.rsvp_deadline ?? null,
       confirmation_message: settings.confirmation_message ?? null,
       music_url: settings.music_url ?? null,
       music_title: settings.music_title ?? null,
     },
     afterPartyInvited,
   });
+}
+
+
+/**
+ * A short, readable note of what a guest altered on a second reply — "Coming →
+ * Cannot come · meal: salmon → lamb". Only fields the couple act on.
+ */
+function describeChange(before: Record<string, unknown>, after: Record<string, unknown>) {
+  const labels: Record<string, string> = {
+    rsvp_status: "reply", meal_selection: "main course", dietary_requirements: "dietary note",
+    travel_mode: "travel", accommodation_name: "staying at", mobile: "number",
+  };
+  const pretty = (value: unknown) => {
+    if (value === null || value === undefined || value === "") return "nothing";
+    if (value === "Confirmed") return "coming";
+    if (value === "Declined") return "cannot come";
+    return String(value);
+  };
+  const moved = Object.keys(labels)
+    .filter((key) => String(before[key] ?? "") !== String(after[key] ?? ""))
+    .map((key) => `${labels[key]}: ${pretty(before[key])} → ${pretty(after[key])}`);
+  return moved.length ? moved.join(" · ") : "replied again with the same answers";
+}
+
+
+/**
+ * True if the couple regenerated this household's link after the deadline —
+ * their signal that this particular invitation may reply late.
+ */
+function reopenedAfterDeadline(reopenedAt: unknown, deadline: unknown) {
+  if (!reopenedAt || !deadline) return false;
+  const asDate = (value: unknown): Date | null => {
+    if (value instanceof Date) return value;
+    if (value && typeof (value as { toDate?: () => Date }).toDate === "function") return (value as { toDate: () => Date }).toDate();
+    if (typeof value === "string") { const parsed = new Date(value.includes("T") ? value : `${value}T23:59:59+08:00`); return Number.isNaN(parsed.getTime()) ? null : parsed; }
+    return null;
+  };
+  const reopened = asDate(reopenedAt);
+  const closes = asDate(String(deadline));
+  return Boolean(reopened && closes && reopened.getTime() > closes.getTime());
 }
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
@@ -123,7 +166,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const responses = Array.isArray(payload.guests) ? payload.guests.slice(0, 30) as Array<Record<string, unknown>> : [];
   if (!/^\+[0-9]{8,15}$/.test(mobile)) return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
   const settingsBefore = (await weddingRef.get()).data() ?? {};
-  if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
+  const householdData = householdDoc.data() as Record<string, unknown>;
+  // After the deadline the door is closed — unless the couple regenerated this
+  // household's link after it passed, which reopens that one invitation.
+  if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline) && !reopenedAfterDeadline(householdData.rsvp_reopened_at, settingsBefore.rsvp_deadline)) {
     return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
   }
   const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get();
@@ -144,6 +190,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     const meal = response.mealSelection === "Lamb" || response.mealSelection === "Salmon" ? response.mealSelection : null;
     if (status === "Confirmed" && permission.reception_invited && !meal) return Response.json({ error: "Please choose lamb or salmon for every attending guest." }, { status: 400 });
     anyAttending ||= status === "Confirmed";
+    const previous = allowed.doc.data() as Record<string, unknown>;
     batch.set(allowed.doc.ref, {
       rsvp_status: status,
       ceremony_attending: permission.ceremony_invited ? Number(status === "Confirmed" && response.ceremonyAttending !== false) : null,
@@ -165,6 +212,19 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       wishes: clean(response.wishes, 1500) || null,
       mobile,
       rsvp_submitted_at: serverTimestamp(), updated_at: serverTimestamp(),
+      // If they have replied before, record what moved so the couple can see
+      // at a glance what a guest changed rather than diffing it themselves.
+      ...(previous.rsvp_submitted_at ? {
+        rsvp_changed_at: serverTimestamp(),
+        rsvp_change_note: describeChange(previous, {
+          rsvp_status: status,
+          meal_selection: clean(response.mealSelection, 120) || null,
+          dietary_requirements: clean(response.dietaryRequirements, 400) || null,
+          travel_mode: clean(response.travelMode, 60) || null,
+          accommodation_name: clean(response.accommodationName, 240) || null,
+          mobile,
+        }),
+      } : {}),
     }, { merge: true });
   }
   batch.set(householdDoc.ref, { mobile, max_guests: allowedDocs.length, last_activity_at: serverTimestamp(), updated_at: serverTimestamp() }, { merge: true });

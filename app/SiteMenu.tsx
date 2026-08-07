@@ -8,7 +8,7 @@ import Link from "next/link";
  * sections of other steps are hidden, so an anchor has nothing to jump to —
  * those entries carry an onSelect that turns to the right step instead.
  */
-export type MenuLink = { label: string; href?: string; onSelect?: () => void };
+export type MenuLink = { label: string; href?: string; onSelect?: () => void; className?: string };
 
 export function SiteMenu({ links }: { links: MenuLink[] }) {
   const [open, setOpen] = useState(false);
@@ -43,6 +43,7 @@ export function SiteMenu({ links }: { links: MenuLink[] }) {
               <button
                 type="button"
                 key={link.label}
+                className={link.className}
                 style={style}
                 onClick={() => { link.onSelect?.(); setOpen(false); }}
               >

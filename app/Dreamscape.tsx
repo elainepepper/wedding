@@ -73,6 +73,16 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     return () => window.clearTimeout(timer);
   }, [motion, onReady]);
 
+  // Films must be muted as a property before play() for iOS to allow autoplay.
+  useEffect(() => {
+    if (!motion) return;
+    const films = Array.from(document.querySelectorAll<HTMLVideoElement>(".dream-film"));
+    films.forEach((film) => { film.muted = true; film.defaultMuted = true; film.playsInline = true; void film.play().catch(() => undefined); });
+    const onTouch = () => films.forEach((film) => void film.play().catch(() => undefined));
+    window.addEventListener("pointerdown", onTouch, { once: true, passive: true });
+    return () => window.removeEventListener("pointerdown", onTouch);
+  }, [motion]);
+
   const filmReady = () => {
     if (announced.current) return;
     announced.current = true;

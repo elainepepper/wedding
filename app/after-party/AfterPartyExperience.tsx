@@ -13,11 +13,13 @@ export function AfterPartyExperience() {
   const [message, setMessage] = useState("");
   const [details, setDetails] = useState<PartyDetails | null>(null);
   const [active, setActive] = useState("midnight");
+  const [token, setToken] = useState("");
 
   // The invitation itself is the key: the personal token is verified against
   // the guest database on load. No password, nothing to remember.
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token") || "";
+    setToken(token);
     let cancelled = false;
     fetch("/api/after-party", {
       method: "POST",
@@ -140,7 +142,7 @@ export function AfterPartyExperience() {
           <p className="eyebrow">Elaine &amp; Haykal</p>
           <h2>See you on<br />the other side.</h2>
           <p>7 November 2026 · Kuala Lumpur</p>
-          <a className="party-button" href="/">Back to the invitation</a>
+          <a className="party-button" href={token ? `/rsvp?t=${encodeURIComponent(token)}#confirmation` : "/"}>Back to the invitation</a>
         </div>
       </section>
     </main>

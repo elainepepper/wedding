@@ -160,10 +160,12 @@ const maps = (query: string) => `https://www.google.com/maps/search/?api=1&query
 
 
 const foodPlaces = [
-  { name: "White & Black Kampong Kuala Lumpur", note: "Kampung cooking done beautifully — sambal petai, asam pedas, rendang.", detail: "10 minutes by Grab", score: "4.8 · 5,400 reviews" },
+  { name: "Oriental Kopi", note: "Kopi, kaya toast and egg tarts — worth the queue.", detail: "10 minutes", score: "4.4 · 6,800 reviews" },
+  { name: "Super Kitchen Chilli Pan Mee", note: "The chilli pan mee everyone means when they say chilli pan mee.", detail: "10 minutes by Grab", score: "4.8 · 5,400 reviews" },
+  { name: "Oriental Kopi", note: "Kopi, kaya toast and Malaysian breakfast all day.", detail: "8 minutes", score: "4.5 · 3,200 reviews" },
   { name: "Pokok KLCC Lot 91", note: "A leafy all-day place tucked beneath Permata Sapura.", detail: "5 minutes", score: "4.7 · 1,700 reviews" },
-  { name: "The Oriental Park KLCC", note: "Tables beside the fountains. Ask to sit outside at dusk.", detail: "6 minutes", score: "4.5 · 920 reviews" },
-  { name: "Cili Kampung Suria KLCC", note: "Honest Malay food inside Suria — quick, before the shops.", detail: "5 minutes", score: "4.4 · 1,400 reviews" },
+  { name: "The Nasi Lemak Shop", note: "Nasi lemak at any hour, exactly as it should be.", detail: "6 minutes", score: "4.5 · 920 reviews" },
+  { name: "SS2 Durian Stalls", note: "Durian in season, eaten standing up under the lights.", detail: "5 minutes", score: "4.4 · 1,400 reviews" },
 ] as const;
 
 const nearbyHotels = [
@@ -179,7 +181,7 @@ const pamperPlaces = [
   { name: "Health World Spa and Massage Bukit Bintang", note: "Deep tissue and foot massage, open very late indeed.", detail: "10 minutes", score: "4.7 · 670 reviews" },
   { name: "Thai Paradise Spa Kuala Lumpur", note: "Thai massage and aromatherapy, a few streets away.", detail: "5 minutes", score: "4.4 · 760 reviews" },
   { name: "Hair Quarters Pavilion Kuala Lumpur", note: "Wash, blow-dry and styling before the evening.", detail: "Pavilion, 12 minutes", score: "4.9 · 2,300 reviews" },
-  { name: "Alice Hair Wonderland Pavilion Kuala Lumpur", note: "Cut and colour, much loved by regulars.", detail: "Pavilion, 12 minutes", score: "4.8 · 530 reviews" },
+  { name: "Number76 Lot 10", note: "Japanese salon at Lot 10 — cut, colour and styling.", detail: "Pavilion, 12 minutes", score: "4.8 · 530 reviews" },
 ] as const;
 
 const sightseeingPlaces = [
@@ -194,7 +196,7 @@ const shoppingPlaces = [
   { name: "Suria KLCC", note: "At the foot of the towers. Everything, under one roof.", detail: "5 minutes", score: "4.6 · 75,000 reviews" },
   { name: "Pavilion Kuala Lumpur", note: "Reached by the covered walkway, without stepping into the sun.", detail: "12 minutes on foot", score: "4.6 · 63,000 reviews" },
   { name: "Central Market Kuala Lumpur", note: "Batik, pewter and craft — the place for something to carry home.", detail: "15 minutes by Grab", score: "4.3 · 61,000 reviews" },
-  { name: "Isetan The Japan Store Kuala Lumpur", note: "Four floors of Japanese food, homeware and beauty at Lot 10.", detail: "15 minutes", score: "4.3 · 1,400 reviews" },
+  { name: "Mid Valley Megamall", note: "One of the largest in the country — everything, and then more.", detail: "15 minutes", score: "4.3 · 1,400 reviews" },
 ] as const;
 
 const usefulApps = [
@@ -311,6 +313,29 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   const [siteDesign, setSiteDesign] = useState<SiteDesign>(defaultSiteDesign);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // The music begins with the crossing, because ENTER was the gesture that
+  // permitted it. If the browser still refuses, the toggle remains.
+  useEffect(() => {
+    let granted = false;
+    try { granted = window.sessionStorage.getItem("he:sound") === "on"; } catch { /* private mode */ }
+    if (!granted || !music.musicUrl) return;
+    const player = audioRef.current;
+    if (!player) return;
+    player.volume = 0;
+    void player.play().then(() => {
+      setSoundEnabled(true);
+      // fade in rather than starting at full volume over the archway
+      const target = 0.55;
+      const started = performance.now();
+      const lift = () => {
+        const through = Math.min(1, (performance.now() - started) / 2400);
+        player.volume = target * through;
+        if (through < 1) requestAnimationFrame(lift);
+      };
+      requestAnimationFrame(lift);
+    }).catch(() => undefined);
+  }, [music.musicUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -699,6 +724,34 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     return () => window.removeEventListener("focusin", onFocus);
   }, []);
 
+  // Answers are held for the visit, so moving back and forth — or a reload
+  // mid-way — never loses what a guest has already chosen. Cleared once the
+  // reply is sent, since the server then holds the truth.
+  const draftKey = token ? `he:draft:${token}` : "";
+  const draftLoaded = useRef(false);
+  useEffect(() => {
+    if (!draftKey || draftLoaded.current || inviteLoading || submitted) return;
+    draftLoaded.current = true;
+    try {
+      const saved = window.sessionStorage.getItem(draftKey);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as { rsvp?: typeof rsvp; guests?: typeof guestResponses };
+      if (parsed.rsvp) setRsvp((current) => ({ ...current, ...parsed.rsvp }));
+      if (parsed.guests?.length) {
+        setGuestResponses((current) => current.map((guest) => {
+          const held = parsed.guests?.find((entry) => entry.id === guest.id);
+          return held ? { ...guest, ...held } : guest;
+        }));
+      }
+    } catch { /* a corrupt draft is simply ignored */ }
+  }, [draftKey, inviteLoading, submitted]);
+
+  useEffect(() => {
+    if (!draftKey || inviteLoading || !draftLoaded.current) return;
+    if (submitted) { try { window.sessionStorage.removeItem(draftKey); } catch { /* private mode */ } return; }
+    try { window.sessionStorage.setItem(draftKey, JSON.stringify({ rsvp, guests: guestResponses })); } catch { /* private mode */ }
+  }, [draftKey, rsvp, guestResponses, submitted, inviteLoading]);
+
   // A safety net: if any overlay ever leaves the page frozen, release it.
   useEffect(() => {
     document.documentElement.style.overflow = "";
@@ -824,7 +877,10 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       // these move between steps rather than jumping to anchors, which cannot
       // reach a section the wizard is currently holding hidden
       { label: "RSVP", onSelect: () => goToSection("rsvp") },
-      ...(submitted ? [{ label: "Confirmation page", onSelect: () => goToSection("confirmation") }] : []),
+      ...(submitted ? [{ label: "Confirmation", onSelect: () => goToSection("confirmation") }] : []),
+      ...(submitted && inviteData?.afterPartyInvited
+        ? [{ label: "The secret chapter", onSelect: () => goToSection("afterparty"), className: "is-secret" }]
+        : []),
       ...(inviteData?.afterPartyInvited ? [{ label: "The secret chapter", onSelect: () => goToSection("afterparty") }] : []),
     ]} /> : null}
     <Dreamscape onReady={() => setFilmReady(true)} />
@@ -881,7 +937,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     </section> : null}
     {renderCustomPages("schedule")}
 
-    <section id="rsvp" data-sky="dream-2" style={textStyle("rsvp")} className="scene scene--paper" data-scene><img className="scene-art scene-art--dinner" src="/wedding/dinner-table.webp" alt="A hand-drawn wedding reception table" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">01 · Your reply</p><h2>Will you join us?</h2>{personalised ? <><p className="section-intro">Written for the names below. We are unable to welcome additional guests or children.</p>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? <p className="rsvp-deadline-note">Kindly reply by <strong>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}</strong> — you may return to this link to update your reply any time before then.</p> : null}<div className="party-rsvp-list">{guestResponses.map((guest) => <fieldset key={guest.id}>{guestResponses.length > 1 ? <legend>{guest.name}</legend> : <legend className="is-quiet">Will you be joining us?</legend>}<div className="segmented-control"><button type="button" className={guest.rsvpStatus === "Confirmed" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Confirmed", receptionAttending: true })}>Joyfully accept</button><button type="button" className={guest.rsvpStatus === "Declined" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Declined", receptionAttending: false, ceremonyAttending: false, mealSelection: "" })}>Regretfully decline</button></div></fieldset>)}</div>{someoneAttending ? <><p className="help-note phone-note">One number per household — whoever is easiest to reach on WhatsApp.</p><div className="field-grid phone-grid"><label className="phone-code"><span className="visually-hidden">Country code</span><select value={rsvp.countryCode} onChange={(event) => update("countryCode", event.target.value)} aria-label="Country calling code">{countryCodes.map(([country, code]) => <option key={`${country}-${code}`} value={code}>{country === "Other" ? "Other" : `${country} ${code}`}</option>)}</select></label><label><span>My WhatsApp number is</span><input required value={rsvp.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="12 345 6789" maxLength={24} /></label></div></> : null}{guestResponses.length > 1 ? <p className="help-note couple-note">You may each reply in your own right — if one of you can join us and the other cannot, that is perfectly all right.</p> : null}{guestResponses.length === 0 ? <p className="form-error" role="alert">We are unable to find the names attached to this invitation, so the reply buttons are missing. Do let Elaine and Haykal know — nothing entered here can be saved until it is put right.</p> : null}</> : <div className="invitation-only"><span aria-hidden="true">🔐</span><h3>Your invitation is your key</h3><p>Replies are opened only through the personal link Elaine and Haykal have sent you. It carries the names of those they have invited, and cannot be extended to additional guests.</p><p className="invitation-only-note">The rest of the evening — the dress code, the menu, and how to find us — opens with that link. This is where the page ends for now.</p></div>}{error && activeSection === "rsvp" ? <p className="form-error" role="alert">{error}</p> : null}{personalised && guestResponses.length > 0 ? <ScrollOn ready={rsvpComplete} hint={guestResponses.some((guest) => guest.rsvpStatus === "Pending") ? "A reply is still awaited above." : "Add a number we can reach you on."} label="Thank you — please continue below" /> : null}</div></section>
+    <section id="rsvp" data-sky="dream-2" style={textStyle("rsvp")} className="scene scene--paper" data-scene><img className="scene-art scene-art--dinner" src="/wedding/dinner-table.webp" alt="A hand-drawn wedding reception table" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">01 · Your reply</p><h2>Will you join us?</h2>{personalised ? <><p className="section-intro">Written for the names below. We are unable to welcome additional guests.</p>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? <p className="rsvp-deadline-note">Kindly reply by <strong>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}</strong> — you may return to this link to update your reply any time before then.</p> : null}<div className="party-rsvp-list">{guestResponses.map((guest) => <fieldset key={guest.id}>{guestResponses.length > 1 ? <legend>{guest.name}</legend> : <legend className="is-quiet">Will you be joining us?</legend>}<div className="segmented-control"><button type="button" className={guest.rsvpStatus === "Confirmed" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Confirmed", receptionAttending: true })}>Joyfully accept</button><button type="button" className={guest.rsvpStatus === "Declined" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Declined", receptionAttending: false, ceremonyAttending: false, mealSelection: "" })}>Regretfully decline</button></div></fieldset>)}</div>{someoneAttending ? <><p className="help-note phone-note">One number per household — whoever is easiest to reach on WhatsApp.</p><div className="field-grid phone-grid"><label className="phone-code"><span className="visually-hidden">Country code</span><select value={rsvp.countryCode} onChange={(event) => update("countryCode", event.target.value)} aria-label="Country calling code">{countryCodes.map(([country, code]) => <option key={`${country}-${code}`} value={code}>{country === "Other" ? "Other" : `${country} ${code}`}</option>)}</select></label><label><span>My phone number is</span><input required value={rsvp.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="12 345 6789" maxLength={24} /></label></div></> : null}{guestResponses.length === 0 ? <p className="form-error" role="alert">We are unable to find the names attached to this invitation, so the reply buttons are missing. Do let Elaine and Haykal know — nothing entered here can be saved until it is put right.</p> : null}</> : <div className="invitation-only"><span aria-hidden="true">🔐</span><h3>Your invitation is your key</h3><p>Replies are opened only through the personal link Elaine and Haykal have sent you. It carries the names of those they have invited, and cannot be extended to additional guests.</p><p className="invitation-only-note">The rest of the evening — the dress code, the menu, and how to find us — opens with that link. This is where the page ends for now.</p></div>}{error && activeSection === "rsvp" ? <p className="form-error" role="alert">{error}</p> : null}{personalised && guestResponses.length > 0 ? <ScrollOn ready={rsvpComplete} hint={guestResponses.some((guest) => guest.rsvpStatus === "Pending") ? "A reply is still awaited above." : "Add a number we can reach you on."} label="Thank you — please continue below" /> : null}</div></section>
 
     {renderCustomPages("rsvp")}
     {anyYes && !hiddenScenes.has("dress") ? <section id="dress" data-sky="dream-3" style={textStyle("dress")} className="scene scene--blush" data-scene><img className="scene-art scene-art--wide-frame" src="/wedding/frame-wide.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content dress-card reveal"><p className="step-label">02 · Dress code</p><p className="script-kicker">{content.dressKicker}</p><h2>{content.dressCode}</h2><RibbonDivider /><p>{content.dressNote}</p><p className="dress-restriction">{content.dressRestriction}</p><ScrollOn label="Keep scrolling to choose your dinner" /></div></section> : null}
@@ -891,7 +947,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
     {renderCustomPages("meal")}
     {mealComplete && !hiddenScenes.has("travel") ? <section id="travel" data-sky="dream-2" style={textStyle("travel")} className="scene scene--pearl" data-scene><img className="scene-art scene-art--pearl" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content form-card form-card--glass reveal"><p className="step-label">04 · Your journey</p><h2>Coming from afar?</h2><p className="section-intro">Only if you are travelling to us.</p><fieldset><legend>{attendingCount > 1 ? "We are flying in" : "I am flying in"}</legend><div className="segmented-control"><button type="button" className={rsvp.flyingIn === true ? "is-selected" : ""} onClick={() => update("flyingIn", true)}>Yes</button><button type="button" className={rsvp.flyingIn === false ? "is-selected" : ""} onClick={() => { update("flyingIn", false); update("roomAtHyatt", null); }}>No</button></div></fieldset>{rsvp.flyingIn ? <div className="slide-open travel-details">
-      <p className="room-offer"><strong>The Grand Room · RM850++ a night</strong><span>A rate held for our guests at the Grand Hyatt, in the same building as the celebration.</span></p>
+      <p className="room-offer"><strong>Stay the night upstairs — from RM850++</strong><span>A guest rate at the Grand Hyatt itself, so when the last song ends, home is a lift ride away.</span></p>
       <fieldset><legend>A room at the Grand Hyatt</legend><div className="segmented-control"><button type="button" className={rsvp.roomAtHyatt === true ? "is-selected" : ""} onClick={() => update("roomAtHyatt", true)}>Yes, please</button><button type="button" className={rsvp.roomAtHyatt === false ? "is-selected" : ""} onClick={() => { update("roomAtHyatt", false); update("bedPreference", null); update("nights", null); }}>No, thank you</button></div></fieldset>
       {rsvp.roomAtHyatt === true ? <div className="slide-open">
         <fieldset><legend>We would like</legend><div className="segmented-control"><button type="button" className={rsvp.bedPreference === "King" ? "is-selected" : ""} onClick={() => update("bedPreference", "King")}>One king</button><button type="button" className={rsvp.bedPreference === "Twin" ? "is-selected" : ""} onClick={() => update("bedPreference", "Twin")}>Two singles</button></div></fieldset>
@@ -912,7 +968,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
 
     
 
-    {travelComplete && !hiddenScenes.has("venue") ? <section id="venue" data-sky="dream-3" style={textStyle("venue")} className="scene scene--venue" data-scene><div className="venue-map" aria-label="Map showing Grand Hyatt Kuala Lumpur"><iframe title="Map to Grand Hyatt Kuala Lumpur" src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div><div className="scene-content venue-card reveal"><p className="step-label">Finding your way to us</p><h2>{content.venueName}</h2><p className="venue-address">{content.venueAddress.split("\n").map((line, index) => <span key={line}>{index ? <br /> : null}{line}</span>)}</p><p className="help-note venue-note">The Grand Salon is on Level 1 — take the lift or escalator up from the lobby.</p><div className="arrival-grid"><article><span>01</span><h3>By MRT</h3><p>Take the Putrajaya Line to Conlay station, leave by Entrance A, and follow Jalan Kia Peng towards the Convention Centre — the hotel appears on your right.</p></article><article><span>02</span><h3>By car</h3><p>Make your way to the hotel entrance on Jalan Pinang, where the doormen will greet you. Guest parking sits in the hotel’s own basement.</p></article><article><span>03</span><h3>By Grab</h3><p>Simply set your destination to “Grand Hyatt Kuala Lumpur” and ask to be set down at the main lobby.</p></article></div><a className="primary-button map-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Open directions <span aria-hidden="true">↗</span></a><ScrollOn /></div></section> : null}
+    {travelComplete && !hiddenScenes.has("venue") ? <section id="venue" data-sky="dream-3" style={textStyle("venue")} className="scene scene--venue" data-scene><div className="scene-content venue-card reveal"><p className="step-label">Finding your way to us</p><h2>{content.venueName}</h2><p className="venue-address">{content.venueAddress.split("\n").map((line, index) => <span key={line}>{index ? <br /> : null}{line}</span>)}</p><p className="help-note venue-note">The Grand Salon is on Level 1 — take the lift or escalator up from the lobby.</p><div className="arrival-grid"><article><span>01</span><h3>By MRT</h3><p>Take the Putrajaya Line to Conlay station, leave by Entrance A, and follow Jalan Kia Peng towards the Convention Centre — the hotel appears on your right.</p></article><article><span>02</span><h3>By car</h3><p>Make your way to the hotel entrance on Jalan Pinang, where the doormen will greet you. Guest parking sits in the hotel’s own basement.</p></article><article><span>03</span><h3>By Grab</h3><p>Simply set your destination to “Grand Hyatt Kuala Lumpur” and ask to be set down at the main lobby.</p></article></div><div className="venue-map" aria-label="Map showing Grand Hyatt Kuala Lumpur"><iframe title="Map to Grand Hyatt Kuala Lumpur" src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div><a className="primary-button map-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Open directions <span aria-hidden="true">↗</span></a><ScrollOn /></div></section> : null}
     {renderCustomPages("venue")}
 
     
@@ -967,7 +1023,7 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       <p className="help-note private-note">Only Elaine and Haykal will ever read this one.</p>{error && activeSection === "wishes" ? <p className="form-error" role="alert">{error}</p> : null}<button className="primary-button" type="button" onClick={submitRsvp} disabled={submitting || submitted}>{submitting ? "Sending with love…" : submitted ? "RSVP sent" : previewMode ? "Preview confirmation" : "Send our RSVP"}{!submitting && !submitted ? <span aria-hidden="true">♡</span> : null}</button><small className="privacy-note">{previewMode ? "Preview only — no response or personal information will be saved." : "Your details are used only to plan Elaine and Haykal’s celebration."}</small></> : <div className="invitation-only compact"><p>Your personal invitation link unlocks the RSVP and wishes form.</p></div>}</div></section> : null}
     {renderCustomPages("wishes")}
 
-    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}</div></section> : null}
+    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.attendance === "yes" ? <p className="kitchen-note">Three days before the celebration we will send you a message with your table number, and confirmation that anything the kitchen needs to know has been passed on.</p> : null}{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}</div></section> : null}
     {inviteData?.afterPartyInvited && token ? <section id="afterparty" data-sky="dream-3" style={textStyle("afterparty")} className="scene scene--afterparty" data-scene>
       <div className="scene-content reveal">
         <div className="afterparty-arch">

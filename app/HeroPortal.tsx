@@ -23,9 +23,47 @@ export function HeroPortal() {
   const [refused, setRefused] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  useEffect(() => {
+    const film = videoRef.current;
+    if (!film) return;
+    film.muted = true;                    // the property, not just the attribute
+    film.defaultMuted = true;
+    film.playsInline = true;
+    const start = () => { void film.play().catch(() => undefined); };
+    start();
+    // Some browsers refuse until the guest has touched the page at least once.
+    const onTouch = () => start();
+    window.addEventListener("pointerdown", onTouch, { once: true, passive: true });
+    window.addEventListener("touchstart", onTouch, { once: true, passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", onTouch);
+      window.removeEventListener("touchstart", onTouch);
+    };
+  }, []);
+
   useEffect(() => { setToken(readToken() || ""); }, []);
 
+  useEffect(() => {
+    const film = videoRef.current;
+    if (!film) return;
+    film.muted = true;                 // set as a property: iOS ignores the attribute alone
+    film.defaultMuted = true;
+    const start = () => { void film.play().catch(() => undefined); };
+    start();
+    // Low Power Mode blocks autoplay entirely, so the first touch starts it.
+    const onTouch = () => start();
+    window.addEventListener("touchstart", onTouch, { once: true, passive: true });
+    window.addEventListener("pointerdown", onTouch, { once: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouch);
+      window.removeEventListener("pointerdown", onTouch);
+    };
+  }, []);
+
   const enter = () => {
+    // Browsers only allow sound after a real gesture. ENTER is that gesture,
+    // so the invitation knows it may start the music the moment it loads.
+    try { window.sessionStorage.setItem("he:sound", "on"); } catch { /* private mode */ }
     if (crossing) return;
     if (!token) { setRefused(true); return; }
     setCrossing(true);
