@@ -12,7 +12,6 @@ type Guest = {
   allergies: string | null; child_meal: number; accessibility: string | null; transport_required: number;
   accommodation_required: number; table_id: number | null; seat_number: number | null; invitation_sent: number;
   invitation_sent_at: string | null; rsvp_submitted_at: string | null; internal_notes: string | null;
-  rsvp_changed_at?: string | null; rsvp_change_note?: string | null; final_message_sent_at?: string | null;
   wishes?: string | null; marriage_advice?: string | null; bed_preference?: string | null; room_nights?: number | null;
   household_name: string | null; invitation_slug: string | null; invitation_token: string | null;
   invitation_enabled: number; opened_at: string | null; last_activity_at: string | null; table_name: string | null;
@@ -34,7 +33,7 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof" | "dispatch";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "links", label: "Invitation links", glyph: "↗" },
@@ -45,7 +44,6 @@ const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
   { id: "chase", label: "Awaiting replies", glyph: "◷" },
   { id: "dayof", label: "For the day", glyph: "❧" },
-  { id: "dispatch", label: "Final messages", glyph: "✉" },
   { id: "health", label: "Health check", glyph: "✓" },
   { id: "settings", label: "Settings", glyph: "◇" },
 ];
@@ -60,19 +58,6 @@ const greetingForNow = () => {
   const hour = new Date().getHours();
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 };
-/** Date and time, in Kuala Lumpur — "1 Aug 2026, 9:42 pm". */
-const momentLabel = (value: string | null | undefined) => {
-  if (!value) return "—";
-  const text = String(value).replace(" ", "T");
-  const date = new Date(/(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text}Z`);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "numeric", minute: "2-digit", hour12: true,
-    timeZone: "Asia/Kuala_Lumpur",
-  }).format(date);
-};
-
 const dateLabel = (value: string | null | undefined) => {
   if (!value) return "—";
   const text = value.replace(" ", "T");
@@ -272,12 +257,11 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
           />
         ) : null}
         {tab === "households" ? <Households households={data.households} guests={data.guests} act={act} notify={notify} setUndo={setUndo} /> : null}
-        {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} act={act} settings={data.settings} /> : null}
+        {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} act={act} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "imports" ? <Imports act={act} notify={notify} /> : null}
-        {tab === "dispatch" ? <FinalMessages guests={data.guests} act={act} notify={notify} /> : null}
         {tab === "dayof" ? <ForTheDay guests={data.guests} tables={data.tables} /> : null}
         {tab === "chase" ? <Chasing households={data.households} guests={data.guests} settings={data.settings} act={act} notify={notify} /> : null}
         {tab === "health" ? <HealthCheck authToken={authToken} /> : null}
@@ -339,17 +323,8 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
         for (const id of selected) await act({ action: "deleteGuest", guestId: id }, `${count} guest${count === 1 ? "" : "s"} removed`);
         setSelected([]);
       }}>Delete</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
-      <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : guests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><th>Guest</th><th>Household</th><th>Group</th><th>RSVP</th><th>Replied</th><th>Meal &amp; dietary</th><th>Table</th><th>Invitation</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
-        {guests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td>{guest.rsvp_changed_at ? <span className="changed-star" title={guest.rsvp_change_note || "Reply changed"}>★</span> : null}<button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} /></td>
-          <td className="replied-cell">
-            {guest.rsvp_submitted_at ? <>
-              <span>{momentLabel(guest.rsvp_submitted_at)}</span>
-              {guest.rsvp_changed_at ? <>
-                <span className="changed-at">changed {momentLabel(guest.rsvp_changed_at)}</span>
-                {guest.rsvp_change_note ? <span className="change-note">{guest.rsvp_change_note}</span> : null}
-              </> : null}
-            </> : <span className="muted-cell">Not yet</span>}
-          </td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
+      <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : guests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><th>Guest</th><th>Household</th><th>Group</th><th>RSVP</th><th>Meal &amp; dietary</th><th>Table</th><th>Invitation</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+        {guests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
       <footer className="table-footer"><span>{guests.length} guests shown</span><span>Updates use Australia/Perth time</span></footer>
     </section>
@@ -399,8 +374,8 @@ function nudgeMessage(names: string, link: string, deadline: string) {
   return `Hello ${names},\n\nJust a gentle nudge — we are gathering final numbers for our wedding on 7 November${deadline ? `, and replies close on ${deadline}` : ""}. If you have a moment, your invitation is here:\n\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
-function invitationMessage(names: string, link: string, deadline?: string) {
-  return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n${deadline ? `\nKindly reply by ${deadline}.\n` : ""}\nWith love,\nElaine & Haykal`;
+function invitationMessage(names: string, link: string) {
+  return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
 function Households({ households, guests, act, notify , setUndo }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void }) {
@@ -486,8 +461,7 @@ function Households({ households, guests, act, notify , setUndo }: { households:
   })}</section></div>;
 }
 
-function InvitationLinks({ households, guests, notify, setTab , act , settings }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void ; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> ; settings?: Settings }) {
-  const deadline = settings?.rsvp_deadline ? dateLabel(settings.rsvp_deadline) : "";
+function InvitationLinks({ households, guests, notify, setTab , act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void ; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
   const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
@@ -534,8 +508,8 @@ function InvitationLinks({ households, guests, notify, setTab , act , settings }
                   <td className="link-cell"><span>{link}</span></td>
                   <td className="link-actions">
                     <button type="button" onClick={async () => { await navigator.clipboard.writeText(link); notify("Link copied"); }}>Copy</button>
-                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link, deadline)); notify("Message copied"); }}>Copy message</button>
-                    <a href={waLink(household.mobile, invitationMessage(names, link, deadline))} target="_blank" rel="noreferrer"
+                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link)); notify("Message copied"); }}>Copy message</button>
+                    <a href={waLink(household.mobile, invitationMessage(names, link))} target="_blank" rel="noreferrer"
                       onClick={() => { people.forEach((guest) => void act({ action: "markInvitationSent", guestId: guest.id }, "")); }}>WhatsApp</a>
                     <a href={`${link}`} target="_blank" rel="noreferrer">Preview</a>
                   </td>
@@ -987,7 +961,7 @@ function HealthCheck({ authToken }: { authToken: string }) {
     setRunning(true); setFailed("");
     try {
       const response = await fetch(`/api/manager/health?at=${Date.now()}`, { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
-      const data = await response.json();
+      const data = await readApiResponse<{ ok: boolean; summary: string; counts?: Record<string, number>; checks: Array<{ name: string; ok: boolean; detail: string; affected?: string[] }> }>(response);
       if (!response.ok) throw new Error(data.error || "The health check could not run.");
       setResult(data);
     } catch (error) {
@@ -1164,62 +1138,5 @@ function ForTheDay({ guests, tables }: { guests: Guest[]; tables: SeatingTable[]
         </article>)}
       </div> : <p className="import-help">Seat your guests first, under Seating.</p>}
     </section>
-  </div>;
-}
-
-
-/**
- * The message each attending guest receives three days before: their table,
- * their main course, and anything the kitchen was told. One tap opens
- * WhatsApp with it already written.
- */
-function FinalMessages({ guests, act, notify }: {
-  guests: Guest[];
-  act: (payload: Record<string, unknown>, success: string) => Promise<unknown>;
-  notify: (message: string) => void;
-}) {
-  const coming = guests.filter((guest) => guest.rsvp_status === "Confirmed");
-  const ready = coming.filter((guest) => guest.mobile && guest.table_name);
-  const notReady = coming.filter((guest) => !guest.mobile || !guest.table_name);
-
-  const finalMessage = (guest: Guest) => {
-    const care = [guest.dietary_requirements, guest.allergies].filter(Boolean).join("; ");
-    return `Dear ${displayName(guest)},\n\nWe cannot wait to see you on Saturday.\n\nYour table is ${guest.table_name}.\nYour main course: ${guest.meal_selection || "still to be chosen"}.${care ? `\nThe kitchen has been told: ${care}.` : ""}\n\nThe Grand Salon, Level 1, Grand Hyatt Kuala Lumpur — doors at 6:00pm.\n\nWith love,\nElaine & Haykal`;
-  };
-
-  return <div className="manager-page">
-    <div className="section-intro-row">
-      <div>
-        <p className="panel-kicker">Three days before</p>
-        <h2>Final messages</h2>
-        <span>{ready.length} ready to send · {notReady.length} still missing a table or a number. Each message carries that guest&rsquo;s own table and main course.</span>
-      </div>
-    </div>
-
-    {notReady.length ? <section className="manager-panel">
-      <h3>Not ready yet · {notReady.length}</h3>
-      <p className="import-help">These guests are coming, but the message would be incomplete.</p>
-      <ul className="not-ready-list">{notReady.map((guest) => <li key={guest.id}>
-        <strong>{displayName(guest)}</strong>
-        <span>{!guest.mobile && !guest.table_name ? "no number, no table" : !guest.mobile ? "no number" : "not seated"}</span>
-      </li>)}</ul>
-    </section> : null}
-
-    {ready.length ? <section className="manager-panel">
-      <h3>Ready to send · {ready.length}</h3>
-      <div className="dispatch-list">{ready.map((guest) => <article className="dispatch-card" key={guest.id}>
-        <div>
-          <strong>{displayName(guest)}</strong>
-          <p>{guest.table_name} · {guest.meal_selection || "no main course chosen"}</p>
-          {guest.dietary_requirements || guest.allergies ? <p className="dispatch-care">{[guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ")}</p> : null}
-          {guest.final_message_sent_at ? <p className="dispatch-sent">Sent {dateLabel(guest.final_message_sent_at)}</p> : null}
-        </div>
-        <div className="dispatch-actions">
-          <button type="button" onClick={async () => { await navigator.clipboard.writeText(finalMessage(guest)); notify("Message copied"); }}>Copy</button>
-          <a className="wa-button" href={waLink(guest.mobile, finalMessage(guest))} target="_blank" rel="noreferrer"
-            onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "finalMessageSentAt", value: new Date().toISOString() }, "")}>WhatsApp</a>
-        </div>
-      </article>)}</div>
-    </section> : <section className="manager-panel"><p className="import-help">No one is both seated and reachable yet. Seat your guests under <strong>Seating</strong> first.</p></section>}
   </div>;
 }

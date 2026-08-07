@@ -22,19 +22,19 @@ async function addActivity(adminName: string, action: string, recordType: string
 
 export async function GET(request: Request) {
   try {
-    assertFirebaseAdminConfigured();
     const admin = await requireAdmin(request);
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
+    assertFirebaseAdminConfigured();
     const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
       // No "where" on archived: Firestore drops documents missing the field,
       // which silently hid imported guests from the manager as well.
       weddingRef.collection("guests").get(),
       weddingRef.collection("households").get(),
       weddingRef.collection("tables").get(),
-      weddingRef.collection("events").get(),   // enabled is judged in code: a where() drops records missing the field
+      weddingRef.collection("events").where("is_enabled", "==", 1).get(),
       weddingRef.collection("activityLogs").orderBy("created_at", "desc").limit(30).get(),
       weddingRef.get(),
-      weddingRef.collection("admins").get(),   // active is judged below: a record saving 1 rather than true would be dropped by a where()
+      weddingRef.collection("admins").where("active", "==", true).get(),
     ]);
     const households = householdSnapshot.docs.map(plainDoc);
     const tables = tableSnapshot.docs.map(plainDoc);
@@ -54,21 +54,13 @@ export async function GET(request: Request) {
     }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
     const tableRows: Array<Record<string, unknown>> = tables.map((table): Record<string, unknown> => ({ ...table, guest_count: guests.filter((guest) => guest.rsvp_status === "Confirmed" && Number(guest.table_id) === Number(table.id)).length })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
     const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
-    const managers = [
-      { id: 0, email: ownerEmail, name: "Wedding owner", role: "owner", active: 1, created_at: null },
-      // the flag is read here rather than in the query, so a record storing 1
-      // or omitting the field is still shown
-      ...managerSnapshot.docs.map(plainDoc).filter((entry) => {
-        const flag = (entry as { active?: unknown }).active;
-        return !(flag === false || flag === 0 || flag === "false");
-      }),
-    ];
+    const managers = [{ id: 0, email: ownerEmail, name: "Wedding owner", role: "owner", active: 1, created_at: null }, ...managerSnapshot.docs.map(plainDoc)];
     return Response.json({
       admin: { displayName: admin.displayName, email: admin.email, role: admin.role },
       guests,
       households: householdRows,
       tables: tableRows,
-      events: eventSnapshot.docs.map(plainDoc).filter((event) => Number((event as { is_enabled?: unknown }).is_enabled ?? 1) !== 0).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
+      events: eventSnapshot.docs.map(plainDoc).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
       activities: activitySnapshot.docs.map(plainDoc),
       settings: settingsSnapshot.data() ?? {},
       managers,
@@ -80,9 +72,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    assertFirebaseAdminConfigured();
     const admin = await requireAdmin(request);
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
+    assertFirebaseAdminConfigured();
     const payload = await request.json() as Record<string, unknown>;
     const action = clean(payload.action, 60);
     if (action === "addGuest") {
@@ -167,7 +159,7 @@ export async function POST(request: Request) {
 
     if (action === "bulkUpdate") {
       const guestIds = ids(payload.guestIds);
-      const fieldMap: Record<string, string> = { category: "category", side: "side", rsvpStatus: "rsvp_status", tableId: "table_id", afterPartyEligible: "after_party_eligible", afterPartyInvited: "after_party_invited" , finalMessageSentAt: "final_message_sent_at" };
+      const fieldMap: Record<string, string> = { category: "category", side: "side", rsvpStatus: "rsvp_status", tableId: "table_id", afterPartyEligible: "after_party_eligible", afterPartyInvited: "after_party_invited" };
       const field = clean(payload.field, 50);
       const targetField = fieldMap[field];
       if (!guestIds.length || !targetField) return Response.json({ error: "Choose guests and a valid update." }, { status: 400 });
@@ -241,9 +233,7 @@ export async function POST(request: Request) {
       if (tableId) {
         const tableDoc = await docById("tables", tableId);
         if (!tableDoc) return Response.json({ error: "Table not found." }, { status: 404 });
-        // no "archived" in the query: Firestore drops records missing the field,
-        // which would leave those guests pointing at a table that no longer exists
-        const seated = await weddingRef.collection("guests").where("table_id", "in", [Number(tableId), String(tableId)]).get();
+        const seated = await weddingRef.collection("guests").where("table_id", "==", tableId).where("archived", "==", 0).get();
         if (seated.docs.filter((doc) => Number(doc.data().id) !== guestId).length >= Number(tableDoc.data().capacity)) return Response.json({ error: "That table is already at capacity." }, { status: 409 });
       }
       await guestDoc.ref.set({ table_id: tableId, seat_number: integer(payload.seatNumber), updated_at: serverTimestamp() }, { merge: true });
@@ -255,13 +245,7 @@ export async function POST(request: Request) {
       const householdId = integer(payload.householdId);
       const householdDoc = householdId ? await docById("households", householdId) : null;
       if (!householdId || !householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
-      if (action === "regenerateLink") await householdDoc.ref.set({
-        invitation_token: randomToken(), invitation_enabled: true,
-        // regenerating after the deadline is the couple's way of letting this
-        // one household reply late — the invite API checks this timestamp
-        rsvp_reopened_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
-      }, { merge: true });
+      if (action === "regenerateLink") await householdDoc.ref.set({ invitation_token: randomToken(), invitation_enabled: true, updated_at: serverTimestamp() }, { merge: true });
       else {
         const members = await weddingRef.collection("guests").where("household_id", "==", householdId).get();
         const batch = weddingRef.firestore.batch();

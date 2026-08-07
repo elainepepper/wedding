@@ -207,9 +207,11 @@
 
 .manager-login { min-height: 100svh; padding: 2rem; display: grid; place-items: center; background: radial-gradient(circle at 50% 0, #F1E6DD, transparent 42%), #fbf7f1; color: #713748; }
 .manager-login form { width: min(420px, 100%); padding: 2rem; border: 1px solid #e1ccc6; border-radius: 22px; display: grid; gap: .9rem; background: rgba(255,253,249,.92); box-shadow: 0 30px 80px rgba(87,45,59,.12); }
+.manager-login .manager-config { width: min(520px, 100%); padding: 2rem; border: 1px solid #e1ccc6; border-radius: 22px; display: grid; gap: .9rem; background: rgba(255,253,249,.92); box-shadow: 0 30px 80px rgba(87,45,59,.12); }
 .manager-login p { margin: 0; color: #b96779; font-size: .64rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 .manager-login h1 { margin: 0; font-family: Georgia, serif; font-size: 2.2rem; font-weight: 400; }
 .manager-login form > span { color: #806d73; font-size: .72rem; line-height: 1.6; }
+.manager-login .manager-config > span { color: #806d73; font-size: .82rem; line-height: 1.7; }
 .manager-login label { display: grid; gap: .35rem; }.manager-login label b { color: #806d73; font-size: .58rem; text-transform: uppercase; }.manager-login input { min-height: 44px; border: 1px solid #dfcfca; border-radius: 10px; padding: .7rem; background: #fff; }
 .manager-login button { min-height: 44px; border: 1px solid #713748; border-radius: 999px; background: #713748; color: #fff; font-weight: 800; }.manager-login .google-login { background: #fff; color: #713748; }.manager-login i { color: #a58d95; font-size: .6rem; font-style: normal; text-align: center; text-transform: uppercase; }.manager-login em { color: #a34560; font-size: .65rem; font-style: normal; }
 .manager-profile > button { grid-column: 2; border: 0; padding: 0; background: transparent; color: #8d737c; font-size: .56rem; text-align: left; }
@@ -951,34 +953,3 @@
 .household-pick input { width: 20px; height: 20px; accent-color: var(--m-wine, #7d2f45); }
 .household-pick span { font-size: .72rem; font-weight: 700; color: var(--m-muted); }
 .household-card.is-picked { outline: 2px solid var(--m-wine, #7d2f45); outline-offset: -2px; }
-/* a guest who has replied a second time */
-.changed-star { margin-right: .35rem; color: #b8860b; font-size: .9rem; cursor: help; }
-.guest-table tr:has(.changed-star) { background: rgba(184, 134, 11, .06); }
-.change-note { display: block; margin-top: .15rem; color: #8a6d1f; font-size: .68rem; font-style: italic; }
-/* when a guest replied, and what they later changed */
-.replied-cell { min-width: 11rem; }
-.replied-cell > span { display: block; font-size: .76rem; }
-.replied-cell .changed-at { margin-top: .2rem; color: #8a6d1f; font-size: .68rem; font-weight: 700; }
-.replied-cell .muted-cell { color: var(--m-muted); font-style: italic; }
-
-/* Final messages, three days before */
-.dispatch-list { display: grid; gap: .6rem; margin-top: .9rem; }
-.dispatch-card {
-  display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; justify-content: space-between;
-  padding: .9rem 1rem; border: 1px solid var(--m-line); border-radius: 14px; background: #fff;
-}
-.dispatch-card strong { font-size: .95rem; }
-.dispatch-card p { margin: .15rem 0 0; color: var(--m-muted); font-size: .8rem; }
-.dispatch-care { font-style: italic; color: #8a6d1f !important; }
-.dispatch-sent { color: #2f7d55 !important; font-weight: 700; font-size: .72rem !important; }
-.dispatch-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-.dispatch-actions button {
-  min-height: 44px; padding: 0 1rem; border: 1px solid var(--m-line);
-  border-radius: 999px; background: #fff; font-size: .68rem; font-weight: 700;
-}
-.not-ready-list { margin: .8rem 0 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
-.not-ready-list li {
-  display: flex; justify-content: space-between; gap: .8rem;
-  padding: .55rem .8rem; border: 1px solid var(--m-line); border-radius: 10px; background: #fff;
-}
-.not-ready-list span { color: #a8324a; font-size: .72rem; font-style: italic; }

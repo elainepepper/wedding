@@ -13,6 +13,9 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({})) as { token?: unknown };
   const token = typeof payload.token === "string" ? payload.token.trim() : "";
   if (!token) return Response.json({ ok: false, error: "This private chapter opens only from a personal invitation link." }, { status: 401 });
+  if (!/^[abcdefghjkmnpqrstuvwxyz23456789]{12}$/i.test(token)) {
+    return Response.json({ ok: false, error: "This private chapter is not included in your invitation." }, { status: 403 });
+  }
   // Firestore drops any document missing a field named in a where(), and an
   // "enabled" flag saved as 1 rather than true would never match either. Match
   // on the token alone and judge the rest in code.

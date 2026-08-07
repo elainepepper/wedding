@@ -1,12 +1,4 @@
 {
-  "indexes": [
-    { "collectionGroup": "households", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "invitation_token", "order": "ASCENDING" }, { "fieldPath": "invitation_enabled", "order": "ASCENDING" }] },
-    { "collectionGroup": "guests", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "household_id", "order": "ASCENDING" }, { "fieldPath": "archived", "order": "ASCENDING" }] },
-    { "collectionGroup": "guests", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "household_id", "order": "ASCENDING" }, { "fieldPath": "after_party_invited", "order": "ASCENDING" }, { "fieldPath": "archived", "order": "ASCENDING" }] },
-    { "collectionGroup": "guests", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "table_id", "order": "ASCENDING" }, { "fieldPath": "archived", "order": "ASCENDING" }] },
-    { "collectionGroup": "guests", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "mobile", "order": "ASCENDING" }, { "fieldPath": "archived", "order": "ASCENDING" }] },
-    { "collectionGroup": "guests", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "first_name", "order": "ASCENDING" }, { "fieldPath": "last_name", "order": "ASCENDING" }, { "fieldPath": "archived", "order": "ASCENDING" }] },
-    { "collectionGroup": "admins", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "email", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }] }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

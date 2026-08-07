@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { removeBrokenImage } from "./image-fallback";
 
 /**
  * The painted world behind the whole site.
@@ -73,16 +74,6 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     return () => window.clearTimeout(timer);
   }, [motion, onReady]);
 
-  // Films must be muted as a property before play() for iOS to allow autoplay.
-  useEffect(() => {
-    if (!motion) return;
-    const films = Array.from(document.querySelectorAll<HTMLVideoElement>(".dream-film"));
-    films.forEach((film) => { film.muted = true; film.defaultMuted = true; film.playsInline = true; void film.play().catch(() => undefined); });
-    const onTouch = () => films.forEach((film) => void film.play().catch(() => undefined));
-    window.addEventListener("pointerdown", onTouch, { once: true, passive: true });
-    return () => window.removeEventListener("pointerdown", onTouch);
-  }, [motion]);
-
   const filmReady = () => {
     if (announced.current) return;
     announced.current = true;
@@ -96,6 +87,17 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     let frame = 0;
     let drift = 0;
+
+    // Only the painting on show runs its film. All three decoding at once,
+    // even fully transparent, is more video than a phone's renderer can
+    // carry through a long visit — the hidden ones wait, paused, on their
+    // first frame until their painting is called for.
+    const syncFilm = (layer: HTMLElement, show: boolean) => {
+      const film = layer.querySelector<HTMLVideoElement>("video");
+      if (!film || show !== film.paused) return;
+      if (show) film.play().catch(() => undefined);
+      else film.pause();
+    };
 
     const render = () => {
       frame = 0;
@@ -122,11 +124,13 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
       layers.forEach((layer) => {
         const value = wanted.get(layer.dataset.sky || "") ?? 0;
         strongest = Math.max(strongest, value);
-        layer.style.opacity = smoothstep(0.12, 0.62, value).toFixed(3);
+        const opacity = smoothstep(0.12, 0.62, value);
+        layer.style.opacity = opacity.toFixed(3);
+        syncFilm(layer, opacity > 0.02);
       });
       // nothing nearby (a very tall section) — hold the first painting rather
       // than letting the page fall through to bare colour
-      if (strongest < 0.05) layers.forEach((layer, index) => { layer.style.opacity = index === 0 ? "1" : "0"; });
+      if (strongest < 0.05) layers.forEach((layer, index) => { layer.style.opacity = index === 0 ? "1" : "0"; syncFilm(layer, index === 0); });
 
       const doc = document.documentElement;
       const progress = clamp(window.scrollY / Math.max(1, doc.scrollHeight - height));
@@ -165,7 +169,7 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
         >
           <picture>
             <source media="(max-width: 780px)" srcSet={asset(`bg/${name}-tall.webp`)} />
-            <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} />
+            <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} onError={removeBrokenImage} />
           </picture>
           {motion ? (
             <video

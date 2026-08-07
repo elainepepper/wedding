@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { removeBrokenImage } from "../image-fallback";
 
 const goTo = (id: string) => {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -13,13 +14,11 @@ export function AfterPartyExperience() {
   const [message, setMessage] = useState("");
   const [details, setDetails] = useState<PartyDetails | null>(null);
   const [active, setActive] = useState("midnight");
-  const [token, setToken] = useState("");
 
   // The invitation itself is the key: the personal token is verified against
   // the guest database on load. No password, nothing to remember.
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token") || "";
-    setToken(token);
     let cancelled = false;
     fetch("/api/after-party", {
       method: "POST",
@@ -119,7 +118,7 @@ export function AfterPartyExperience() {
       </section>
 
       <section id="details" className="party-scene party-scene--details" data-party-scene>
-        <img className="party-glass party-glass--details" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" />
+        <img className="party-glass party-glass--details" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" onError={removeBrokenImage} />
         <div className="party-copy party-copy--card reveal">
           <p className="eyebrow">The private chapter</p>
           <h2>One more round</h2>
@@ -142,7 +141,7 @@ export function AfterPartyExperience() {
           <p className="eyebrow">Elaine &amp; Haykal</p>
           <h2>See you on<br />the other side.</h2>
           <p>7 November 2026 · Kuala Lumpur</p>
-          <a className="party-button" href={token ? `/rsvp?t=${encodeURIComponent(token)}#confirmation` : "/"}>Back to the invitation</a>
+          <a className="party-button" href="/">Back to the invitation</a>
         </div>
       </section>
     </main>

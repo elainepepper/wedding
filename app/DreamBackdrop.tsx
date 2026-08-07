@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import { removeBrokenImage } from "./image-fallback";
 
 /**
  * The three paintings, behind the whole invitation.
@@ -121,7 +122,7 @@ export function DreamBackdrop() {
         >
           <picture>
             <source media="(max-width: 780px)" srcSet={asset(`bg/${name}-tall.webp`)} />
-            <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} />
+            <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} onError={removeBrokenImage} />
           </picture>
         </div>
       ))}

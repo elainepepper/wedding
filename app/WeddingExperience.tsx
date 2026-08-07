@@ -1,7 +1,12 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { defaultSiteDesign, fontPairs, normaliseSiteDesign, SiteDesign } from "../lib/site-design";
+import {
+  defaultSiteDesign,
+  fontPairs,
+  normaliseSiteDesign,
+  SiteDesign,
+} from "../lib/site-design";
 import { rsvpDeadlineLabel } from "../lib/rsvp-window";
 import { Dreamscape } from "./Dreamscape";
 import BubbleCursor from "./BubbleCursor";
@@ -11,6 +16,7 @@ import { LockedInvitation } from "./LockedInvitation";
 import { readToken } from "./invite-token";
 import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
+import { removeBrokenImage } from "./image-fallback";
 
 type Attendance = "yes" | "no" | null;
 type Meal = "lamb" | "salmon" | null;
@@ -44,7 +50,12 @@ type InviteData = {
   household: { id: number; name: string; maxGuests: number };
   guests: InvitedGuest[];
   afterPartyInvited: boolean;
-  settings: { rsvp_deadline?: string; confirmation_message?: string; music_url?: string | null; music_title?: string | null } | null;
+  settings: {
+    rsvp_deadline?: string;
+    confirmation_message?: string;
+    music_url?: string | null;
+    music_title?: string | null;
+  } | null;
 };
 type MusicSettings = { musicUrl: string | null; musicTitle: string | null };
 type PublicSiteSettings = MusicSettings & { siteDesign?: unknown };
@@ -121,8 +132,10 @@ const countryCodes = [
   ["Other", "+"],
 ] as const;
 
-const salmonDescription = "Seared Alaskan salmon with Peruvian asparagus, heirloom baby carrot, avruga caviar, celeriac mash and citrus fennel beurre blanc.";
-const lambDescription = "Almond dukkha-crusted lamb with potato pavé, smoked eggplant purée, tomato on vines confit and balsamic rosemary reduction.";
+const salmonDescription =
+  "Seared Alaskan salmon with Peruvian asparagus, heirloom baby carrot, avruga caviar, celeriac mash and citrus fennel beurre blanc.";
+const lambDescription =
+  "Almond dukkha-crusted lamb with potato pavé, smoked eggplant purée, tomato on vines confit and balsamic rosemary reduction.";
 const checkOutDate = (checkIn: string, nights: number | null) => {
   if (!checkIn || !nights) return "";
   const date = new Date(`${checkIn}T00:00:00`);
@@ -130,85 +143,266 @@ const checkOutDate = (checkIn: string, nights: number | null) => {
   date.setDate(date.getDate() + nights);
   return date.toISOString().slice(0, 10);
 };
-const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-const ScrollOn = ({ ready = true, hint, label = "Please continue below" }: { ready?: boolean; hint?: string; label?: string }) => ready
-  ? <p className="scroll-on"><i aria-hidden="true" /> {label}</p>
-  : hint ? <p className="gate-hint" role="status">{hint}</p> : null;
+const scrollToSection = (id: string) =>
+  document
+    .getElementById(id)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+const ScrollOn = ({
+  ready = true,
+  hint,
+  label = "Please continue below",
+}: {
+  ready?: boolean;
+  hint?: string;
+  label?: string;
+}) =>
+  ready ? (
+    <p className="scroll-on">
+      <i aria-hidden="true" /> {label}
+    </p>
+  ) : hint ? (
+    <p className="gate-hint" role="status">
+      {hint}
+    </p>
+  ) : null;
 const sceneLabels: Record<string, string> = {
-  invitation: "The invitation", table: "Your table", schedule: "The evening", venue: "The Grand Salon", gallery: "Us, lately", rsvp: "Your reply", dress: "Dress code", meal: "Dinner", travel: "Your journey",  recommendations: "Kuala Lumpur", wishes: "From the heart", confirmation: "Until November",
+  invitation: "The invitation",
+  table: "Your table",
+  schedule: "The evening",
+  venue: "The Grand Salon",
+  gallery: "Us, lately",
+  rsvp: "Your reply",
+  dress: "Dress code",
+  meal: "Dinner",
+  travel: "Your journey",
+  recommendations: "Kuala Lumpur",
+  wishes: "From the heart",
+  confirmation: "Until November",
 };
 
 function splitMobile(mobile: string | null) {
   if (!mobile) return { countryCode: "+60", phoneNumber: "" };
   const compact = mobile.replace(/[\s()-]/g, "");
-  const known = ["+60", "+61", "+65", "+62", "+44", "+64", "+1"].find((code) => compact.startsWith(code));
-  return known ? { countryCode: known, phoneNumber: compact.slice(known.length) } : { countryCode: "+60", phoneNumber: compact.replace(/^\+/, "") };
+  const known = ["+60", "+61", "+65", "+62", "+44", "+64", "+1"].find((code) =>
+    compact.startsWith(code),
+  );
+  return known
+    ? { countryCode: known, phoneNumber: compact.slice(known.length) }
+    : { countryCode: "+60", phoneNumber: compact.replace(/^\+/, "") };
 }
 
 function Sparkles() {
-  return <div className="sparkles" aria-hidden="true"><span className="sparkle sparkle--one">✦</span><span className="sparkle sparkle--two">✧</span><span className="sparkle sparkle--three">✦</span><span className="sparkle sparkle--four">✧</span><span className="orbit" /></div>;
+  return (
+    <div className="sparkles" aria-hidden="true">
+      <span className="sparkle sparkle--one">✦</span>
+      <span className="sparkle sparkle--two">✧</span>
+      <span className="sparkle sparkle--three">✦</span>
+      <span className="sparkle sparkle--four">✧</span>
+      <span className="orbit" />
+    </div>
+  );
 }
 
 function RibbonDivider() {
-  return <div className="ribbon-divider" aria-hidden="true"><span /><b>❦</b><span /></div>;
+  return (
+    <div className="ribbon-divider" aria-hidden="true">
+      <span />
+      <b>❦</b>
+      <span />
+    </div>
+  );
 }
 
-const maps = (query: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-
-
-
-
+const maps = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
 const foodPlaces = [
-  { name: "Oriental Kopi", note: "Kopi, kaya toast and egg tarts — worth the queue.", detail: "10 minutes", score: "4.4 · 6,800 reviews" },
-  { name: "Super Kitchen Chilli Pan Mee", note: "The chilli pan mee everyone means when they say chilli pan mee.", detail: "10 minutes by Grab", score: "4.8 · 5,400 reviews" },
-  { name: "Oriental Kopi", note: "Kopi, kaya toast and Malaysian breakfast all day.", detail: "8 minutes", score: "4.5 · 3,200 reviews" },
-  { name: "Pokok KLCC Lot 91", note: "A leafy all-day place tucked beneath Permata Sapura.", detail: "5 minutes", score: "4.7 · 1,700 reviews" },
-  { name: "The Nasi Lemak Shop", note: "Nasi lemak at any hour, exactly as it should be.", detail: "6 minutes", score: "4.5 · 920 reviews" },
-  { name: "SS2 Durian Stalls", note: "Durian in season, eaten standing up under the lights.", detail: "5 minutes", score: "4.4 · 1,400 reviews" },
+  {
+    name: "Village Park Restaurant",
+    note: "A Kuala Lumpur favourite for nasi lemak, crisp chicken and fragrant coconut rice.",
+    detail: "20 minutes by Grab",
+    score: "Beloved local classic",
+  },
+  {
+    name: "Super Kitchen Chilli Pan Mee",
+    note: "Springy noodles, punchy chilli and a poached egg — stir everything together before the first bite.",
+    detail: "15 minutes by Grab",
+    score: "Casual local favourite",
+  },
+  {
+    name: "White & Black Kampong Kuala Lumpur",
+    note: "Kampung cooking done beautifully — sambal petai, asam pedas, rendang.",
+    detail: "10 minutes by Grab",
+    score: "4.8 · 5,400 reviews",
+  },
+  {
+    name: "Pokok KLCC Lot 91",
+    note: "A leafy all-day place tucked beneath Permata Sapura.",
+    detail: "5 minutes",
+    score: "4.7 · 1,700 reviews",
+  },
+  {
+    name: "The Oriental Park KLCC",
+    note: "Tables beside the fountains. Ask to sit outside at dusk.",
+    detail: "6 minutes",
+    score: "4.5 · 920 reviews",
+  },
+  {
+    name: "Cili Kampung Suria KLCC",
+    note: "Honest Malay food inside Suria — quick, before the shops.",
+    detail: "5 minutes",
+    score: "4.4 · 1,400 reviews",
+  },
 ] as const;
 
 const nearbyHotels = [
-  { name: "Four Seasons Hotel Kuala Lumpur", note: "Five-star, beside the towers on Jalan Ampang.", walk: "8 minutes", score: "4.6 · 5,600 reviews" },
-  { name: "Banyan Tree Kuala Lumpur", note: "Five-star, rooms from the 54th floor on Jalan Conlay.", walk: "6 minutes", score: "4.7 · 2,900 reviews" },
-  { name: "Grand Millennium Kuala Lumpur", note: "Five-star, on Bukit Bintang beside Pavilion.", walk: "12 minutes", score: "4.5 · 8,800 reviews" },
-  { name: "Pavilion Hotel Kuala Lumpur Managed By Banyan Tree", note: "Five-star, attached to Pavilion itself.", walk: "12 minutes", score: "4.5 · 1,900 reviews" },
-  { name: "Berjaya Times Square Hotel Kuala Lumpur", note: "Four star and kinder on the purse, with generous family rooms.", walk: "20 minutes", score: "4.3 · 23,000 reviews" },
+  {
+    name: "Four Seasons Hotel Kuala Lumpur",
+    note: "Five-star, beside the towers on Jalan Ampang.",
+    walk: "8 minutes",
+    score: "4.6 · 5,600 reviews",
+  },
+  {
+    name: "Banyan Tree Kuala Lumpur",
+    note: "Five-star, rooms from the 54th floor on Jalan Conlay.",
+    walk: "6 minutes",
+    score: "4.7 · 2,900 reviews",
+  },
+  {
+    name: "Grand Millennium Kuala Lumpur",
+    note: "Five-star, on Bukit Bintang beside Pavilion.",
+    walk: "12 minutes",
+    score: "4.5 · 8,800 reviews",
+  },
+  {
+    name: "Pavilion Hotel Kuala Lumpur Managed By Banyan Tree",
+    note: "Five-star, attached to Pavilion itself.",
+    walk: "12 minutes",
+    score: "4.5 · 1,900 reviews",
+  },
+  {
+    name: "Berjaya Times Square Hotel Kuala Lumpur",
+    note: "Four star and kinder on the purse, with generous family rooms.",
+    walk: "20 minutes",
+    score: "4.3 · 23,000 reviews",
+  },
 ] as const;
 
 const pamperPlaces = [
-  { name: "V Spa Bukit Bintang", note: "Calm rooms, gentle prices, open until late.", detail: "10 minutes", score: "4.8 · 780 reviews" },
-  { name: "Health World Spa and Massage Bukit Bintang", note: "Deep tissue and foot massage, open very late indeed.", detail: "10 minutes", score: "4.7 · 670 reviews" },
-  { name: "Thai Paradise Spa Kuala Lumpur", note: "Thai massage and aromatherapy, a few streets away.", detail: "5 minutes", score: "4.4 · 760 reviews" },
-  { name: "Hair Quarters Pavilion Kuala Lumpur", note: "Wash, blow-dry and styling before the evening.", detail: "Pavilion, 12 minutes", score: "4.9 · 2,300 reviews" },
-  { name: "Number76 Lot 10", note: "Japanese salon at Lot 10 — cut, colour and styling.", detail: "Pavilion, 12 minutes", score: "4.8 · 530 reviews" },
+  {
+    name: "V Spa Bukit Bintang",
+    note: "Calm rooms, gentle prices, open until late.",
+    detail: "10 minutes",
+    score: "4.8 · 780 reviews",
+  },
+  {
+    name: "Health World Spa and Massage Bukit Bintang",
+    note: "Deep tissue and foot massage, open very late indeed.",
+    detail: "10 minutes",
+    score: "4.7 · 670 reviews",
+  },
+  {
+    name: "Thai Paradise Spa Kuala Lumpur",
+    note: "Thai massage and aromatherapy, a few streets away.",
+    detail: "5 minutes",
+    score: "4.4 · 760 reviews",
+  },
+  {
+    name: "Hair Quarters Pavilion Kuala Lumpur",
+    note: "Wash, blow-dry and styling before the evening.",
+    detail: "Pavilion, 12 minutes",
+    score: "4.9 · 2,300 reviews",
+  },
+  {
+    name: "Alice Hair Wonderland Pavilion Kuala Lumpur",
+    note: "Cut and colour, much loved by regulars.",
+    detail: "Pavilion, 12 minutes",
+    score: "4.8 · 530 reviews",
+  },
 ] as const;
 
 const sightseeingPlaces = [
-  { name: "Petronas Twin Towers", note: "The skybridge and the deck on the 86th floor. Book ahead.", detail: "5 minutes", score: "4.7 · 103,000 reviews" },
-  { name: "KLCC Park Kuala Lumpur", note: "The park behind the towers. Come at dusk, when the fountains begin.", detail: "6 minutes", score: "4.6 · 63,000 reviews" },
-  { name: "Aquaria KLCC", note: "A walk-through aquarium beneath the convention centre, next door.", detail: "3 minutes", score: "4.3 · 40,000 reviews" },
-  { name: "Menara Kuala Lumpur KL Tower", note: "The one view the towers cannot give you — the towers themselves.", detail: "10 minutes", score: "4.5 · 42,000 reviews" },
-  { name: "Islamic Arts Museum Malaysia", note: "Quiet, beautiful, and the loveliest small museum in the city.", detail: "15 minutes", score: "4.7 · 5,900 reviews" },
+  {
+    name: "Petronas Twin Towers",
+    note: "The skybridge and the deck on the 86th floor. Book ahead.",
+    detail: "5 minutes",
+    score: "4.7 · 103,000 reviews",
+  },
+  {
+    name: "KLCC Park Kuala Lumpur",
+    note: "The park behind the towers. Come at dusk, when the fountains begin.",
+    detail: "6 minutes",
+    score: "4.6 · 63,000 reviews",
+  },
+  {
+    name: "Aquaria KLCC",
+    note: "A walk-through aquarium beneath the convention centre, next door.",
+    detail: "3 minutes",
+    score: "4.3 · 40,000 reviews",
+  },
+  {
+    name: "Menara Kuala Lumpur KL Tower",
+    note: "The one view the towers cannot give you — the towers themselves.",
+    detail: "10 minutes",
+    score: "4.5 · 42,000 reviews",
+  },
+  {
+    name: "Islamic Arts Museum Malaysia",
+    note: "Quiet, beautiful, and the loveliest small museum in the city.",
+    detail: "15 minutes",
+    score: "4.7 · 5,900 reviews",
+  },
 ] as const;
 
 const shoppingPlaces = [
-  { name: "Suria KLCC", note: "At the foot of the towers. Everything, under one roof.", detail: "5 minutes", score: "4.6 · 75,000 reviews" },
-  { name: "Pavilion Kuala Lumpur", note: "Reached by the covered walkway, without stepping into the sun.", detail: "12 minutes on foot", score: "4.6 · 63,000 reviews" },
-  { name: "Central Market Kuala Lumpur", note: "Batik, pewter and craft — the place for something to carry home.", detail: "15 minutes by Grab", score: "4.3 · 61,000 reviews" },
-  { name: "Mid Valley Megamall", note: "One of the largest in the country — everything, and then more.", detail: "15 minutes", score: "4.3 · 1,400 reviews" },
+  {
+    name: "Suria KLCC",
+    note: "At the foot of the towers. Everything, under one roof.",
+    detail: "5 minutes",
+    score: "4.6 · 75,000 reviews",
+  },
+  {
+    name: "Pavilion Kuala Lumpur",
+    note: "Reached by the covered walkway, without stepping into the sun.",
+    detail: "12 minutes on foot",
+    score: "4.6 · 63,000 reviews",
+  },
+  {
+    name: "Central Market Kuala Lumpur",
+    note: "Batik, pewter and craft — the place for something to carry home.",
+    detail: "15 minutes by Grab",
+    score: "4.3 · 61,000 reviews",
+  },
+  {
+    name: "Isetan The Japan Store Kuala Lumpur",
+    note: "Four floors of Japanese food, homeware and beauty at Lot 10.",
+    detail: "15 minutes",
+    score: "4.3 · 1,400 reviews",
+  },
 ] as const;
 
 const usefulApps = [
-  { name: "Grab", note: "Rides and food delivery — how most of Kuala Lumpur gets about.",
+  {
+    name: "Grab",
+    note: "Rides and food delivery — how most of Kuala Lumpur gets about.",
     ios: "https://apps.apple.com/app/grab-taxi-ride-food-delivery/id647268330",
-    android: "https://play.google.com/store/apps/details?id=com.grabtaxi.passenger" },
-  { name: "Touch \u2019n Go eWallet", note: "Pays for trains, parking and much else. Set it up before you fly.",
-    ios: "https://apps.apple.com/my/app/touch-n-go-ewallet/id1344696702", 
-    android: "https://play.google.com/store/apps/details?id=my.com.tngdigital.ewallet" },
-  { name: "Google Maps", note: "Save the Kuala Lumpur map offline and you will never be lost.",
+    android:
+      "https://play.google.com/store/apps/details?id=com.grabtaxi.passenger",
+  },
+  {
+    name: "Touch \u2019n Go eWallet",
+    note: "Pays for trains, parking and much else. Set it up before you fly.",
+    ios: "https://apps.apple.com/my/app/touch-n-go-ewallet/id1344696702",
+    android:
+      "https://play.google.com/store/apps/details?id=my.com.tngdigital.ewallet",
+  },
+  {
+    name: "Google Maps",
+    note: "Save the Kuala Lumpur map offline and you will never be lost.",
     ios: "https://apps.apple.com/app/google-maps/id585027354",
-    android: "https://play.google.com/store/apps/details?id=com.google.android.apps.maps" },
+    android:
+      "https://play.google.com/store/apps/details?id=com.google.android.apps.maps",
+  },
 ] as const;
 
 const guideCategories = [
@@ -224,75 +418,188 @@ const eveningMoments = [
   { time: "7:00pm", title: "The celebration begins" },
 ] as const;
 
-
 const WEDDING_START_UTC = "20261107T100000Z"; // 6:00pm in Kuala Lumpur
 const WEDDING_END_UTC = "20261107T160000Z"; // midnight in Kuala Lumpur
 
 function downloadCalendarInvite() {
   const ics = [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Elaine & Haykal//Wedding//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Elaine & Haykal//Wedding//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
     "BEGIN:VEVENT",
     "UID:elaine-haykal-2026@haykalelaine.com",
-    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+    `DTSTAMP:${new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}/, "")}`,
     `DTSTART:${WEDDING_START_UTC}`,
     `DTEND:${WEDDING_END_UTC}`,
     "SUMMARY:Elaine & Haykal — Wedding Reception",
     "DESCRIPTION:Arrive from 6:00pm for drinks and canapés\\; the celebration begins at 7:00pm.",
     "LOCATION:The Grand Salon\\, Grand Hyatt Kuala Lumpur\\, 12 Jalan Pinang\\, 50450 Kuala Lumpur",
-    "END:VEVENT", "END:VCALENDAR",
+    "END:VEVENT",
+    "END:VCALENDAR",
   ].join("\r\n");
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  link.href = URL.createObjectURL(
+    new Blob([ics], { type: "text/calendar;charset=utf-8" }),
+  );
   link.download = "elaine-haykal-wedding.ics";
   link.click();
   URL.revokeObjectURL(link.href);
 }
 
+// A gateway timeout or a maintenance page is not JSON. Reading it as JSON
+// used to throw, and the browser's raw parser message was shown to the
+// guest. Turn any unreadable reply into words a guest can act on.
+async function readGuestResponse<T>(
+  response: Response,
+  fallback: string,
+): Promise<T & { error?: string }> {
+  try {
+    return (await response.json()) as T & { error?: string };
+  } catch {
+    if (
+      response.status === 504 ||
+      response.status === 502 ||
+      response.status === 408
+    ) {
+      throw new Error(
+        "That took a little too long to reach us. Please try once more in a moment.",
+      );
+    }
+    throw new Error(fallback);
+  }
+}
+
 function Countdown() {
-  const target = useMemo(() => new Date("2026-11-07T18:00:00+08:00").getTime(), []);
+  const target = useMemo(
+    () => new Date("2026-11-07T18:00:00+08:00").getTime(),
+    [],
+  );
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
   const remaining = target - now;
-  if (remaining <= 0) return <p className="countdown-live">Today, we celebrate. ✦</p>;
+  if (remaining <= 0)
+    return <p className="countdown-live">Today, we celebrate. ✦</p>;
   const days = Math.floor(remaining / 86_400_000);
   const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
   const minutes = Math.floor((remaining % 3_600_000) / 60_000);
-  return <div className="countdown" role="timer" aria-label={`${days} days, ${hours} hours and ${minutes} minutes until the wedding`}>
-    <div><strong>{days}</strong><span>days</span></div>
-    <div><strong>{hours}</strong><span>hours</span></div>
-    <div><strong>{minutes}</strong><span>minutes</span></div>
-  </div>;
+  return (
+    <div
+      className="countdown"
+      role="timer"
+      aria-label={`${days} days, ${hours} hours and ${minutes} minutes until the wedding`}
+    >
+      <div>
+        <strong>{days}</strong>
+        <span>days</span>
+      </div>
+      <div>
+        <strong>{hours}</strong>
+        <span>hours</span>
+      </div>
+      <div>
+        <strong>{minutes}</strong>
+        <span>minutes</span>
+      </div>
+    </div>
+  );
 }
 
-function EditableDecorationOverlay({ design, activeScene }: { design: SiteDesign; activeScene: string }) {
-  return <div className="editable-decoration-overlay" aria-hidden="true">{design.decorations.map((item) => {
-    const active = item.visible && item.scene === activeScene;
-    // Pointer drift: depth-based parallax obeys the editor's master cursor
-    // toggle; the "cursor" preset adds a stronger, per-element follow.
-    const drift = (design.cursorMotion ? item.depth * 9 : 0) + (item.motion === "cursor" ? 26 * item.motionStrength : 0);
-    const motionVars = {
-      "--m-amp": `${(4 + item.motionStrength * 14).toFixed(1)}px`,
-      "--m-deg": `${(1.5 + item.motionStrength * 5).toFixed(1)}deg`,
-      "--m-dur": `${(11 - item.motionStrength * 6).toFixed(1)}s`,
-    } as CSSProperties;
-    return <span key={item.id} className={`deco-wrap${active ? " is-active" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.width}%`, opacity: active ? item.opacity : 0, zIndex: item.depth + 4, transform: `translate3d(calc(-50% + var(--pointer-x) * ${drift}px), calc(-50% + var(--pointer-y) * ${drift * .7}px), 0) rotate(${item.rotation}deg)` }}>
-      <img src={item.src} alt="" className={item.motion !== "none" && item.motion !== "cursor" ? `deco-anim deco-anim--${item.motion}` : undefined} style={motionVars} />
-    </span>;
-  })}</div>;
+function EditableDecorationOverlay({
+  design,
+  activeScene,
+}: {
+  design: SiteDesign;
+  activeScene: string;
+}) {
+  return (
+    <div className="editable-decoration-overlay" aria-hidden="true">
+      {design.decorations.map((item) => {
+        const active = item.visible && item.scene === activeScene;
+        // Pointer drift: depth-based parallax obeys the editor's master cursor
+        // toggle; the "cursor" preset adds a stronger, per-element follow.
+        const drift =
+          (design.cursorMotion ? item.depth * 9 : 0) +
+          (item.motion === "cursor" ? 26 * item.motionStrength : 0);
+        const motionVars = {
+          "--m-amp": `${(4 + item.motionStrength * 14).toFixed(1)}px`,
+          "--m-deg": `${(1.5 + item.motionStrength * 5).toFixed(1)}deg`,
+          "--m-dur": `${(11 - item.motionStrength * 6).toFixed(1)}s`,
+        } as CSSProperties;
+        return (
+          <span
+            key={item.id}
+            className={`deco-wrap${active ? " is-active" : ""}`}
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+              width: `${item.width}%`,
+              opacity: active ? item.opacity : 0,
+              zIndex: item.depth + 4,
+              transform: `translate3d(calc(-50% + var(--pointer-x) * ${drift}px), calc(-50% + var(--pointer-y) * ${drift * 0.7}px), 0) rotate(${item.rotation}deg)`,
+            }}
+          >
+            <img
+              src={item.src}
+              alt=""
+              className={
+                item.motion !== "none" && item.motion !== "cursor"
+                  ? `deco-anim deco-anim--${item.motion}`
+                  : undefined
+              }
+              style={motionVars}
+              onError={removeBrokenImage}
+            />
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
-function ChoiceButton({ selected, title, detail, onClick }: { selected: boolean; title: string; detail?: string; onClick: () => void }) {
-  return <button type="button" className={`choice-card${selected ? " is-selected" : ""}`} aria-pressed={selected} onClick={onClick}><span className="choice-mark">{selected ? "✓" : ""}</span><strong>{title}</strong>{detail ? <small>{detail}</small> : null}</button>;
+function ChoiceButton({
+  selected,
+  title,
+  detail,
+  onClick,
+}: {
+  selected: boolean;
+  title: string;
+  detail?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`choice-card${selected ? " is-selected" : ""}`}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
+      <span className="choice-mark">{selected ? "✓" : ""}</span>
+      <strong>{title}</strong>
+      {detail ? <small>{detail}</small> : null}
+    </button>
+  );
 }
 
-export function WeddingExperience({ invitationToken, previewMode = false }: { invitationToken?: string; previewMode?: boolean }) {
+export function WeddingExperience({
+  invitationToken,
+  previewMode = false,
+}: {
+  invitationToken?: string;
+  previewMode?: boolean;
+}) {
   // the token arrives in the address, or is remembered from earlier in the visit
   const [token, setToken] = useState(invitationToken ?? "");
   useEffect(() => {
-    const resolved = readToken(invitationToken);   // always runs, always remembers
+    const resolved = readToken(invitationToken); // always runs, always remembers
     if (resolved) setToken(resolved);
   }, [invitationToken]);
   const personalised = Boolean(token) || previewMode;
@@ -300,50 +607,76 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   // first. They may step past it and look around, but the RSVP stays closed.
   const [filmReady, setFilmReady] = useState(false);
   const [openGuide, setOpenGuide] = useState("");
-  const [rsvp, setRsvp] = useState<RsvpState>(() => previewMode ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" } : initialRsvp);
+  const [rsvp, setRsvp] = useState<RsvpState>(() =>
+    previewMode
+      ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" }
+      : initialRsvp,
+  );
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
-  const [guestResponses, setGuestResponses] = useState<GuestResponse[]>(() => previewMode ? [{ id: -1, name: "Your name", rsvpStatus: "Pending", ceremonyAttending: true, receptionAttending: true, afterPartyInvited: false, afterPartyAttending: "Pending", mealSelection: "", dietaryRequirements: "", allergies: "", accessibility: "", transportRequired: false, accommodationRequired: false, travelArrival: "", travelDeparture: "", accommodationName: "", bedPreference: "", roomNights: null, tableName: "", wishes: "", advice: "" }] : []);
+  const [guestResponses, setGuestResponses] = useState<GuestResponse[]>(() =>
+    previewMode
+      ? [
+          {
+            id: -1,
+            name: "Your name",
+            rsvpStatus: "Pending",
+            ceremonyAttending: true,
+            receptionAttending: true,
+            afterPartyInvited: false,
+            afterPartyAttending: "Pending",
+            mealSelection: "",
+            dietaryRequirements: "",
+            allergies: "",
+            accessibility: "",
+            transportRequired: false,
+            accommodationRequired: false,
+            travelArrival: "",
+            travelDeparture: "",
+            accommodationName: "",
+            bedPreference: "",
+            roomNights: null,
+            tableName: "",
+            wishes: "",
+            advice: "",
+          },
+        ]
+      : [],
+  );
   const [inviteLoading, setInviteLoading] = useState(Boolean(token));
   const [inviteError, setInviteError] = useState("");
   const [activeSection, setActiveSection] = useState("welcome");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [music, setMusic] = useState<MusicSettings>({ musicUrl: null, musicTitle: null });
+  const [music, setMusic] = useState<MusicSettings>({
+    musicUrl: null,
+    musicTitle: null,
+  });
   const [siteDesign, setSiteDesign] = useState<SiteDesign>(defaultSiteDesign);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // The music begins with the crossing, because ENTER was the gesture that
-  // permitted it. If the browser still refuses, the toggle remains.
-  useEffect(() => {
-    let granted = false;
-    try { granted = window.sessionStorage.getItem("he:sound") === "on"; } catch { /* private mode */ }
-    if (!granted || !music.musicUrl) return;
-    const player = audioRef.current;
-    if (!player) return;
-    player.volume = 0;
-    void player.play().then(() => {
-      setSoundEnabled(true);
-      // fade in rather than starting at full volume over the archway
-      const target = 0.55;
-      const started = performance.now();
-      const lift = () => {
-        const through = Math.min(1, (performance.now() - started) / 2400);
-        player.volume = target * through;
-        if (through < 1) requestAnimationFrame(lift);
-      };
-      requestAnimationFrame(lift);
-    }).catch(() => undefined);
-  }, [music.musicUrl]);
-
   useEffect(() => {
     let cancelled = false;
     fetch("/api/site-settings", { cache: "no-store" })
-      .then(async (response) => response.ok ? response.json() as Promise<PublicSiteSettings> : { musicUrl: null, musicTitle: null, siteDesign: null })
-      .then((result) => { if (!cancelled) { setMusic({ musicUrl: result.musicUrl, musicTitle: result.musicTitle }); setSiteDesign(normaliseSiteDesign(result.siteDesign)); } })
+      .then(async (response) =>
+        response.ok
+          ? (response.json() as Promise<PublicSiteSettings>)
+          : { musicUrl: null, musicTitle: null, siteDesign: null },
+      )
+      .then((result) => {
+        if (!cancelled) {
+          setMusic({
+            musicUrl: result.musicUrl,
+            musicTitle: result.musicTitle,
+          });
+          setSiteDesign(normaliseSiteDesign(result.siteDesign));
+        }
+      })
       .catch(() => undefined);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Music tries to start on its own; browsers usually refuse until a guest
@@ -354,10 +687,18 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     let done = false;
     const start = () => {
       if (done) return;
-      player.play().then(() => { done = true; setSoundEnabled(true); }).catch(() => undefined);
+      player
+        .play()
+        .then(() => {
+          done = true;
+          setSoundEnabled(true);
+        })
+        .catch(() => undefined);
     };
     start();
-    const onFirstTouch = () => { start(); };
+    const onFirstTouch = () => {
+      start();
+    };
     window.addEventListener("pointerdown", onFirstTouch, { once: true });
     window.addEventListener("keydown", onFirstTouch, { once: true });
     return () => {
@@ -370,7 +711,12 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     const player = audioRef.current;
     if (!player) return;
     if (player.paused) {
-      try { await player.play(); setSoundEnabled(true); } catch { setSoundEnabled(false); }
+      try {
+        await player.play();
+        setSoundEnabled(true);
+      } catch {
+        setSoundEnabled(false);
+      }
     } else {
       player.pause();
       setSoundEnabled(false);
@@ -382,55 +728,110 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     let cancelled = false;
     fetch(`/api/invite/${encodeURIComponent(token)}`, { cache: "no-store" })
       .then(async (response) => {
-        const result = await response.json() as InviteData & { error?: string };
-        if (!response.ok) throw new Error(result.error || "This invitation could not be opened.");
+        const result = await readGuestResponse<InviteData>(
+          response,
+          "Your invitation could not be opened just now. Please try your link again in a moment.",
+        );
+        if (!response.ok)
+          throw new Error(
+            result.error || "This invitation could not be opened.",
+          );
         return result;
       })
       .then((result) => {
         if (cancelled) return;
         setInviteData(result);
-        const names = result.guests.map((guest) => guest.preferred_name || guest.first_name).join(" & ");
-        const phone = splitMobile(result.guests.find((guest) => guest.mobile)?.mobile || null);
+        const names = result.guests
+          .map((guest) => guest.preferred_name || guest.first_name)
+          .join(" & ");
+        const phone = splitMobile(
+          result.guests.find((guest) => guest.mobile)?.mobile || null,
+        );
         setRsvp((current) => ({
           ...current,
           guestName: names || result.household.name,
           ...phone,
-          accessibilityNote: result.guests.map((guest) => guest.accessibility || "").find(Boolean) || current.accessibilityNote,
-          wishes: result.guests.map((guest) => guest.wishes || "").find(Boolean) || current.wishes,
-          advice: result.guests.map((guest) => guest.marriage_advice || "").find(Boolean) || current.advice,
-          bedPreference: (result.guests.map((guest) => guest.bed_preference || "").find(Boolean) as "King" | "Twin" | undefined) ?? current.bedPreference,
-          nights: result.guests.map((guest) => guest.room_nights).find((value) => typeof value === "number") ?? current.nights,
+          accessibilityNote:
+            result.guests
+              .map((guest) => guest.accessibility || "")
+              .find(Boolean) || current.accessibilityNote,
+          wishes:
+            result.guests.map((guest) => guest.wishes || "").find(Boolean) ||
+            current.wishes,
+          advice:
+            result.guests
+              .map((guest) => guest.marriage_advice || "")
+              .find(Boolean) || current.advice,
+          bedPreference:
+            (result.guests
+              .map((guest) => guest.bed_preference || "")
+              .find(Boolean) as "King" | "Twin" | undefined) ??
+            current.bedPreference,
+          nights:
+            result.guests
+              .map((guest) => guest.room_nights)
+              .find((value) => typeof value === "number") ?? current.nights,
         }));
-        setGuestResponses(result.guests.map((guest) => ({
-          id: guest.id,
-          name: guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim(),
-          rsvpStatus: guest.rsvp_status === "Confirmed" || guest.rsvp_status === "Declined" ? guest.rsvp_status : "Pending",
-          ceremonyAttending: guest.ceremony_invited ? guest.rsvp_status !== "Declined" : false,
-          receptionAttending: guest.reception_invited ? guest.rsvp_status !== "Declined" : false,
-          afterPartyInvited: Boolean(guest.after_party_invited),
-          afterPartyAttending: guest.after_party_attending === "Yes" || guest.after_party_attending === "No" ? guest.after_party_attending : "Pending",
-          mealSelection: guest.meal_selection === "Lamb" || guest.meal_selection === "Salmon" ? guest.meal_selection : "",
-          dietaryRequirements: guest.dietary_requirements || "",
-          allergies: guest.allergies || "",
-          accessibility: guest.accessibility || "",
-          transportRequired: Boolean(guest.transport_required),
-          accommodationRequired: Boolean(guest.accommodation_required),
-          travelArrival: guest.travel_arrival || "",
-          travelDeparture: guest.travel_departure || "",
-          accommodationName: guest.accommodation_name || "",
-          bedPreference: guest.bed_preference || "",
-          tableName: guest.table_name || "",
-          roomNights: typeof guest.room_nights === "number" ? guest.room_nights : null,
-          wishes: guest.wishes || "",
-          advice: guest.marriage_advice || "",
-        })));
+        setGuestResponses(
+          result.guests.map((guest) => ({
+            id: guest.id,
+            name:
+              guest.preferred_name ||
+              `${guest.first_name} ${guest.last_name}`.trim(),
+            rsvpStatus:
+              guest.rsvp_status === "Confirmed" ||
+              guest.rsvp_status === "Declined"
+                ? guest.rsvp_status
+                : "Pending",
+            ceremonyAttending: guest.ceremony_invited
+              ? guest.rsvp_status !== "Declined"
+              : false,
+            receptionAttending: guest.reception_invited
+              ? guest.rsvp_status !== "Declined"
+              : false,
+            afterPartyInvited: Boolean(guest.after_party_invited),
+            afterPartyAttending:
+              guest.after_party_attending === "Yes" ||
+              guest.after_party_attending === "No"
+                ? guest.after_party_attending
+                : "Pending",
+            mealSelection:
+              guest.meal_selection === "Lamb" ||
+              guest.meal_selection === "Salmon"
+                ? guest.meal_selection
+                : "",
+            dietaryRequirements: guest.dietary_requirements || "",
+            allergies: guest.allergies || "",
+            accessibility: guest.accessibility || "",
+            transportRequired: Boolean(guest.transport_required),
+            accommodationRequired: Boolean(guest.accommodation_required),
+            travelArrival: guest.travel_arrival || "",
+            travelDeparture: guest.travel_departure || "",
+            accommodationName: guest.accommodation_name || "",
+            bedPreference: guest.bed_preference || "",
+            tableName: guest.table_name || "",
+            roomNights:
+              typeof guest.room_nights === "number" ? guest.room_nights : null,
+            wishes: guest.wishes || "",
+            advice: guest.marriage_advice || "",
+          })),
+        );
       })
-      .catch((loadError) => { if (!cancelled) setInviteError(loadError instanceof Error ? loadError.message : "This invitation could not be opened."); })
-      .finally(() => { if (!cancelled) setInviteLoading(false); });
-    return () => { cancelled = true; };
+      .catch((loadError) => {
+        if (!cancelled)
+          setInviteError(
+            loadError instanceof Error
+              ? loadError.message
+              : "This invitation could not be opened.",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setInviteLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
-
-
 
   useEffect(() => {
     let frame = 0;
@@ -449,35 +850,73 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       frame = 0;
       const elapsed = Math.max(1, Math.min(50, time - lastTime));
       lastTime = time;
-      const scrollAlpha = reduceMotion.matches ? 1 : 1 - Math.pow(1 - siteDesign.motionDamping, elapsed / 16.667);
-      const pointerAlpha = reduceMotion.matches ? 1 : 1 - Math.pow(.93, elapsed / 16.667);
+      const scrollAlpha = reduceMotion.matches
+        ? 1
+        : 1 - Math.pow(1 - siteDesign.motionDamping, elapsed / 16.667);
+      const pointerAlpha = reduceMotion.matches
+        ? 1
+        : 1 - Math.pow(0.93, elapsed / 16.667);
       const viewport = window.innerHeight || 1;
       let sceneIsMoving = false;
-      document.querySelectorAll<HTMLElement>("[data-scene]").forEach((scene) => {
-        const rect = scene.getBoundingClientRect();
-        const scrollRange = Math.max(1, rect.height - viewport);
-        const target = rect.height > viewport * 1.05
-          ? Math.max(0, Math.min(1, -rect.top / scrollRange))
-          : Math.max(0, Math.min(1, (viewport - rect.top) / (viewport + rect.height)));
-        const previous = sceneProgress.get(scene) ?? target;
-        const progress = previous + (target - previous) * scrollAlpha;
-        sceneProgress.set(scene, progress);
-        scene.style.setProperty("--scene-progress", progress.toFixed(4));
-        if (scene.id === "welcome") {
-          scene.style.setProperty("--welcome-intro", (1 - smoothstep(0.1, 0.3, progress)).toFixed(4));
-          scene.style.setProperty("--welcome-names", (smoothstep(0.2, 0.38, progress) * (1 - smoothstep(0.53, 0.7, progress))).toFixed(4));
-          scene.style.setProperty("--welcome-date", smoothstep(0.6, 0.8, progress).toFixed(4));
-          scene.style.setProperty("--welcome-portal", smoothstep(0.16, 0.88, progress).toFixed(4));
-        }
-        if (Math.abs(target - progress) > 0.001) sceneIsMoving = true;
-      });
+      document
+        .querySelectorAll<HTMLElement>("[data-scene]")
+        .forEach((scene) => {
+          const rect = scene.getBoundingClientRect();
+          const scrollRange = Math.max(1, rect.height - viewport);
+          const target =
+            rect.height > viewport * 1.05
+              ? Math.max(0, Math.min(1, -rect.top / scrollRange))
+              : Math.max(
+                  0,
+                  Math.min(1, (viewport - rect.top) / (viewport + rect.height)),
+                );
+          const previous = sceneProgress.get(scene) ?? target;
+          const progress = previous + (target - previous) * scrollAlpha;
+          sceneProgress.set(scene, progress);
+          scene.style.setProperty("--scene-progress", progress.toFixed(4));
+          if (scene.id === "welcome") {
+            scene.style.setProperty(
+              "--welcome-intro",
+              (1 - smoothstep(0.1, 0.3, progress)).toFixed(4),
+            );
+            scene.style.setProperty(
+              "--welcome-names",
+              (
+                smoothstep(0.2, 0.38, progress) *
+                (1 - smoothstep(0.53, 0.7, progress))
+              ).toFixed(4),
+            );
+            scene.style.setProperty(
+              "--welcome-date",
+              smoothstep(0.6, 0.8, progress).toFixed(4),
+            );
+            scene.style.setProperty(
+              "--welcome-portal",
+              smoothstep(0.16, 0.88, progress).toFixed(4),
+            );
+          }
+          if (Math.abs(target - progress) > 0.001) sceneIsMoving = true;
+        });
       pointerX += (targetX - pointerX) * pointerAlpha;
       pointerY += (targetY - pointerY) * pointerAlpha;
-      document.documentElement.style.setProperty("--pointer-x", pointerX.toFixed(3));
-      document.documentElement.style.setProperty("--pointer-y", pointerY.toFixed(3));
-      if (sceneIsMoving || Math.abs(targetX - pointerX) > 0.002 || Math.abs(targetY - pointerY) > 0.002) frame = requestAnimationFrame(render);
+      document.documentElement.style.setProperty(
+        "--pointer-x",
+        pointerX.toFixed(3),
+      );
+      document.documentElement.style.setProperty(
+        "--pointer-y",
+        pointerY.toFixed(3),
+      );
+      if (
+        sceneIsMoving ||
+        Math.abs(targetX - pointerX) > 0.002 ||
+        Math.abs(targetY - pointerY) > 0.002
+      )
+        frame = requestAnimationFrame(render);
     };
-    const requestRender = () => { if (!frame) frame = requestAnimationFrame(render); };
+    const requestRender = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
     const pointer = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       targetX = (event.clientX / window.innerWidth - 0.5) * 2;
@@ -496,28 +935,55 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     };
   }, [rsvp.attendance, submitted, inviteLoading, siteDesign.motionDamping]);
 
-  const hiddenScenes = useMemo(() => new Set(siteDesign.hiddenScenes), [siteDesign.hiddenScenes]);
+  const hiddenScenes = useMemo(
+    () => new Set(siteDesign.hiddenScenes),
+    [siteDesign.hiddenScenes],
+  );
   const customAfter = useMemo(() => {
     const map = new Map<string, typeof siteDesign.customPages>();
-    siteDesign.customPages.forEach((page) => map.set(page.afterScene, [...(map.get(page.afterScene) ?? []), page]));
+    siteDesign.customPages.forEach((page) =>
+      map.set(page.afterScene, [...(map.get(page.afterScene) ?? []), page]),
+    );
     return map;
   }, [siteDesign.customPages]);
   const validPhone = () => rsvp.phoneNumber.replace(/\D/g, "").length >= 7;
-  const someoneAttending = guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
-  const rsvpComplete = personalised && guestResponses.length > 0
-    && guestResponses.every((guest) => guest.rsvpStatus !== "Pending")
+  const someoneAttending = guestResponses.some(
+    (guest) => guest.rsvpStatus === "Confirmed",
+  );
+  const rsvpComplete =
+    personalised &&
+    guestResponses.length > 0 &&
+    guestResponses.every((guest) => guest.rsvpStatus !== "Pending") &&
     // a number is only asked of guests who are coming
-    && (!someoneAttending || validPhone());
-  const anyYes = rsvpComplete && guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
-  const allDeclined = rsvpComplete && !guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
-  const mealComplete = anyYes && guestResponses.every((guest) => guest.rsvpStatus !== "Confirmed" || Boolean(guest.mealSelection));
-  const roomComplete = rsvp.roomAtHyatt === true
-    ? Boolean(rsvp.bedPreference) && Boolean(rsvp.nights) && Boolean(rsvp.arrivalDate)
-    : rsvp.roomAtHyatt === false;
-  const travelComplete = mealComplete && (hiddenScenes.has("travel") || (rsvp.flyingIn === false || (rsvp.flyingIn === true && roomComplete)));
+    (!someoneAttending || validPhone());
+  const anyYes =
+    rsvpComplete &&
+    guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
+  const allDeclined =
+    rsvpComplete &&
+    !guestResponses.some((guest) => guest.rsvpStatus === "Confirmed");
+  const mealComplete =
+    anyYes &&
+    guestResponses.every(
+      (guest) =>
+        guest.rsvpStatus !== "Confirmed" || Boolean(guest.mealSelection),
+    );
+  const roomComplete =
+    rsvp.roomAtHyatt === true
+      ? Boolean(rsvp.bedPreference) &&
+        Boolean(rsvp.nights) &&
+        Boolean(rsvp.arrivalDate)
+      : rsvp.roomAtHyatt === false;
+  const travelComplete =
+    mealComplete &&
+    (hiddenScenes.has("travel") ||
+      rsvp.flyingIn === false ||
+      (rsvp.flyingIn === true && roomComplete));
   const flyingIn = travelComplete && rsvp.flyingIn === true;
   const journeyDone = travelComplete || allDeclined;
-  const attendingCount = guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed").length;
+  const attendingCount = guestResponses.filter(
+    (guest) => guest.rsvpStatus === "Confirmed",
+  ).length;
 
   // THE WIZARD — the journey as a handful of full-screen pages rather than
   // one long scroll. Each step shows one or two sections; Continue is enabled
@@ -525,29 +991,89 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   // and the backend remain untouched.
   const [step, setStep] = useState(0);
   const wizardSteps = useMemo(() => {
-    const steps: Array<{ id: string; sections: string[]; ready: boolean; cta: string }> = [
-      { id: "invitation", sections: ["invitation", "table", "schedule"], ready: true, cta: "Begin" },
+    const steps: Array<{
+      id: string;
+      sections: string[];
+      ready: boolean;
+      cta: string;
+    }> = [
+      {
+        id: "invitation",
+        sections: ["invitation", "table", "schedule"],
+        ready: true,
+        cta: "Begin",
+      },
       { id: "reply", sections: ["rsvp"], ready: rsvpComplete, cta: "Continue" },
     ];
-    if (anyYes) steps.push({ id: "dress", sections: ["dress"], ready: true, cta: "Continue" });
-    if (anyYes) steps.push({ id: "meal", sections: ["meal"], ready: mealComplete, cta: "Continue" });
-    if (anyYes) steps.push({ id: "travel", sections: ["travel"], ready: travelComplete, cta: "Continue" });
-    if (flyingIn) steps.push({ id: "guide", sections: ["recommendations"], ready: true, cta: "Continue" });
-    steps.push({ id: "venue", sections: ["venue"], ready: true, cta: "Continue" });
-    steps.push({ id: "wishes", sections: ["wishes"], ready: journeyDone, cta: "" });
+    if (anyYes)
+      steps.push({
+        id: "dress",
+        sections: ["dress"],
+        ready: true,
+        cta: "Continue",
+      });
+    if (anyYes)
+      steps.push({
+        id: "meal",
+        sections: ["meal"],
+        ready: mealComplete,
+        cta: "Continue",
+      });
+    if (anyYes)
+      steps.push({
+        id: "travel",
+        sections: ["travel"],
+        ready: travelComplete,
+        cta: "Continue",
+      });
+    if (flyingIn)
+      steps.push({
+        id: "guide",
+        sections: ["recommendations"],
+        ready: true,
+        cta: "Continue",
+      });
+    steps.push({
+      id: "venue",
+      sections: ["venue"],
+      ready: true,
+      cta: "Continue",
+    });
+    steps.push({
+      id: "wishes",
+      sections: ["wishes"],
+      ready: journeyDone,
+      cta: "",
+    });
     // The venue was sharing the closing page, and because it sits earlier in
     // the document it appeared above the confirmation — which is what buried
     // the secret chapter. It gets a page of its own.
-    steps.push({ id: "final", sections: ["confirmation", "afterparty", "gallery"], ready: false, cta: "" });
+    steps.push({
+      id: "final",
+      sections: ["confirmation", "afterparty", "gallery"],
+      ready: false,
+      cta: "",
+    });
     return steps;
-  }, [anyYes, flyingIn, rsvpComplete, mealComplete, travelComplete, journeyDone]);
+  }, [
+    anyYes,
+    flyingIn,
+    rsvpComplete,
+    mealComplete,
+    travelComplete,
+    journeyDone,
+  ]);
   const stepIndex = Math.min(step, wizardSteps.length - 1);
   // If part of this page is still below the fold, carry the guest there
   // rather than turning the page out from under them.
   const advance = () => {
     const shell = document.querySelector<HTMLElement>(".wedding-shell");
     if (shell) {
-      const questions = Array.from(shell.querySelectorAll<HTMLElement>("[data-scene]:not([hidden]) fieldset, [data-scene]:not([hidden]) label"));
+      const questions = Array.from(
+        shell.querySelectorAll<HTMLElement>(
+          "[data-scene]:not([hidden]) fieldset, [data-scene]:not([hidden]) label",
+        ),
+      );
       const below = questions.find((element) => {
         const box = element.getBoundingClientRect();
         return box.top > window.innerHeight * 0.72;
@@ -566,7 +1092,9 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     // A step only has something to show once its sections are on the page.
     // The confirmation, for one, does not exist until a reply has been sent —
     // jumping there early left a guest on a blank screen.
-    const rendered = wizardSteps[index].sections.some((section) => document.getElementById(section));
+    const rendered = wizardSteps[index].sections.some((section) =>
+      document.getElementById(section),
+    );
     if (!rendered) return;
     setStep(index);
   };
@@ -580,14 +1108,18 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
   // the invitation rather than leaving a guest on an empty screen.
   useEffect(() => {
     if (inviteLoading || !personalised) return;
-    const present = wizardSteps[stepIndex].sections.some((section) => document.getElementById(section));
+    const present = wizardSteps[stepIndex].sections.some((section) =>
+      document.getElementById(section),
+    );
     if (!present && stepIndex !== 0) setStep(0);
   }, [stepIndex, wizardSteps, inviteLoading, personalised]);
 
   useEffect(() => {
     const active = new Set(wizardSteps[stepIndex].sections);
     const extras = new Set<string>();
-    active.forEach((id) => (customAfter.get(id) ?? []).forEach((page) => extras.add(page.id)));
+    active.forEach((id) =>
+      (customAfter.get(id) ?? []).forEach((page) => extras.add(page.id)),
+    );
     // An answer can reveal or hide part of the page — a room offer, say. That
     // changes the page's height, and the browser shifts the scroll to
     // compensate, which reads as a jump. Hold the position across the change.
@@ -595,7 +1127,10 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     document.querySelectorAll<HTMLElement>("[data-scene]").forEach((el) => {
       el.hidden = !(active.has(el.id) || extras.has(el.id));
     });
-    if (shownStep.current === stepIndex && Math.abs(window.scrollY - held) > 1) {
+    if (
+      shownStep.current === stepIndex &&
+      Math.abs(window.scrollY - held) > 1
+    ) {
       window.scrollTo({ top: held, behavior: "instant" as ScrollBehavior });
     }
   }, [stepIndex, wizardSteps, customAfter, submitted]);
@@ -615,22 +1150,29 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       window.scrollTo(0, 0);
       if (shell) {
         shell.classList.remove("is-leaving", "step-enter");
-        void shell.offsetWidth;                     // restart the animation
+        void shell.offsetWidth; // restart the animation
         shell.classList.add("step-enter");
       }
-      window.dispatchEvent(new Event("scroll"));    // wake the reveal tracker
+      window.dispatchEvent(new Event("scroll")); // wake the reveal tracker
     };
-    if (first || !shell) { arrive(); return; }
+    if (first || !shell) {
+      arrive();
+      return;
+    }
     shell.classList.add("is-leaving");
     const timer = window.setTimeout(arrive, 240);
     return () => window.clearTimeout(timer);
   }, [stepIndex]);
-  const seatedGuests = guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed" && guest.tableName);
+  const seatedGuests = guestResponses.filter(
+    (guest) => guest.rsvpStatus === "Confirmed" && guest.tableName,
+  );
   const tablesAssigned = seatedGuests.length > 0;
   useEffect(() => {
     if (!rsvpComplete) return;
     const next = anyYes ? "yes" : "no";
-    setRsvp((current) => current.attendance === next ? current : { ...current, attendance: next });
+    setRsvp((current) =>
+      current.attendance === next ? current : { ...current, attendance: next },
+    );
   }, [rsvpComplete, anyYes]);
   const sectionIds = useMemo(() => {
     const ids = ["invitation", "schedule", "rsvp"];
@@ -644,8 +1186,21 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     if (inviteData?.afterPartyInvited) ids.push("afterparty");
     if (journeyDone) ids.push("gallery");
     // Editor-hidden chapters drop out; editor-added pages slide in after their anchor.
-    return ids.flatMap((id) => [...(hiddenScenes.has(id) ? [] : [id]), ...(customAfter.get(id) ?? []).map((page) => page.id)]);
-  }, [anyYes, mealComplete, travelComplete, flyingIn, journeyDone, submitted, tablesAssigned, hiddenScenes, customAfter]);
+    return ids.flatMap((id) => [
+      ...(hiddenScenes.has(id) ? [] : [id]),
+      ...(customAfter.get(id) ?? []).map((page) => page.id),
+    ]);
+  }, [
+    anyYes,
+    mealComplete,
+    travelComplete,
+    flyingIn,
+    journeyDone,
+    submitted,
+    tablesAssigned,
+    hiddenScenes,
+    customAfter,
+  ]);
 
   useEffect(() => {
     let frame = 0;
@@ -654,16 +1209,24 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       const middle = window.innerHeight / 2;
       let nearest = "";
       let best = Infinity;
-      document.querySelectorAll<HTMLElement>("[data-scene]").forEach((section) => {
-        const box = section.getBoundingClientRect();
-        if (box.height === 0) return;
-        if (box.top < window.innerHeight && box.bottom > 0) section.classList.add("is-visible");
-        const distance = Math.abs(box.top + box.height / 2 - middle);
-        if (distance < best) { best = distance; nearest = section.id; }
-      });
+      document
+        .querySelectorAll<HTMLElement>("[data-scene]")
+        .forEach((section) => {
+          const box = section.getBoundingClientRect();
+          if (box.height === 0) return;
+          if (box.top < window.innerHeight && box.bottom > 0)
+            section.classList.add("is-visible");
+          const distance = Math.abs(box.top + box.height / 2 - middle);
+          if (distance < best) {
+            best = distance;
+            nearest = section.id;
+          }
+        });
       if (nearest) setActiveSection(nearest);
     };
-    const request = () => { if (!frame) frame = requestAnimationFrame(read); };
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
     window.addEventListener("scroll", request, { passive: true });
     window.addEventListener("resize", request, { passive: true });
     read();
@@ -673,23 +1236,47 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       if (frame) cancelAnimationFrame(frame);
     };
   }, [sectionIds]);
-  const chapterLabels = useMemo(() => ({ ...sceneLabels, ...Object.fromEntries(siteDesign.customPages.map((page) => [page.id, page.title])) }), [siteDesign.customPages]);
+  const chapterLabels = useMemo(
+    () => ({
+      ...sceneLabels,
+      ...Object.fromEntries(
+        siteDesign.customPages.map((page) => [page.id, page.title]),
+      ),
+    }),
+    [siteDesign.customPages],
+  );
   // Text placement and size, as arranged in the website editor.
   const textStyle = (scene: string): CSSProperties => {
     const layout = siteDesign.textLayout?.[scene];
     if (!layout) return {};
-    return { "--text-x": `${layout.x}%`, "--text-y": `${layout.y}%`, "--text-size": layout.size } as CSSProperties;
+    return {
+      "--text-x": `${layout.x}%`,
+      "--text-y": `${layout.y}%`,
+      "--text-size": layout.size,
+    } as CSSProperties;
   };
 
-  const renderCustomPages = (anchor: string) => (customAfter.get(anchor) ?? []).map((page) => (
-    <section key={page.id} id={page.id} className="scene scene--custom" data-scene aria-label={page.title}>
-      <div className="scene-content custom-page-card reveal">
-        {page.kicker ? <p className="eyebrow">{page.kicker}</p> : null}
-        <h2>{page.title}</h2>
-        {page.body.split(/\n+/).filter(Boolean).map((line, index) => <p key={index}>{line}</p>)}
-      </div>
-    </section>
-  ));
+  const renderCustomPages = (anchor: string) =>
+    (customAfter.get(anchor) ?? []).map((page) => (
+      <section
+        key={page.id}
+        id={page.id}
+        className="scene scene--custom"
+        data-scene
+        aria-label={page.title}
+      >
+        <div className="scene-content custom-page-card reveal">
+          {page.kicker ? <p className="eyebrow">{page.kicker}</p> : null}
+          <h2>{page.title}</h2>
+          {page.body
+            .split(/\n+/)
+            .filter(Boolean)
+            .map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+        </div>
+      </section>
+    ));
 
   // Let the couple see who now knows where they are sitting.
   useEffect(() => {
@@ -713,44 +1300,23 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       // Only fields that raise the keyboard, and only when the keyboard would
       // actually cover them. Scrolling on every focus — a country-code menu,
       // say — made the page jump for no reason.
-      if (!target || !target.matches("input:not([type='checkbox']):not([type='radio']), textarea")) return;
+      if (
+        !target ||
+        !target.matches(
+          "input:not([type='checkbox']):not([type='radio']), textarea",
+        )
+      )
+        return;
       window.setTimeout(() => {
         const box = target.getBoundingClientRect();
         const keyboardTop = window.innerHeight * 0.55;
-        if (box.bottom > keyboardTop) target.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (box.bottom > keyboardTop)
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 280);
     };
     window.addEventListener("focusin", onFocus);
     return () => window.removeEventListener("focusin", onFocus);
   }, []);
-
-  // Answers are held for the visit, so moving back and forth — or a reload
-  // mid-way — never loses what a guest has already chosen. Cleared once the
-  // reply is sent, since the server then holds the truth.
-  const draftKey = token ? `he:draft:${token}` : "";
-  const draftLoaded = useRef(false);
-  useEffect(() => {
-    if (!draftKey || draftLoaded.current || inviteLoading || submitted) return;
-    draftLoaded.current = true;
-    try {
-      const saved = window.sessionStorage.getItem(draftKey);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as { rsvp?: typeof rsvp; guests?: typeof guestResponses };
-      if (parsed.rsvp) setRsvp((current) => ({ ...current, ...parsed.rsvp }));
-      if (parsed.guests?.length) {
-        setGuestResponses((current) => current.map((guest) => {
-          const held = parsed.guests?.find((entry) => entry.id === guest.id);
-          return held ? { ...guest, ...held } : guest;
-        }));
-      }
-    } catch { /* a corrupt draft is simply ignored */ }
-  }, [draftKey, inviteLoading, submitted]);
-
-  useEffect(() => {
-    if (!draftKey || inviteLoading || !draftLoaded.current) return;
-    if (submitted) { try { window.sessionStorage.removeItem(draftKey); } catch { /* private mode */ } return; }
-    try { window.sessionStorage.setItem(draftKey, JSON.stringify({ rsvp, guests: guestResponses })); } catch { /* private mode */ }
-  }, [draftKey, rsvp, guestResponses, submitted, inviteLoading]);
 
   // A safety net: if any overlay ever leaves the page frozen, release it.
   useEffect(() => {
@@ -763,7 +1329,11 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
     setError("");
   };
   const updateGuest = (id: number, patch: Partial<GuestResponse>) => {
-    setGuestResponses((current) => current.map((guest) => guest.id === id ? { ...guest, ...patch } : guest));
+    setGuestResponses((current) =>
+      current.map((guest) =>
+        guest.id === id ? { ...guest, ...patch } : guest,
+      ),
+    );
     setError("");
   };
 
@@ -788,7 +1358,11 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       goToSection("rsvp");
       return;
     }
-    if (guestResponses.some((guest) => guest.rsvpStatus === "Confirmed" && !guest.mealSelection)) {
+    if (
+      guestResponses.some(
+        (guest) => guest.rsvpStatus === "Confirmed" && !guest.mealSelection,
+      )
+    ) {
       setError("A main course is still to be chosen for someone joining us.");
       goToSection("meal");
       return;
@@ -800,12 +1374,20 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
         return;
       }
       if (rsvp.flyingIn && rsvp.roomAtHyatt === null) {
-        setError("Do let us know whether a room at the Grand Hyatt would help.");
+        setError(
+          "Do let us know whether a room at the Grand Hyatt would help.",
+        );
         goToSection("travel");
         return;
       }
-      if (rsvp.flyingIn && rsvp.roomAtHyatt === true && (!rsvp.arrivalDate || !rsvp.nights)) {
-        setError("Your check-in date and how many nights, whenever you know them.");
+      if (
+        rsvp.flyingIn &&
+        rsvp.roomAtHyatt === true &&
+        (!rsvp.arrivalDate || !rsvp.nights)
+      ) {
+        setError(
+          "Your check-in date and how many nights, whenever you know them.",
+        );
         goToSection("travel");
         return;
       }
@@ -818,235 +1400,1222 @@ export function WeddingExperience({ invitationToken, previewMode = false }: { in
       // number nobody can ring.
       const codeDigits = rsvp.countryCode.replace(/\D/g, "");
       let localDigits = rsvp.phoneNumber.replace(/\D/g, "");
-      if (localDigits.startsWith(codeDigits) && localDigits.length > codeDigits.length + 6) {
-        localDigits = localDigits.slice(codeDigits.length);        // code typed twice
+      if (
+        localDigits.startsWith(codeDigits) &&
+        localDigits.length > codeDigits.length + 6
+      ) {
+        localDigits = localDigits.slice(codeDigits.length); // code typed twice
       }
-      localDigits = localDigits.replace(/^0+/, "");                 // local trunk zero
+      localDigits = localDigits.replace(/^0+/, ""); // local trunk zero
       const mobile = `${rsvp.countryCode}${localDigits}`;
-      const firstConfirmedId = guestResponses.find((guest) => guest.rsvpStatus === "Confirmed")?.id;
+      const firstConfirmedId = guestResponses.find(
+        (guest) => guest.rsvpStatus === "Confirmed",
+      )?.id;
       const guests = guestResponses.map((guest) => ({
         ...guest,
-        ceremonyAttending: guest.rsvpStatus === "Confirmed" && guest.ceremonyAttending,
-        receptionAttending: guest.rsvpStatus === "Confirmed" && guest.receptionAttending,
+        ceremonyAttending:
+          guest.rsvpStatus === "Confirmed" && guest.ceremonyAttending,
+        receptionAttending:
+          guest.rsvpStatus === "Confirmed" && guest.receptionAttending,
         travelArrival: guest.rsvpStatus === "Confirmed" ? rsvp.arrivalDate : "",
-        travelDeparture: guest.rsvpStatus === "Confirmed" ? checkOutDate(rsvp.arrivalDate, rsvp.nights) : "",
-        bedPreference: guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true ? (rsvp.bedPreference ?? "") : "",
-        roomNights: guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true ? rsvp.nights : null,
-        accommodationRequired: guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true,
-        accommodationName: guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === false ? rsvp.accommodation : "",
+        travelDeparture:
+          guest.rsvpStatus === "Confirmed"
+            ? checkOutDate(rsvp.arrivalDate, rsvp.nights)
+            : "",
+        bedPreference:
+          guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true
+            ? (rsvp.bedPreference ?? "")
+            : "",
+        roomNights:
+          guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true
+            ? rsvp.nights
+            : null,
+        accommodationRequired:
+          guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === true,
+        accommodationName:
+          guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === false
+            ? rsvp.accommodation
+            : "",
         transportRequired: false,
-        accessibility: guest.rsvpStatus === "Confirmed" ? rsvp.accessibilityNote : "",
+        accessibility:
+          guest.rsvpStatus === "Confirmed" ? rsvp.accessibilityNote : "",
         wishes: rsvp.wishes || guest.wishes,
-        advice: guest.id === firstConfirmedId || guestResponses.length === 1 ? rsvp.advice : "",
+        advice:
+          guest.id === firstConfirmedId || guestResponses.length === 1
+            ? rsvp.advice
+            : "",
       }));
       const response = await fetch(`/api/invite/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mobile, guests }),
       });
-      const result = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(result.error || "Unable to save your RSVP.");
+      const result = await readGuestResponse<{ ok?: boolean }>(
+        response,
+        "We couldn’t save your RSVP just now. Please try again in a moment — nothing has been lost.",
+      );
+      if (!response.ok)
+        throw new Error(result.error || "Unable to save your RSVP.");
       setSubmitted(true);
       window.setTimeout(() => goToSection("confirmation"), 80);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "We couldn’t save your RSVP. Please try again.");
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "We couldn’t save your RSVP. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (inviteLoading) return <main className="invitation-loading"><div className="wax-seal">E<span>&amp;</span>H</div><p>Unfolding your invitation…</p><i /></main>;
+  if (inviteLoading)
+    return (
+      <main className="invitation-loading">
+        <div className="wax-seal">
+          E<span>&amp;</span>H
+        </div>
+        <p>Unfolding your invitation…</p>
+        <i />
+      </main>
+    );
   // Until a token is resolved we show nothing; after that, either the
   // invitation or the locked card. Wedding details never reach the page
   // for a visitor without a personal link.
   if (!previewMode && !inviteLoading && !token) return <LockedInvitation />;
 
-  if (inviteError) return <main className="invitation-invalid"><span>✦</span><h1>This invitation is resting.</h1><p>{inviteError}</p><a href="/">Return to Elaine &amp; Haykal</a></main>;
+  if (inviteError)
+    return (
+      <main className="invitation-invalid">
+        <span>✦</span>
+        <h1>This invitation is resting.</h1>
+        <p>{inviteError}</p>
+        <a href="/">Return to Elaine &amp; Haykal</a>
+      </main>
+    );
 
   const content = siteDesign.content;
-  const designClasses = siteDesign.hiddenBuiltIns.map((id) => `hide-${id}`).join(" ");
-  const selectedFont = fontPairs.find((pair) => pair.id === siteDesign.fontPair) ?? fontPairs[0];
-  const typography = { "--font-header": selectedFont.headerFamily, "--font-body": selectedFont.bodyFamily } as CSSProperties;
+  const designClasses = siteDesign.hiddenBuiltIns
+    .map((id) => `hide-${id}`)
+    .join(" ");
+  const selectedFont =
+    fontPairs.find((pair) => pair.id === siteDesign.fontPair) ?? fontPairs[0];
+  const typography = {
+    "--font-header": selectedFont.headerFamily,
+    "--font-body": selectedFont.bodyFamily,
+  } as CSSProperties;
 
-  return <main className={`wedding-shell wedding-shell--storybook wizard ${designClasses}`} style={typography}>
-    <DreamBackdrop />
+  return (
+    <main
+      className={`wedding-shell wedding-shell--storybook wizard ${designClasses}`}
+      style={typography}
+    >
+      <DreamBackdrop />
 
-    <EtherealLoader ready={filmReady} />
-    {personalised && stepIndex > 0 ? <SiteMenu links={[
-      { label: "Your invitation", onSelect: () => goToSection("invitation") },
-      // these move between steps rather than jumping to anchors, which cannot
-      // reach a section the wizard is currently holding hidden
-      { label: "RSVP", onSelect: () => goToSection("rsvp") },
-      ...(submitted ? [{ label: "Confirmation", onSelect: () => goToSection("confirmation") }] : []),
-      ...(submitted && inviteData?.afterPartyInvited
-        ? [{ label: "The secret chapter", onSelect: () => goToSection("afterparty"), className: "is-secret" }]
-        : []),
-      ...(inviteData?.afterPartyInvited ? [{ label: "The secret chapter", onSelect: () => goToSection("afterparty") }] : []),
-    ]} /> : null}
-    <Dreamscape onReady={() => setFilmReady(true)} />
-    <BubbleCursor zIndex={9998} />
-    <a className="skip-experience" href="#rsvp">Go straight to your reply</a>
-    {music.musicUrl ? <><audio ref={audioRef} src={music.musicUrl} loop preload="none" onPause={() => setSoundEnabled(false)} onPlay={() => setSoundEnabled(true)} /><button type="button" className="sound-control" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Pause wedding music" : "Play wedding music"}><span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span><small>{soundEnabled ? "Pause" : "Play music"}</small>{music.musicTitle ? <em>{music.musicTitle}</em> : null}</button></> : null}
-    {activeSection !== "welcome" ? <>
-      <div className="scroll-progress" aria-hidden="true"><i style={{ height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%` }} /></div>
-      <nav className="scene-nav" aria-label="Your progress">{wizardSteps.slice(0, -1).map((entry, index) => <button key={entry.id} type="button" className={index === stepIndex ? "is-active" : ""} onClick={() => { if (index <= stepIndex) setStep(index); }} aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`} aria-current={index === stepIndex ? "step" : undefined}><span /><b>{entry.cta === "Begin" ? "The invitation" : entry.id === "reply" ? "Your reply" : entry.id === "dress" ? "Dress code" : entry.id === "meal" ? "Dinner" : entry.id === "travel" ? "Travel" : entry.id === "guide" ? "Kuala Lumpur" : entry.id === "venue" ? "The Grand Salon" : "Wishes"}</b></button>)}</nav>
-
-    </> : null}
-    <EditableDecorationOverlay design={siteDesign} activeScene={activeSection} />
-
-
-    <section id="invitation" data-sky="dream-2" style={textStyle("invitation")} className="scene scene--invitation" data-scene>
-      <img className="scene-art scene-art--floral" src="/wedding/floral-frame.webp" alt="" loading="lazy" aria-hidden="true" />
-      <img className="scene-art floating-bloom floating-bloom--left" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" />
-      <img className="scene-art floating-bloom floating-bloom--right" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" />
-      <div className="scene-content invitation-card reveal">
-        <p className="eyebrow">{content.familyLine}</p>
-        <p className="invitation-line">{content.invitationLine}</p>
-        <h2>{content.brideName} <span>&amp;</span> {content.groomName}</h2>
-        <RibbonDivider />
-        <div className="event-details"><p><strong>Saturday</strong><span>{content.eventDate}</span></p><p><strong>{content.eventTime.replace(/pm$/i, "")}</strong><span>in the evening</span></p><p><strong>{content.venueName}</strong><span>Grand Hyatt Kuala Lumpur</span></p></div>
-        <ScrollOn label="The evening unfolds below" />
-      </div>
-    </section>
-
-    {tablesAssigned ? <section id="table" data-sky="dream-3" style={textStyle("table")} className="scene scene--blush" data-scene>
-      <div className="scene-content table-card reveal">
-        <p className="step-label">On the night</p>
-        <h2>{seatedGuests.length > 1 ? "Your tables" : "Your table"}</h2>
-        <p className="section-intro">Come straight up to The Grand Salon — someone will show you the rest.</p>
-        <div className="table-plaques">{seatedGuests.map((guest) => <article key={guest.id}><span>{guest.name}</span><strong>{guest.tableName}</strong></article>)}</div>
-        <ScrollOn />
-      </div>
-    </section> : null}
-    {renderCustomPages("table")}
-
-    {renderCustomPages("invitation")}
-    {!hiddenScenes.has("schedule") ? <section id="schedule" data-sky="dream-1" style={textStyle("schedule")} className="scene scene--schedule" data-scene>
-      <img className="scene-art scene-art--schedule" src="/wedding/frame-tall.webp" alt="" loading="lazy" aria-hidden="true" />
-      <div className="scene-content schedule-card reveal">
-        <p className="step-label">The programme</p>
-        <h2>The evening unfolds</h2>
-        <ol className="evening-timeline">
-          {eveningMoments.map((moment, index) => <li key={moment.title} style={{ "--stagger": `${index * 150}ms` } as CSSProperties}>
-            <span className="timeline-time">{moment.time}</span>
-            <div><h3>{moment.title}</h3></div>
-          </li>)}
-        </ol>
-        {stepIndex === 0 ? <button type="button" className="rsvp-trigger" onClick={advance}>RSVP</button> : <ScrollOn />}
-      </div>
-    </section> : null}
-    {renderCustomPages("schedule")}
-
-    <section id="rsvp" data-sky="dream-2" style={textStyle("rsvp")} className="scene scene--paper" data-scene><img className="scene-art scene-art--dinner" src="/wedding/dinner-table.webp" alt="A hand-drawn wedding reception table" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">01 · Your reply</p><h2>Will you join us?</h2>{personalised ? <><p className="section-intro">Written for the names below. We are unable to welcome additional guests.</p>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? <p className="rsvp-deadline-note">Kindly reply by <strong>{rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}</strong> — you may return to this link to update your reply any time before then.</p> : null}<div className="party-rsvp-list">{guestResponses.map((guest) => <fieldset key={guest.id}>{guestResponses.length > 1 ? <legend>{guest.name}</legend> : <legend className="is-quiet">Will you be joining us?</legend>}<div className="segmented-control"><button type="button" className={guest.rsvpStatus === "Confirmed" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Confirmed", receptionAttending: true })}>Joyfully accept</button><button type="button" className={guest.rsvpStatus === "Declined" ? "is-selected" : ""} onClick={() => updateGuest(guest.id, { rsvpStatus: "Declined", receptionAttending: false, ceremonyAttending: false, mealSelection: "" })}>Regretfully decline</button></div></fieldset>)}</div>{someoneAttending ? <><p className="help-note phone-note">One number per household — whoever is easiest to reach on WhatsApp.</p><div className="field-grid phone-grid"><label className="phone-code"><span className="visually-hidden">Country code</span><select value={rsvp.countryCode} onChange={(event) => update("countryCode", event.target.value)} aria-label="Country calling code">{countryCodes.map(([country, code]) => <option key={`${country}-${code}`} value={code}>{country === "Other" ? "Other" : `${country} ${code}`}</option>)}</select></label><label><span>My phone number is</span><input required value={rsvp.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="12 345 6789" maxLength={24} /></label></div></> : null}{guestResponses.length === 0 ? <p className="form-error" role="alert">We are unable to find the names attached to this invitation, so the reply buttons are missing. Do let Elaine and Haykal know — nothing entered here can be saved until it is put right.</p> : null}</> : <div className="invitation-only"><span aria-hidden="true">🔐</span><h3>Your invitation is your key</h3><p>Replies are opened only through the personal link Elaine and Haykal have sent you. It carries the names of those they have invited, and cannot be extended to additional guests.</p><p className="invitation-only-note">The rest of the evening — the dress code, the menu, and how to find us — opens with that link. This is where the page ends for now.</p></div>}{error && activeSection === "rsvp" ? <p className="form-error" role="alert">{error}</p> : null}{personalised && guestResponses.length > 0 ? <ScrollOn ready={rsvpComplete} hint={guestResponses.some((guest) => guest.rsvpStatus === "Pending") ? "A reply is still awaited above." : "Add a number we can reach you on."} label="Thank you — please continue below" /> : null}</div></section>
-
-    {renderCustomPages("rsvp")}
-    {anyYes && !hiddenScenes.has("dress") ? <section id="dress" data-sky="dream-3" style={textStyle("dress")} className="scene scene--blush" data-scene><img className="scene-art scene-art--wide-frame" src="/wedding/frame-wide.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content dress-card reveal"><p className="step-label">02 · Dress code</p><p className="script-kicker">{content.dressKicker}</p><h2>{content.dressCode}</h2><RibbonDivider /><p>{content.dressNote}</p><p className="dress-restriction">{content.dressRestriction}</p><ScrollOn label="Keep scrolling to choose your dinner" /></div></section> : null}
-
-    {renderCustomPages("dress")}
-    {anyYes ? <section id="meal" data-sky="dream-1" style={textStyle("meal")} className="scene scene--paper scene--meal" data-scene><img className="scene-art scene-art--feast" src="/wedding/feast-table.webp" alt="A hand-drawn candlelit wedding feast" loading="lazy" /><div className="scene-content form-card reveal"><p className="step-label">03 · At the table</p><h2>Choose your main course</h2><p className="section-intro">One happy decision before the dancing.</p><div className="guest-meal-list">{guestResponses.filter((guest) => guest.rsvpStatus === "Confirmed").map((guest) => <fieldset key={guest.id}>{attendingCount > 1 ? <legend>{guest.name}</legend> : null}<div className="choice-grid choice-grid--two meal-choices"><ChoiceButton selected={guest.mealSelection === "Salmon"} title="Seared Alaskan salmon" detail={salmonDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Salmon" })} /><ChoiceButton selected={guest.mealSelection === "Lamb"} title="Almond dukkha-crusted lamb" detail={lambDescription} onClick={() => updateGuest(guest.id, { mealSelection: "Lamb" })} /></div><div className="field-grid field-grid--single"><label><span>Dietary requirements or allergies</span><input value={guest.dietaryRequirements} onChange={(event) => updateGuest(guest.id, { dietaryRequirements: event.target.value })} placeholder="Vegetarian, no nuts…" maxLength={800} /></label></div></fieldset>)}</div>{error && activeSection === "meal" ? <p className="form-error" role="alert">{error}</p> : null}<ScrollOn ready={mealComplete} hint="Choose a main course for everyone joining us." /></div></section> : null}
-
-    {renderCustomPages("meal")}
-    {mealComplete && !hiddenScenes.has("travel") ? <section id="travel" data-sky="dream-2" style={textStyle("travel")} className="scene scene--pearl" data-scene><img className="scene-art scene-art--pearl" src="/wedding/pearl-floral.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content form-card form-card--glass reveal"><p className="step-label">04 · Your journey</p><h2>Coming from afar?</h2><p className="section-intro">Only if you are travelling to us.</p><fieldset><legend>{attendingCount > 1 ? "We are flying in" : "I am flying in"}</legend><div className="segmented-control"><button type="button" className={rsvp.flyingIn === true ? "is-selected" : ""} onClick={() => update("flyingIn", true)}>Yes</button><button type="button" className={rsvp.flyingIn === false ? "is-selected" : ""} onClick={() => { update("flyingIn", false); update("roomAtHyatt", null); }}>No</button></div></fieldset>{rsvp.flyingIn ? <div className="slide-open travel-details">
-      <p className="room-offer"><strong>Stay the night upstairs — from RM850++</strong><span>A guest rate at the Grand Hyatt itself, so when the last song ends, home is a lift ride away.</span></p>
-      <fieldset><legend>A room at the Grand Hyatt</legend><div className="segmented-control"><button type="button" className={rsvp.roomAtHyatt === true ? "is-selected" : ""} onClick={() => update("roomAtHyatt", true)}>Yes, please</button><button type="button" className={rsvp.roomAtHyatt === false ? "is-selected" : ""} onClick={() => { update("roomAtHyatt", false); update("bedPreference", null); update("nights", null); }}>No, thank you</button></div></fieldset>
-      {rsvp.roomAtHyatt === true ? <div className="slide-open">
-        <fieldset><legend>We would like</legend><div className="segmented-control"><button type="button" className={rsvp.bedPreference === "King" ? "is-selected" : ""} onClick={() => update("bedPreference", "King")}>One king</button><button type="button" className={rsvp.bedPreference === "Twin" ? "is-selected" : ""} onClick={() => update("bedPreference", "Twin")}>Two singles</button></div></fieldset>
-        <fieldset><legend>Staying for</legend><div className="segmented-control">{[1, 2, 3].map((count) => <button key={count} type="button" className={rsvp.nights === count ? "is-selected" : ""} onClick={() => update("nights", count)}>{count} {count === 1 ? "night" : "nights"}</button>)}</div></fieldset>
-        <label className="full-field"><span>We arrive on</span><input type="date" value={rsvp.arrivalDate} onChange={(event) => update("arrivalDate", event.target.value)} /></label>
-        <p className="help-note">We will pass this to the hotel and be in touch. Nothing is charged here.</p>
-      </div> : null}
-      {rsvp.roomAtHyatt === false ? <div className="slide-open">
-        <p className="help-note">A few good places within a short walk, should you still be deciding.</p>
-        <ul className="hotel-list">{nearbyHotels.map((hotel) => <li key={hotel.name}><a href={maps(`${hotel.name} Kuala Lumpur`)} target="_blank" rel="noreferrer"><strong>{hotel.name}</strong><span>{hotel.note}</span><em className="place-score">★ {hotel.score}</em><i>{hotel.walk} away ↗</i></a></li>)}</ul>
-        
-      </div> : null}
-    </div> : null}<label className="full-field"><span>It would help us if</span><input value={rsvp.accessibilityNote} onChange={(event) => update("accessibilityNote", event.target.value)} placeholder="Step-free access, seating close to the door…" maxLength={800} /></label>{error && activeSection === "travel" ? <p className="form-error" role="alert">{error}</p> : null}<ScrollOn ready={travelComplete} hint={rsvp.flyingIn === null ? "Answer the question above to continue." : rsvp.roomAtHyatt === null ? "Let us know about a room to continue." : "A few details above are still to be filled in."} /></div></section> : null}
-
-    {renderCustomPages("travel")}
-    
-
-
-    
-
-    {travelComplete && !hiddenScenes.has("venue") ? <section id="venue" data-sky="dream-3" style={textStyle("venue")} className="scene scene--venue" data-scene><div className="scene-content venue-card reveal"><p className="step-label">Finding your way to us</p><h2>{content.venueName}</h2><p className="venue-address">{content.venueAddress.split("\n").map((line, index) => <span key={line}>{index ? <br /> : null}{line}</span>)}</p><p className="help-note venue-note">The Grand Salon is on Level 1 — take the lift or escalator up from the lobby.</p><div className="arrival-grid"><article><span>01</span><h3>By MRT</h3><p>Take the Putrajaya Line to Conlay station, leave by Entrance A, and follow Jalan Kia Peng towards the Convention Centre — the hotel appears on your right.</p></article><article><span>02</span><h3>By car</h3><p>Make your way to the hotel entrance on Jalan Pinang, where the doormen will greet you. Guest parking sits in the hotel’s own basement.</p></article><article><span>03</span><h3>By Grab</h3><p>Simply set your destination to “Grand Hyatt Kuala Lumpur” and ask to be set down at the main lobby.</p></article></div><div className="venue-map" aria-label="Map showing Grand Hyatt Kuala Lumpur"><iframe title="Map to Grand Hyatt Kuala Lumpur" src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div><a className="primary-button map-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Open directions <span aria-hidden="true">↗</span></a><ScrollOn /></div></section> : null}
-    {renderCustomPages("venue")}
-
-    
-
-    {flyingIn && !hiddenScenes.has("recommendations") ? <section id="recommendations" data-sky="dream-2" style={textStyle("recommendations")} className="scene scene--recommendations" data-scene>
-      <div className="scene-content reveal">
-        <p className="step-label">While you are here</p>
-        <h2>Kuala Lumpur</h2>
-        <p className="section-intro">Places within twenty minutes, and the apps worth having. Tap to open.</p>
-        <div className="guide">{guideCategories.map((category) => {
-          const open = openGuide === category.id;
-          return (
-            <div className={`guide-group${open ? " is-open" : ""}`} key={category.id}>
-              <button type="button" onClick={() => setOpenGuide(open ? "" : category.id)} aria-expanded={open}>
-                <span>{category.title}</span>
-                <i aria-hidden="true">{open ? "−" : "+"}</i>
+      <EtherealLoader ready={filmReady} />
+      {personalised && stepIndex > 0 ? (
+        <SiteMenu
+          links={[
+            {
+              label: "Your invitation",
+              onSelect: () => goToSection("invitation"),
+            },
+            // these move between steps rather than jumping to anchors, which cannot
+            // reach a section the wizard is currently holding hidden
+            { label: "RSVP", onSelect: () => goToSection("rsvp") },
+            ...(submitted
+              ? [
+                  {
+                    label: "Confirmation page",
+                    onSelect: () => goToSection("confirmation"),
+                  },
+                ]
+              : []),
+            ...(inviteData?.afterPartyInvited
+              ? [
+                  {
+                    label: "The secret chapter",
+                    onSelect: () => goToSection("afterparty"),
+                  },
+                ]
+              : []),
+          ]}
+        />
+      ) : null}
+      <Dreamscape onReady={() => setFilmReady(true)} />
+      <BubbleCursor zIndex={9998} />
+      <a className="skip-experience" href="#rsvp">
+        Skip our story and go to the RSVP
+      </a>
+      {music.musicUrl ? (
+        <>
+          <audio
+            ref={audioRef}
+            src={music.musicUrl}
+            loop
+            preload="none"
+            onPause={() => setSoundEnabled(false)}
+            onPlay={() => setSoundEnabled(true)}
+          />
+          <button
+            type="button"
+            className="sound-control"
+            onClick={toggleSound}
+            aria-pressed={soundEnabled}
+            aria-label={
+              soundEnabled ? "Pause wedding music" : "Play wedding music"
+            }
+          >
+            <span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span>
+            <small>{soundEnabled ? "Pause" : "Play music"}</small>
+            {music.musicTitle ? <em>{music.musicTitle}</em> : null}
+          </button>
+        </>
+      ) : null}
+      {activeSection !== "welcome" ? (
+        <>
+          <div className="scroll-progress" aria-hidden="true">
+            <i
+              style={{
+                height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%`,
+              }}
+            />
+          </div>
+          <nav className="scene-nav" aria-label="Your progress">
+            {wizardSteps.slice(0, -1).map((entry, index) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={index === stepIndex ? "is-active" : ""}
+                onClick={() => {
+                  if (index <= stepIndex) setStep(index);
+                }}
+                aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`}
+                aria-current={index === stepIndex ? "step" : undefined}
+              >
+                <span />
+                <b>
+                  {entry.cta === "Begin"
+                    ? "The invitation"
+                    : entry.id === "reply"
+                      ? "Your reply"
+                      : entry.id === "dress"
+                        ? "Dress code"
+                        : entry.id === "meal"
+                          ? "Dinner"
+                          : entry.id === "travel"
+                            ? "Travel"
+                            : entry.id === "guide"
+                              ? "Kuala Lumpur"
+                              : entry.id === "venue"
+                                ? "The Grand Salon"
+                                : "Wishes"}
+                </b>
               </button>
-              {"apps" in category ? <ul>{category.apps.map((app) => <li key={app.name}>
-                <div className="guide-app">
-                  <strong>{app.name}</strong>
-                  <span>{app.note}</span>
-                  <span className="app-links">
-                    <a href={app.ios} target="_blank" rel="noreferrer">App Store ↗</a>
-                    <a href={app.android} target="_blank" rel="noreferrer">Google Play ↗</a>
-                  </span>
-                </div>
-              </li>)}</ul> : null}
-              {"places" in category ? <ul>{category.places.map((place) => <li key={place.name}>
-                <a href={maps(place.name)} target="_blank" rel="noreferrer">
-                  <strong>{place.name}</strong>
-                  <span>{place.note}</span>
-                  <em>{place.detail} · ★ {place.score}</em>
-                </a>
-              </li>)}</ul> : null}
-            </div>
-          );
-        })}</div>
-        <ScrollOn />
-      </div>
-    </section> : null}
-    {renderCustomPages("recommendations")}
+            ))}
+          </nav>
+        </>
+      ) : null}
+      <EditableDecorationOverlay
+        design={siteDesign}
+        activeScene={activeSection}
+      />
 
-
-
-    
-
-    
-
-    {journeyDone && !hiddenScenes.has("wishes") ? <section id="wishes" data-sky="dream-2" style={textStyle("wishes")} className="scene scene--wishes" data-scene><img className="scene-art scene-art--wishes-lace" src="/wedding/decor/lace-tape-white.webp" alt="" loading="lazy" aria-hidden="true" /><div className="scene-content wishes-card reveal"><p className="step-label">{rsvp.attendance === "yes" ? "05" : "02"} · From the heart</p><p className="script-kicker">{content.wishesKicker}</p><h2>{content.wishesHeading}</h2>{personalised ? <><label className="full-field"><span>My wish for you both is</span><textarea value={rsvp.wishes} onChange={(event) => update("wishes", event.target.value)} placeholder="A blessing, a memory, a line we can keep…" rows={4} maxLength={1000} /></label>
-      <p className="help-note">We may share a few of these with everyone on the night.</p>
-      <label className="full-field"><span>And a little advice</span><textarea value={rsvp.advice} onChange={(event) => update("advice", event.target.value)} placeholder="Something you have learned, or wish someone had told you…" rows={4} maxLength={1500} /></label>
-      <p className="help-note private-note">Only Elaine and Haykal will ever read this one.</p>{error && activeSection === "wishes" ? <p className="form-error" role="alert">{error}</p> : null}<button className="primary-button" type="button" onClick={submitRsvp} disabled={submitting || submitted}>{submitting ? "Sending with love…" : submitted ? "RSVP sent" : previewMode ? "Preview confirmation" : "Send our RSVP"}{!submitting && !submitted ? <span aria-hidden="true">♡</span> : null}</button><small className="privacy-note">{previewMode ? "Preview only — no response or personal information will be saved." : "Your details are used only to plan Elaine and Haykal’s celebration."}</small></> : <div className="invitation-only compact"><p>Your personal invitation link unlocks the RSVP and wishes form.</p></div>}</div></section> : null}
-    {renderCustomPages("wishes")}
-
-    {submitted ? <section id="confirmation" data-sky="dream-3" style={textStyle("confirmation")} className="scene scene--confirmation" data-scene><Sparkles /><div className="scene-content confirmation-card reveal"><p className="eyebrow">With all our hearts</p><div className="wax-seal" aria-hidden="true">E<span>&amp;</span>H</div><h2>Thank you,<br />{rsvp.guestName || "dear guest"}.</h2><p>{rsvp.attendance === "yes" ? (inviteData?.settings?.confirmation_message || "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you.") : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}</p>{rsvp.attendance === "yes" ? <p className="kitchen-note">Three days before the celebration we will send you a message with your table number, and confirmation that anything the kitchen needs to know has been passed on.</p> : null}{rsvp.wishes.trim() ? <blockquote className="shared-wish"><p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p><cite>your words, kept for the night</cite></blockquote> : null}<RibbonDivider /><div className="confirmation-details"><span>7 November 2026</span><span>The Grand Salon · Grand Hyatt Kuala Lumpur</span></div>{rsvp.attendance === "yes" ? <><Countdown /><div className="confirmation-actions"><button className="calendar-button" type="button" onClick={downloadCalendarInvite}>Add to calendar <span aria-hidden="true">↓</span></button><a className="calendar-button" href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur" target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a></div></> : null}</div></section> : null}
-    {inviteData?.afterPartyInvited && token ? <section id="afterparty" data-sky="dream-3" style={textStyle("afterparty")} className="scene scene--afterparty" data-scene>
-      <div className="scene-content reveal">
-        <div className="afterparty-arch">
-          <p className="step-label">Only for a chosen few</p>
-          <h2>A secret chapter</h2>
-          <p className="section-intro">When the last dance is done, a few of you are invited to carry the night a little further.</p>
-          <a className="afterparty-enter" href={`/after-party?token=${encodeURIComponent(token)}`}>Open your invitation</a>
+      <section
+        id="invitation"
+        data-sky="dream-2"
+        style={textStyle("invitation")}
+        className="scene scene--invitation"
+        data-scene
+      >
+        <img
+          className="scene-art scene-art--floral"
+          src="/wedding/floral-frame.webp"
+          alt=""
+          loading="lazy"
+          aria-hidden="true"
+          onError={removeBrokenImage}
+        />
+        <img
+          className="scene-art floating-bloom floating-bloom--left"
+          src="/wedding/pearl-floral.webp"
+          alt=""
+          loading="lazy"
+          aria-hidden="true"
+          onError={removeBrokenImage}
+        />
+        <img
+          className="scene-art floating-bloom floating-bloom--right"
+          src="/wedding/pearl-floral.webp"
+          alt=""
+          loading="lazy"
+          aria-hidden="true"
+          onError={removeBrokenImage}
+        />
+        <div className="scene-content invitation-card reveal">
+          <p className="eyebrow">{content.familyLine}</p>
+          <p className="invitation-line">{content.invitationLine}</p>
+          <h2>
+            {content.brideName} <span>&amp;</span> {content.groomName}
+          </h2>
+          <RibbonDivider />
+          <div className="event-details">
+            <p>
+              <strong>Saturday</strong>
+              <span>{content.eventDate}</span>
+            </p>
+            <p>
+              <strong>{content.eventTime.replace(/pm$/i, "")}</strong>
+              <span>in the evening</span>
+            </p>
+            <p>
+              <strong>{content.venueName}</strong>
+              <span>Grand Hyatt Kuala Lumpur</span>
+            </p>
+          </div>
+          <ScrollOn label="The evening unfolds below" />
         </div>
-      </div>
-    </section> : null}
+      </section>
 
-    {journeyDone ? <section id="gallery" data-sky="dream-2" style={textStyle("gallery")} className="scene scene--paper" data-scene>
-      <div className="scene-content reveal">
-        <p className="step-label">The two of us</p>
-        <h2>Before we go</h2>
-        <PhotoRail />
-      </div>
-    </section> : null}
-    {journeyDone ? <p className="return-to-start"><button type="button" onClick={() => goToSection("invitation")}>Return to the beginning ↑</button></p> : null}
-    {submitted ? renderCustomPages("confirmation") : null}
-    {personalised && stepIndex > 0 ? <div className="wizard-nav" aria-label="Continue">
-      {stepIndex > 0 && !submitted ? <button type="button" className="wizard-back" onClick={() => setStep((value) => Math.max(0, value - 1))}>Back</button> : <span />}
-      {wizardSteps[stepIndex].cta ? <button type="button" className="wizard-next" disabled={!wizardSteps[stepIndex].ready} onClick={advance}>{wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"}</button> : <span />}
-    </div> : null}
-  </main>;
+      {tablesAssigned ? (
+        <section
+          id="table"
+          data-sky="dream-3"
+          style={textStyle("table")}
+          className="scene scene--blush"
+          data-scene
+        >
+          <div className="scene-content table-card reveal">
+            <p className="step-label">On the night</p>
+            <h2>{seatedGuests.length > 1 ? "Your tables" : "Your table"}</h2>
+            <p className="section-intro">
+              Come straight up to The Grand Salon — someone will show you the
+              rest.
+            </p>
+            <div className="table-plaques">
+              {seatedGuests.map((guest) => (
+                <article key={guest.id}>
+                  <span>{guest.name}</span>
+                  <strong>{guest.tableName}</strong>
+                </article>
+              ))}
+            </div>
+            <ScrollOn />
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("table")}
+
+      {renderCustomPages("invitation")}
+      {!hiddenScenes.has("schedule") ? (
+        <section
+          id="schedule"
+          data-sky="dream-1"
+          style={textStyle("schedule")}
+          className="scene scene--schedule"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--schedule"
+            src="/wedding/frame-tall.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content schedule-card reveal">
+            <p className="step-label">The programme</p>
+            <h2>The evening unfolds</h2>
+            <ol className="evening-timeline">
+              {eveningMoments.map((moment, index) => (
+                <li
+                  key={moment.title}
+                  style={{ "--stagger": `${index * 150}ms` } as CSSProperties}
+                >
+                  <span className="timeline-time">{moment.time}</span>
+                  <div>
+                    <h3>{moment.title}</h3>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {stepIndex === 0 ? (
+              <button type="button" className="rsvp-trigger" onClick={advance}>
+                RSVP
+              </button>
+            ) : (
+              <ScrollOn />
+            )}
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("schedule")}
+
+      <section
+        id="rsvp"
+        data-sky="dream-2"
+        style={textStyle("rsvp")}
+        className="scene scene--paper"
+        data-scene
+      >
+        <img
+          className="scene-art scene-art--dinner"
+          src="/wedding/dinner-table.webp"
+          alt="A hand-drawn wedding reception table"
+          loading="lazy"
+          onError={removeBrokenImage}
+        />
+        <div className="scene-content form-card reveal">
+          <p className="step-label">01 · Your reply</p>
+          <h2>Will you join us?</h2>
+          {personalised ? (
+            <>
+              <p className="section-intro">
+                Written for the names below. We are unable to welcome additional
+                guests or children.
+              </p>
+              {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
+                <p className="rsvp-deadline-note">
+                  Kindly reply by{" "}
+                  <strong>
+                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}
+                  </strong>{" "}
+                  — you may return to this link to update your reply any time
+                  before then.
+                </p>
+              ) : null}
+              <div className="party-rsvp-list">
+                {guestResponses.map((guest) => (
+                  <fieldset key={guest.id}>
+                    {guestResponses.length > 1 ? (
+                      <legend>{guest.name}</legend>
+                    ) : (
+                      <legend className="is-quiet">
+                        Will you be joining us?
+                      </legend>
+                    )}
+                    <div className="segmented-control">
+                      <button
+                        type="button"
+                        className={
+                          guest.rsvpStatus === "Confirmed" ? "is-selected" : ""
+                        }
+                        onClick={() =>
+                          updateGuest(guest.id, {
+                            rsvpStatus: "Confirmed",
+                            receptionAttending: true,
+                          })
+                        }
+                      >
+                        Joyfully accept
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          guest.rsvpStatus === "Declined" ? "is-selected" : ""
+                        }
+                        onClick={() =>
+                          updateGuest(guest.id, {
+                            rsvpStatus: "Declined",
+                            receptionAttending: false,
+                            ceremonyAttending: false,
+                            mealSelection: "",
+                          })
+                        }
+                      >
+                        Regretfully decline
+                      </button>
+                    </div>
+                  </fieldset>
+                ))}
+              </div>
+              {someoneAttending ? (
+                <>
+                  <p className="help-note phone-note">
+                    One number per household — whoever is easiest to reach on
+                    WhatsApp.
+                  </p>
+                  <div className="field-grid phone-grid">
+                    <label className="phone-code">
+                      <span className="visually-hidden">Country code</span>
+                      <select
+                        value={rsvp.countryCode}
+                        onChange={(event) =>
+                          update("countryCode", event.target.value)
+                        }
+                        aria-label="Country calling code"
+                      >
+                        {countryCodes.map(([country, code]) => (
+                          <option key={`${country}-${code}`} value={code}>
+                            {country === "Other"
+                              ? "Other"
+                              : `${country} ${code}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>My WhatsApp number is</span>
+                      <input
+                        required
+                        value={rsvp.phoneNumber}
+                        onChange={(event) =>
+                          update("phoneNumber", event.target.value)
+                        }
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        placeholder="12 345 6789"
+                        maxLength={24}
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : null}
+              {guestResponses.length > 1 ? (
+                <p className="help-note couple-note">
+                  You may each reply in your own right — if one of you can join
+                  us and the other cannot, that is perfectly all right.
+                </p>
+              ) : null}
+              {guestResponses.length === 0 ? (
+                <p className="form-error" role="alert">
+                  We are unable to find the names attached to this invitation,
+                  so the reply buttons are missing. Do let Elaine and Haykal
+                  know — nothing entered here can be saved until it is put
+                  right.
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <div className="invitation-only">
+              <span aria-hidden="true">🔐</span>
+              <h3>Your invitation is your key</h3>
+              <p>
+                Replies are opened only through the personal link Elaine and
+                Haykal have sent you. It carries the names of those they have
+                invited, and cannot be extended to additional guests.
+              </p>
+              <p className="invitation-only-note">
+                The rest of the evening — the dress code, the menu, and how to
+                find us — opens with that link. This is where the page ends for
+                now.
+              </p>
+            </div>
+          )}
+          {error && activeSection === "rsvp" ? (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {personalised && guestResponses.length > 0 ? (
+            <ScrollOn
+              ready={rsvpComplete}
+              hint={
+                guestResponses.some((guest) => guest.rsvpStatus === "Pending")
+                  ? "A reply is still awaited above."
+                  : "Add a number we can reach you on."
+              }
+              label="Thank you — please continue below"
+            />
+          ) : null}
+        </div>
+      </section>
+
+      {renderCustomPages("rsvp")}
+      {anyYes && !hiddenScenes.has("dress") ? (
+        <section
+          id="dress"
+          data-sky="dream-3"
+          style={textStyle("dress")}
+          className="scene scene--blush"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--wide-frame"
+            src="/wedding/frame-wide.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content dress-card reveal">
+            <p className="step-label">02 · Dress code</p>
+            <p className="script-kicker">{content.dressKicker}</p>
+            <h2>{content.dressCode}</h2>
+            <RibbonDivider />
+            <p>{content.dressNote}</p>
+            <p className="dress-restriction">{content.dressRestriction}</p>
+            <ScrollOn label="Keep scrolling to choose your dinner" />
+          </div>
+        </section>
+      ) : null}
+
+      {renderCustomPages("dress")}
+      {anyYes ? (
+        <section
+          id="meal"
+          data-sky="dream-1"
+          style={textStyle("meal")}
+          className="scene scene--paper scene--meal"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--feast"
+            src="/wedding/feast-table.webp"
+            alt="A hand-drawn candlelit wedding feast"
+            loading="lazy"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content form-card reveal">
+            <p className="step-label">03 · At the table</p>
+            <h2>Choose your main course</h2>
+            <p className="section-intro">
+              One happy decision before the dancing.
+            </p>
+            <div className="guest-meal-list">
+              {guestResponses
+                .filter((guest) => guest.rsvpStatus === "Confirmed")
+                .map((guest) => (
+                  <fieldset key={guest.id}>
+                    {attendingCount > 1 ? <legend>{guest.name}</legend> : null}
+                    <div className="choice-grid choice-grid--two meal-choices">
+                      <ChoiceButton
+                        selected={guest.mealSelection === "Salmon"}
+                        title="Seared Alaskan salmon"
+                        detail={salmonDescription}
+                        onClick={() =>
+                          updateGuest(guest.id, { mealSelection: "Salmon" })
+                        }
+                      />
+                      <ChoiceButton
+                        selected={guest.mealSelection === "Lamb"}
+                        title="Almond dukkha-crusted lamb"
+                        detail={lambDescription}
+                        onClick={() =>
+                          updateGuest(guest.id, { mealSelection: "Lamb" })
+                        }
+                      />
+                    </div>
+                    <div className="field-grid field-grid--single">
+                      <label>
+                        <span>Dietary requirements or allergies</span>
+                        <input
+                          value={guest.dietaryRequirements}
+                          onChange={(event) =>
+                            updateGuest(guest.id, {
+                              dietaryRequirements: event.target.value,
+                            })
+                          }
+                          placeholder="Vegetarian, no nuts…"
+                          maxLength={800}
+                        />
+                      </label>
+                    </div>
+                  </fieldset>
+                ))}
+            </div>
+            {error && activeSection === "meal" ? (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <ScrollOn
+              ready={mealComplete}
+              hint="Choose a main course for everyone joining us."
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {renderCustomPages("meal")}
+      {mealComplete && !hiddenScenes.has("travel") ? (
+        <section
+          id="travel"
+          data-sky="dream-2"
+          style={textStyle("travel")}
+          className="scene scene--pearl"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--pearl"
+            src="/wedding/pearl-floral.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content form-card form-card--glass reveal">
+            <p className="step-label">04 · Your journey</p>
+            <h2>Coming from afar?</h2>
+            <p className="section-intro">Only if you are travelling to us.</p>
+            <fieldset>
+              <legend>
+                {attendingCount > 1 ? "We are flying in" : "I am flying in"}
+              </legend>
+              <div className="segmented-control">
+                <button
+                  type="button"
+                  className={rsvp.flyingIn === true ? "is-selected" : ""}
+                  onClick={() => update("flyingIn", true)}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={rsvp.flyingIn === false ? "is-selected" : ""}
+                  onClick={() => {
+                    update("flyingIn", false);
+                    update("roomAtHyatt", null);
+                  }}
+                >
+                  No
+                </button>
+              </div>
+            </fieldset>
+            {rsvp.flyingIn ? (
+              <div className="slide-open travel-details">
+                <p className="room-offer">
+                  <strong>The Grand Room · RM850++ a night</strong>
+                  <span>
+                    A rate held for our guests at the Grand Hyatt, in the same
+                    building as the celebration.
+                  </span>
+                </p>
+                <fieldset>
+                  <legend>A room at the Grand Hyatt</legend>
+                  <div className="segmented-control">
+                    <button
+                      type="button"
+                      className={rsvp.roomAtHyatt === true ? "is-selected" : ""}
+                      onClick={() => update("roomAtHyatt", true)}
+                    >
+                      Yes, please
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        rsvp.roomAtHyatt === false ? "is-selected" : ""
+                      }
+                      onClick={() => {
+                        update("roomAtHyatt", false);
+                        update("bedPreference", null);
+                        update("nights", null);
+                      }}
+                    >
+                      No, thank you
+                    </button>
+                  </div>
+                </fieldset>
+                {rsvp.roomAtHyatt === true ? (
+                  <div className="slide-open">
+                    <fieldset>
+                      <legend>We would like</legend>
+                      <div className="segmented-control">
+                        <button
+                          type="button"
+                          className={
+                            rsvp.bedPreference === "King" ? "is-selected" : ""
+                          }
+                          onClick={() => update("bedPreference", "King")}
+                        >
+                          One king
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            rsvp.bedPreference === "Twin" ? "is-selected" : ""
+                          }
+                          onClick={() => update("bedPreference", "Twin")}
+                        >
+                          Two singles
+                        </button>
+                      </div>
+                    </fieldset>
+                    <fieldset>
+                      <legend>Staying for</legend>
+                      <div className="segmented-control">
+                        {[1, 2, 3].map((count) => (
+                          <button
+                            key={count}
+                            type="button"
+                            className={
+                              rsvp.nights === count ? "is-selected" : ""
+                            }
+                            onClick={() => update("nights", count)}
+                          >
+                            {count} {count === 1 ? "night" : "nights"}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <label className="full-field">
+                      <span>We arrive on</span>
+                      <input
+                        type="date"
+                        value={rsvp.arrivalDate}
+                        onChange={(event) =>
+                          update("arrivalDate", event.target.value)
+                        }
+                      />
+                    </label>
+                    <p className="help-note">
+                      We will pass this to the hotel and be in touch. Nothing is
+                      charged here.
+                    </p>
+                  </div>
+                ) : null}
+                {rsvp.roomAtHyatt === false ? (
+                  <div className="slide-open">
+                    <p className="help-note">
+                      A few good places within a short walk, should you still be
+                      deciding.
+                    </p>
+                    <ul className="hotel-list">
+                      {nearbyHotels.map((hotel) => (
+                        <li key={hotel.name}>
+                          <a
+                            href={maps(`${hotel.name} Kuala Lumpur`)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <strong>{hotel.name}</strong>
+                            <span>{hotel.note}</span>
+                            <em className="place-score">★ {hotel.score}</em>
+                            <i>{hotel.walk} away ↗</i>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <label className="full-field">
+              <span>It would help us if</span>
+              <input
+                value={rsvp.accessibilityNote}
+                onChange={(event) =>
+                  update("accessibilityNote", event.target.value)
+                }
+                placeholder="Step-free access, seating close to the door…"
+                maxLength={800}
+              />
+            </label>
+            {error && activeSection === "travel" ? (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <ScrollOn
+              ready={travelComplete}
+              hint={
+                rsvp.flyingIn === null
+                  ? "Answer the question above to continue."
+                  : rsvp.roomAtHyatt === null
+                    ? "Let us know about a room to continue."
+                    : "A few details above are still to be filled in."
+              }
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {renderCustomPages("travel")}
+
+      {travelComplete && !hiddenScenes.has("venue") ? (
+        <section
+          id="venue"
+          data-sky="dream-3"
+          style={textStyle("venue")}
+          className="scene scene--venue"
+          data-scene
+        >
+          <div
+            className="venue-map"
+            aria-label="Map showing Grand Hyatt Kuala Lumpur"
+          >
+            <iframe
+              title="Map to Grand Hyatt Kuala Lumpur"
+              src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+          <div className="scene-content venue-card reveal">
+            <p className="step-label">Finding your way to us</p>
+            <h2>{content.venueName}</h2>
+            <p className="venue-address">
+              {content.venueAddress.split("\n").map((line, index) => (
+                <span key={line}>
+                  {index ? <br /> : null}
+                  {line}
+                </span>
+              ))}
+            </p>
+            <p className="help-note venue-note">
+              The Grand Salon is on Level 1 — take the lift or escalator up from
+              the lobby.
+            </p>
+            <div className="arrival-grid">
+              <article>
+                <span>01</span>
+                <h3>By MRT</h3>
+                <p>
+                  Take the Putrajaya Line to Conlay station, leave by Entrance
+                  A, and follow Jalan Kia Peng towards the Convention Centre —
+                  the hotel appears on your right.
+                </p>
+              </article>
+              <article>
+                <span>02</span>
+                <h3>By car</h3>
+                <p>
+                  Make your way to the hotel entrance on Jalan Pinang, where the
+                  doormen will greet you. Guest parking sits in the hotel’s own
+                  basement.
+                </p>
+              </article>
+              <article>
+                <span>03</span>
+                <h3>By Grab</h3>
+                <p>
+                  Simply set your destination to “Grand Hyatt Kuala Lumpur” and
+                  ask to be set down at the main lobby.
+                </p>
+              </article>
+            </div>
+            <a
+              className="primary-button map-button"
+              href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open directions <span aria-hidden="true">↗</span>
+            </a>
+            <ScrollOn />
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("venue")}
+
+      {flyingIn && !hiddenScenes.has("recommendations") ? (
+        <section
+          id="recommendations"
+          data-sky="dream-2"
+          style={textStyle("recommendations")}
+          className="scene scene--recommendations"
+          data-scene
+        >
+          <div className="scene-content reveal">
+            <p className="step-label">While you are here</p>
+            <h2>Kuala Lumpur</h2>
+            <p className="section-intro">
+              Places within twenty minutes, and the apps worth having. Tap to
+              open.
+            </p>
+            <div className="guide">
+              {guideCategories.map((category) => {
+                const open = openGuide === category.id;
+                return (
+                  <div
+                    className={`guide-group${open ? " is-open" : ""}`}
+                    key={category.id}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenGuide(open ? "" : category.id)}
+                      aria-expanded={open}
+                    >
+                      <span>{category.title}</span>
+                      <i aria-hidden="true">{open ? "−" : "+"}</i>
+                    </button>
+                    {"apps" in category ? (
+                      <ul>
+                        {category.apps.map((app) => (
+                          <li key={app.name}>
+                            <div className="guide-app">
+                              <strong>{app.name}</strong>
+                              <span>{app.note}</span>
+                              <span className="app-links">
+                                <a
+                                  href={app.ios}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  App Store ↗
+                                </a>
+                                <a
+                                  href={app.android}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Google Play ↗
+                                </a>
+                              </span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {"places" in category ? (
+                      <ul>
+                        {category.places.map((place) => (
+                          <li key={place.name}>
+                            <a
+                              href={maps(place.name)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <strong>{place.name}</strong>
+                              <span>{place.note}</span>
+                              <em>
+                                {place.detail} · ★ {place.score}
+                              </em>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+            <ScrollOn />
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("recommendations")}
+
+      {journeyDone && !hiddenScenes.has("wishes") ? (
+        <section
+          id="wishes"
+          data-sky="dream-2"
+          style={textStyle("wishes")}
+          className="scene scene--wishes"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--wishes-lace"
+            src="/wedding/decor/lace-tape-white.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content wishes-card reveal">
+            <p className="step-label">
+              {rsvp.attendance === "yes" ? "05" : "02"} · From the heart
+            </p>
+            <p className="script-kicker">{content.wishesKicker}</p>
+            <h2>{content.wishesHeading}</h2>
+            {personalised ? (
+              <>
+                <label className="full-field">
+                  <span>My wish for you both is</span>
+                  <textarea
+                    value={rsvp.wishes}
+                    onChange={(event) => update("wishes", event.target.value)}
+                    placeholder="A blessing, a memory, a line we can keep…"
+                    rows={4}
+                    maxLength={1000}
+                  />
+                </label>
+                <p className="help-note">
+                  We may share a few of these with everyone on the night.
+                </p>
+                <label className="full-field">
+                  <span>And a little advice</span>
+                  <textarea
+                    value={rsvp.advice}
+                    onChange={(event) => update("advice", event.target.value)}
+                    placeholder="Something you have learned, or wish someone had told you…"
+                    rows={4}
+                    maxLength={1500}
+                  />
+                </label>
+                <p className="help-note private-note">
+                  Only Elaine and Haykal will ever read this one.
+                </p>
+                {error && activeSection === "wishes" ? (
+                  <p className="form-error" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={submitRsvp}
+                  disabled={submitting || submitted}
+                >
+                  {submitting
+                    ? "Sending with love…"
+                    : submitted
+                      ? "RSVP sent"
+                      : previewMode
+                        ? "Preview confirmation"
+                        : "Send our RSVP"}
+                  {!submitting && !submitted ? (
+                    <span aria-hidden="true">♡</span>
+                  ) : null}
+                </button>
+                <small className="privacy-note">
+                  {previewMode
+                    ? "Preview only — no response or personal information will be saved."
+                    : "Your details are used only to plan Elaine and Haykal’s celebration."}
+                </small>
+              </>
+            ) : (
+              <div className="invitation-only compact">
+                <p>
+                  Your personal invitation link unlocks the RSVP and wishes
+                  form.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("wishes")}
+
+      {submitted ? (
+        <section
+          id="confirmation"
+          data-sky="dream-3"
+          style={textStyle("confirmation")}
+          className="scene scene--confirmation"
+          data-scene
+        >
+          <Sparkles />
+          <div className="scene-content confirmation-card reveal">
+            <p className="eyebrow">With all our hearts</p>
+            <div className="wax-seal" aria-hidden="true">
+              E<span>&amp;</span>H
+            </div>
+            <h2>
+              Thank you,
+              <br />
+              {rsvp.guestName || "dear guest"}.
+            </h2>
+            <p>
+              {rsvp.attendance === "yes"
+                ? inviteData?.settings?.confirmation_message ||
+                  "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you."
+                : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}
+            </p>
+            {rsvp.wishes.trim() ? (
+              <blockquote className="shared-wish">
+                <p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p>
+                <cite>your words, kept for the night</cite>
+              </blockquote>
+            ) : null}
+            <RibbonDivider />
+            <div className="confirmation-details">
+              <span>7 November 2026</span>
+              <span>The Grand Salon · Grand Hyatt Kuala Lumpur</span>
+            </div>
+            {rsvp.attendance === "yes" ? (
+              <>
+                <Countdown />
+                <div className="confirmation-actions">
+                  <button
+                    className="calendar-button"
+                    type="button"
+                    onClick={downloadCalendarInvite}
+                  >
+                    Add to calendar <span aria-hidden="true">↓</span>
+                  </button>
+                  <a
+                    className="calendar-button"
+                    href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Directions <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+      {inviteData?.afterPartyInvited && token ? (
+        <section
+          id="afterparty"
+          data-sky="dream-3"
+          style={textStyle("afterparty")}
+          className="scene scene--afterparty"
+          data-scene
+        >
+          <div className="scene-content reveal">
+            <div className="afterparty-arch">
+              <p className="step-label">Only for a chosen few</p>
+              <h2>A secret chapter</h2>
+              <p className="section-intro">
+                When the last dance is done, a few of you are invited to carry
+                the night a little further.
+              </p>
+              <a
+                className="afterparty-enter"
+                href={`/after-party?token=${encodeURIComponent(token)}`}
+              >
+                Open your invitation
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {journeyDone ? (
+        <section
+          id="gallery"
+          data-sky="dream-2"
+          style={textStyle("gallery")}
+          className="scene scene--paper"
+          data-scene
+        >
+          <div className="scene-content reveal">
+            <p className="step-label">The two of us</p>
+            <h2>Before we go</h2>
+            <PhotoRail />
+          </div>
+        </section>
+      ) : null}
+      {journeyDone ? (
+        <p className="return-to-start">
+          <button type="button" onClick={() => goToSection("invitation")}>
+            Return to the beginning ↑
+          </button>
+        </p>
+      ) : null}
+      {submitted ? renderCustomPages("confirmation") : null}
+      {personalised && stepIndex > 0 ? (
+        <div className="wizard-nav" aria-label="Continue">
+          {stepIndex > 0 && !submitted ? (
+            <button
+              type="button"
+              className="wizard-back"
+              onClick={() => setStep((value) => Math.max(0, value - 1))}
+            >
+              Back
+            </button>
+          ) : (
+            <span />
+          )}
+          {wizardSteps[stepIndex].cta ? (
+            <button
+              type="button"
+              className="wizard-next"
+              disabled={!wizardSteps[stepIndex].ready}
+              onClick={advance}
+            >
+              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"}
+            </button>
+          ) : (
+            <span />
+          )}
+        </div>
+      ) : null}
+    </main>
+  );
 }
