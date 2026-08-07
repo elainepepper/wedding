@@ -681,10 +681,16 @@ export function WeddingExperience({
 
   // Music tries to start on its own; browsers usually refuse until a guest
   // has touched the page, so the first tap anywhere quietly starts it.
+  // iPhone Safari is the strict one: it only honours play() inside a
+  // touchend or click gesture — pointerdown does not count — and the old
+  // single { once: true } listener was burned by that first refusal, after
+  // which the music could never begin. Every gesture now retries, and the
+  // listeners leave only once the song is truly playing.
   useEffect(() => {
     const player = audioRef.current;
     if (!player) return;
     let done = false;
+    const events = ["click", "touchend", "pointerdown", "keydown"] as const;
     const start = () => {
       if (done) return;
       player
@@ -692,19 +698,16 @@ export function WeddingExperience({
         .then(() => {
           done = true;
           setSoundEnabled(true);
+          detach();
         })
         .catch(() => undefined);
     };
+    const detach = () => {
+      events.forEach((name) => window.removeEventListener(name, start));
+    };
     start();
-    const onFirstTouch = () => {
-      start();
-    };
-    window.addEventListener("pointerdown", onFirstTouch, { once: true });
-    window.addEventListener("keydown", onFirstTouch, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", onFirstTouch);
-      window.removeEventListener("keydown", onFirstTouch);
-    };
+    events.forEach((name) => window.addEventListener(name, start, { passive: true }));
+    return detach;
   }, [music.musicUrl]);
 
   const toggleSound = async () => {
