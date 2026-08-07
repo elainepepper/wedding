@@ -5854,3 +5854,34 @@ canvas { pointer-events: none; }
   .reveal { transform: translateY(14px); transition: opacity .55s ease, transform .6s ease-out; }
   .is-visible .reveal { transform: none; }
 }
+
+/* A page the wizard has turned away must be gone entirely. Several scene
+   styles set their own display, which quietly outvoted the hidden
+   attribute - the next page's questions showed beneath the current one,
+   and answering them there made the view leap back to the top. */
+.wedding-shell [hidden] { display: none !important; }
+
+/* The map closes the venue card now, after the address and the three ways
+   of arriving. Its old rules assumed it sat beside the card, and one of
+   them turned its positioning off at phone widths - which threw the
+   symmetric crop off and let the pin drift. Settled here for every size. */
+.wizard .scene--venue .venue-card .venue-map {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 560px;
+  height: 300px !important;
+  max-height: 38svh;
+  margin: 2.2rem auto 0 !important;
+  transform: none !important;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.wizard .scene--venue .venue-card .venue-map iframe {
+  position: absolute;
+  left: -20%;
+  top: -20%;
+  width: 140%;
+  height: 140%;
+  transform: none !important;
+}

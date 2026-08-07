@@ -14,6 +14,7 @@ import { EtherealLoader } from "./EtherealLoader";
 import { SiteMenu } from "./SiteMenu";
 import { LockedInvitation } from "./LockedInvitation";
 import { readToken } from "./invite-token";
+import { musicElement } from "./music";
 import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
 import { removeBrokenImage } from "./image-fallback";
@@ -693,28 +694,47 @@ export function WeddingExperience({
     };
   }, []);
 
-  // Music tries to start on its own; browsers usually refuse until a guest
-  // has touched the page, so the first tap anywhere quietly starts it.
-  // iPhone Safari is the strict one: it only honours play() inside a
-  // touchend or click gesture — pointerdown does not count — and the old
-  // single { once: true } listener was burned by that first refusal, after
-  // which the music could never begin. Every gesture now retries, and the
-  // listeners leave only once the song is truly playing.
+  // The song lives in one shared player (see music.ts) that usually began
+  // at the front door, inside the tap on ENTER — so by the time a guest is
+  // here it is already playing and simply carries on. This effect adopts
+  // that player: it points it at the couple's chosen track once settings
+  // arrive, and mirrors its state into the sound button.
   useEffect(() => {
-    const player = audioRef.current;
-    if (!player) return;
-    let done = false;
+    if (!music.musicUrl) return;
+    const player = musicElement();
+    audioRef.current = player;
+    const wanted = new URL(music.musicUrl, window.location.origin).href;
+    if (player.src !== wanted) {
+      const wasPlaying = !player.paused;
+      player.src = wanted;
+      if (wasPlaying) player.play().catch(() => undefined);
+    }
+    const onPlay = () => setSoundEnabled(true);
+    const onPause = () => setSoundEnabled(false);
+    player.addEventListener("play", onPlay);
+    player.addEventListener("pause", onPause);
+    setSoundEnabled(!player.paused);
+    return () => {
+      player.removeEventListener("play", onPlay);
+      player.removeEventListener("pause", onPause);
+    };
+  }, [music.musicUrl]);
+
+  // If the guest arrived on a direct link and skipped the archway, the
+  // player has not begun. Browsers refuse sound until a real gesture —
+  // iPhone Safari honours only touchend or click — so every gesture
+  // retries, and the listeners leave once the song is truly playing.
+  useEffect(() => {
+    if (!music.musicUrl) return;
     const events = ["click", "touchend", "pointerdown", "keydown"] as const;
     const start = () => {
-      if (done) return;
-      player
-        .play()
-        .then(() => {
-          done = true;
-          setSoundEnabled(true);
-          detach();
-        })
-        .catch(() => undefined);
+      const player = audioRef.current;
+      if (!player) return;
+      // Already playing — or played before and deliberately paused by the
+      // guest. Either way these listeners have nothing left to do; a tap
+      // must never restart music someone chose to turn off.
+      if (!player.paused || player.currentTime > 0) { detach(); return; }
+      player.play().then(detach).catch(() => undefined);
     };
     const detach = () => {
       events.forEach((name) => window.removeEventListener(name, start));
@@ -1572,14 +1592,8 @@ export function WeddingExperience({
       </a>
       {music.musicUrl ? (
         <>
-          <audio
-            ref={audioRef}
-            src={music.musicUrl}
-            loop
-            preload="none"
-            onPause={() => setSoundEnabled(false)}
-            onPlay={() => setSoundEnabled(true)}
-          />
+          {/* The audio itself is the shared player from music.ts — begun at
+              the front door and adopted by the effect above. */}
           <button
             type="button"
             className="sound-control"
@@ -2254,17 +2268,6 @@ export function WeddingExperience({
           className="scene scene--venue"
           data-scene
         >
-          <div
-            className="venue-map"
-            aria-label="Map showing Grand Hyatt Kuala Lumpur"
-          >
-            <iframe
-              title="Map to Grand Hyatt Kuala Lumpur"
-              src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
           <div className="scene-content venue-card reveal">
             <p className="step-label">Finding your way to us</p>
             <h2>{content.venueName}</h2>
@@ -2316,6 +2319,19 @@ export function WeddingExperience({
             >
               Open directions <span aria-hidden="true">↗</span>
             </a>
+            {/* The map closes the page: everyone reads the address and the
+                three ways of arriving first, then sees where it all is. */}
+            <div
+              className="venue-map"
+              aria-label="Map showing Grand Hyatt Kuala Lumpur"
+            >
+              <iframe
+                title="Map to Grand Hyatt Kuala Lumpur"
+                src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
             <ScrollOn />
           </div>
         </section>

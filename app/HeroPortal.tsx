@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readToken } from "./invite-token";
+import { beginMusic } from "./music";
 import { Butterflies } from "./Butterflies";
 import BubbleCursor from "./BubbleCursor";
 
@@ -25,8 +26,28 @@ export function HeroPortal() {
 
   useEffect(() => { setToken(readToken() || ""); }, []);
 
+  // iPhones only autoplay a film they are certain is silent, and React does
+  // not always write the muted attribute into the first HTML — so the film
+  // arrived "unmuted", was refused, and a play badge appeared over the arch.
+  // Mute it by hand, ask it to play, and ask once more on the first touch.
+  useEffect(() => {
+    const film = videoRef.current;
+    if (!film) return;
+    film.muted = true;
+    film.defaultMuted = true;
+    const start = () => { film.play().then(detach).catch(() => undefined); };
+    const events = ["touchend", "click"] as const;
+    const detach = () => events.forEach((name) => window.removeEventListener(name, start));
+    start();
+    events.forEach((name) => window.addEventListener(name, start, { passive: true }));
+    return detach;
+  }, []);
+
   const enter = () => {
     if (crossing) return;
+    // The tap on ENTER is the one moment a browser lets sound begin — the
+    // song starts here and carries on into the invitation.
+    beginMusic();
     if (!token) { setRefused(true); return; }
     setCrossing(true);
     // straight to the invitation itself — the welcome was an empty scroll

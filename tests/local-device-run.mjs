@@ -104,7 +104,8 @@ for (const [label, device] of Object.entries(DEVICES)) {
     await page.waitForTimeout(8000);
     check(label, "page alive after films play", !crashed && (await page.title()).length > 0);
     const playing = await page.evaluate(() => [...document.querySelectorAll("video")].filter((v) => !v.paused).length);
-    check(label, "only one background film plays", playing <= 1, `${playing} playing`);
+    // one film on show; a second is legitimate mid-crossfade, all three never
+    check(label, "hidden background films stay paused", playing <= 2, `${playing} playing`);
 
     // ---- 1b. Guests who decline go straight on to the wishes page ----
     // (steps are identical whether one guest or a whole couple declines)

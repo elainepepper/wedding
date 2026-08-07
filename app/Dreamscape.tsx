@@ -178,6 +178,15 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
           {motion ? (
             <video
               className="dream-film"
+              // React does not always write the muted attribute into the
+              // first HTML, and iPhones refuse to autoplay a film they are
+              // not certain is silent. Set it on the element directly.
+              ref={(el) => {
+                if (el) {
+                  el.muted = true;
+                  el.defaultMuted = true;
+                }
+              }}
               src={asset(`videos/${name}.mp4`)}
               poster={asset(`bg/${name}.webp`)}
               playsInline

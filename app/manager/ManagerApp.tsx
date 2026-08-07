@@ -48,7 +48,7 @@ const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: "settings", label: "Settings", glyph: "◇" },
 ];
 
-const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim();
+const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name ?? ""} ${guest.last_name ?? ""}`.trim() || "Unnamed guest";
 // The wedding evening begins 6:00pm in Kuala Lumpur; fall back to the known date if settings are blank.
 const daysUntilWedding = (weddingDate: string | null | undefined) => {
   const target = Date.parse(`${/^\d{4}-\d{2}-\d{2}$/.test(weddingDate || "") ? weddingDate : "2026-11-07"}T18:00:00+08:00`);
@@ -81,8 +81,11 @@ function csvValue(value: unknown) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
-function Status({ value }: { value: string }) {
-  return <span className={`status status--${value.toLowerCase().replaceAll(" ", "-")}`}><i />{value}</span>;
+function Status({ value }: { value: string | null | undefined }) {
+  // Guests imported before a field existed carry no value for it at all —
+  // reading one used to crash the whole page. An absent status reads Pending.
+  const label = value || "Pending";
+  return <span className={`status status--${label.toLowerCase().replaceAll(" ", "-")}`}><i />{label}</span>;
 }
 
 async function readApiResponse<T>(response: Response): Promise<T & { error?: string }> {
