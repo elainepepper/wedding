@@ -77,6 +77,24 @@ export async function POST(request: Request) {
     assertFirebaseAdminConfigured();
     const payload = await request.json() as Record<string, unknown>;
     const action = clean(payload.action, 60);
+
+    // An invitation with no one on it can still be opened and replied to,
+    // which confuses everyone. Whenever the last guest leaves a household —
+    // deleted outright or moved to another invitation — the empty household
+    // goes quietly with them. Archived guests still count as present, so an
+    // undo always has a home to return to.
+    const removeHouseholdIfEmpty = async (rawHouseholdId: unknown) => {
+      const householdId = integer(rawHouseholdId);
+      if (!householdId) return;
+      const remaining = await weddingRef.collection("guests")
+        .where("household_id", "in", [Number(householdId), String(householdId)]).limit(1).get();
+      if (!remaining.empty) return;
+      const householdDoc = await docById("households", householdId);
+      if (!householdDoc) return;
+      await householdDoc.ref.delete();
+      await addActivity(admin.displayName, "Household removed", "household", householdId,
+        `${String(householdDoc.data().name ?? "")} — removed automatically, no guests left`);
+    };
     if (action === "addGuest") {
       const firstName = clean(payload.firstName, 100);
       const lastName = clean(payload.lastName, 100);
@@ -132,8 +150,12 @@ export async function POST(request: Request) {
         update.household_id = householdId;
       }
 
+      const previousHouseholdId = guestDoc.data().household_id;
       await guestDoc.ref.set(update, { merge: true });
       await addActivity(admin.displayName, "Guest edited", "guest", guestId, "Guest details updated");
+      if ("household_id" in update && integer(update.household_id) !== integer(previousHouseholdId)) {
+        await removeHouseholdIfEmpty(previousHouseholdId);
+      }
       return Response.json({ ok: true });
     }
 
@@ -154,6 +176,7 @@ export async function POST(request: Request) {
       if (!guestId || !guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
       if (action === "archiveGuest") await guestDoc.ref.set({ archived: 1, updated_at: serverTimestamp() }, { merge: true }); else await guestDoc.ref.delete();
       await addActivity(admin.displayName, action === "archiveGuest" ? "Guest archived" : "Guest deleted", "guest", guestId, action === "archiveGuest" ? "Guest moved to archive" : "Guest permanently removed");
+      if (action === "deleteGuest") await removeHouseholdIfEmpty(guestDoc.data().household_id);
       return Response.json({ ok: true });
     }
 

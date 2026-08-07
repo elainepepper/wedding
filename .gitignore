@@ -8,3 +8,4 @@ tests/screens/
 .env.*.local
 *.log
 .DS_Store
+.pnpm-store/

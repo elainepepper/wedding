@@ -212,15 +212,36 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
     };
   }, [data]);
 
+  // Guests who look like the same person entered twice: an identical name,
+  // or an identical mobile number. Surfaced through the group filter so the
+  // couple can tick and delete them from the ordinary list.
+  const duplicateIds = useMemo(() => {
+    const byKey = new Map<string, number[]>();
+    (data?.guests ?? []).forEach((guest) => {
+      const name = `${(guest.first_name || "").trim()} ${(guest.last_name || "").trim()}`.toLowerCase().replace(/\s+/g, " ").trim();
+      if (name) byKey.set(`name:${name}`, [...(byKey.get(`name:${name}`) ?? []), guest.id]);
+      const mobile = (guest.mobile || "").replace(/\D/g, "");
+      if (mobile.length >= 8) byKey.set(`mobile:${mobile}`, [...(byKey.get(`mobile:${mobile}`) ?? []), guest.id]);
+    });
+    const doubled = new Set<number>();
+    byKey.forEach((ids) => { if (ids.length > 1) ids.forEach((id) => doubled.add(id)); });
+    return doubled;
+  }, [data]);
+
   const filteredGuests = useMemo(() => {
     const query = search.toLowerCase();
-    return (data?.guests ?? []).filter((guest) => {
+    const matches = (data?.guests ?? []).filter((guest) => {
       const matchesSearch = !query || [displayName(guest), guest.mobile, guest.household_name].some((value) => value?.toLowerCase().includes(query));
       const matchesStatus = statusFilter === "All" || guest.rsvp_status === statusFilter;
-      const matchesGroup = groupFilter === "All" || guest.category === groupFilter || guest.side === groupFilter || (groupFilter === "After-party" && !!guest.after_party_invited);
+      const matchesGroup = groupFilter === "All" || guest.category === groupFilter || guest.side === groupFilter || (groupFilter === "After-party" && !!guest.after_party_invited) || (groupFilter === "Possible duplicates" && duplicateIds.has(guest.id));
       return matchesSearch && matchesStatus && matchesGroup;
     });
-  }, [data, search, statusFilter, groupFilter]);
+    // In the duplicates view, sort by name so each suspected pair sits together.
+    if (groupFilter === "Possible duplicates") {
+      matches.sort((a, b) => displayName(a).toLowerCase().localeCompare(displayName(b).toLowerCase()));
+    }
+    return matches;
+  }, [data, search, statusFilter, groupFilter, duplicateIds]);
 
   const jumpToGuests = (filter: string) => {
     setTab("guests");
@@ -315,7 +336,7 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
     <section className="manager-panel guest-table-panel">
       <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone or household" /></label>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter by RSVP status"><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select>
-        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option></select>
+        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option><option>Possible duplicates</option></select>
       </div>
       {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" onClick={async () => {
         if (!window.confirm(`Remove ${selected.length} guest${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
@@ -659,7 +680,10 @@ function GuestPill({ guest, compact = false }: { guest: Guest; compact?: boolean
 
 function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; selected: number[]; setSelected: (ids: number[]) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [partySearch, setPartySearch] = useState("");
-  const allEligible = guests.filter((guest) => guest.after_party_eligible);
+  // This list once showed only guests pre-marked "eligible" — a field no
+  // screen ever set, so the page sat empty and read as broken. Every guest
+  // can now be granted the chapter directly; the toggle is the decision.
+  const allEligible = guests;
   const eligible = allEligible.filter((guest) => !partySearch || displayName(guest).toLowerCase().includes(partySearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(partySearch.toLowerCase()));
   return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{allEligible.filter((g) => g.after_party_invited).length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{allEligible.filter((g) => g.after_party_invited).length}</strong></p><p><span>Attending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Yes").length}</strong></p><p><span>Pending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Pending").length}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span><Status value={guest.after_party_attending} /><button type="button" className={guest.after_party_invited ? "is-on" : ""} onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`Toggle after-party invitation for ${displayName(guest)}`}><span /></button></label>)}</div></section></div>;
 }

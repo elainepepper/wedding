@@ -5842,3 +5842,15 @@ canvas { pointer-events: none; }
 .scene--venue .scene-content > a { margin-inline: auto; }
 .wizard .scene--venue .scene-content > a,
 .wizard .scene--venue .scene-content > p > a { display: inline-flex; justify-content: center; }
+
+/* ============ Steady scrolling on phones ============ */
+/* Guests reported the page feeling jumpy on iOS Safari and Android. Two
+   things moved against the finger on every frame: the paintings sliding a
+   parallax transform, and revealed content travelling a long way up as it
+   appeared. On touch screens the paintings now hold still (their crossfades
+   remain), and content settles gently from a much shorter distance. */
+@media (max-width: 900px), (pointer: coarse) {
+  .dream-sky { transform: scale(1.03) !important; }
+  .reveal { transform: translateY(14px); transition: opacity .55s ease, transform .6s ease-out; }
+  .is-visible .reveal { transform: none; }
+}

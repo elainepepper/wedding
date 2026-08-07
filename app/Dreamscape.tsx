@@ -41,6 +41,10 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
   // reads as depth. One transform on one fixed layer, so it stays cheap.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // On phones the paintings hold perfectly still: writing a transform on
+    // every scrolled frame is exactly the kind of work that made scrolling
+    // feel jumpy on iOS Safari and Android. The crossfades stay.
+    if (window.matchMedia("(max-width: 900px), (pointer: coarse)").matches) return;
     const box = boxRef.current;
     if (!box) return;
     let frame = 0;

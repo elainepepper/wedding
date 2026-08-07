@@ -31,6 +31,11 @@ export async function POST(request: Request) {
     .filter((guest) => !Number(guest.archived ?? 0))
     .filter((guest) => Boolean(Number(guest.after_party_invited ?? 0)));
   if (!eligibleGuests.length) return Response.json({ ok: false, error: "This private chapter is not included in your invitation." }, { status: 403 });
+  // The chapter unlocks with the follow-up link that carries the seat
+  // allocation: until the couple assigns a table, it stays sealed even for
+  // invited guests — the same rule the invitation page applies on screen.
+  const anySeatAssigned = eligibleGuests.some((guest) => Number(guest.table_id ?? 0) > 0);
+  if (!anySeatAssigned) return Response.json({ ok: false, error: "This chapter is still resting. It will open with the note that carries your table number." }, { status: 403 });
   const settings = (await weddingRef.get()).data() ?? {};
   return Response.json({
     ok: true,

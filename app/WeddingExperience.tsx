@@ -180,6 +180,20 @@ const sceneLabels: Record<string, string> = {
   confirmation: "Until November",
 };
 
+// A couple entered as "Mr Lim" and "Mrs Lim" reads as one address:
+// "Mr & Mrs Lim". Any other pair of names keeps the plain "A & B" form.
+function joinGuestNames(names: Array<string | null | undefined>) {
+  const clean = names.map((name) => (name || "").trim()).filter(Boolean);
+  if (clean.length === 2) {
+    const titled = clean.map((name) => name.match(/^(Mr|Mrs)\.?\s+(.+)$/i));
+    if (titled[0] && titled[1] && titled[0][2].toLowerCase() === titled[1][2].toLowerCase() && titled[0][1].toLowerCase() !== titled[1][1].toLowerCase()) {
+      const surname = titled.find((match) => match![1].toLowerCase() === "mr")![2];
+      return `Mr & Mrs ${surname}`;
+    }
+  }
+  return clean.join(" & ");
+}
+
 function splitMobile(mobile: string | null) {
   if (!mobile) return { countryCode: "+60", phoneNumber: "" };
   const compact = mobile.replace(/[\s()-]/g, "");
@@ -744,9 +758,9 @@ export function WeddingExperience({
       .then((result) => {
         if (cancelled) return;
         setInviteData(result);
-        const names = result.guests
-          .map((guest) => guest.preferred_name || guest.first_name)
-          .join(" & ");
+        const names = joinGuestNames(
+          result.guests.map((guest) => guest.preferred_name || guest.first_name),
+        );
         const phone = splitMobile(
           result.guests.find((guest) => guest.mobile)?.mobile || null,
         );
@@ -1195,7 +1209,9 @@ export function WeddingExperience({
     if (flyingIn) ids.push("recommendations");
     if (journeyDone) ids.push("wishes");
     if (submitted) ids.push("confirmation");
-    if (inviteData?.afterPartyInvited) ids.push("afterparty");
+    // The secret chapter stays sealed until the couple assigns a table —
+    // it arrives with the follow-up link that carries the seat allocation.
+    if (inviteData?.afterPartyInvited && tablesAssigned) ids.push("afterparty");
     if (journeyDone) ids.push("gallery");
     // Editor-hidden chapters drop out; editor-added pages slide in after their anchor.
     return ids.flatMap((id) => [
@@ -1543,14 +1559,9 @@ export function WeddingExperience({
                   },
                 ]
               : []),
-            ...(inviteData?.afterPartyInvited
-              ? [
-                  {
-                    label: "The secret chapter",
-                    onSelect: () => goToSection("afterparty"),
-                  },
-                ]
-              : []),
+            // The secret chapter is deliberately absent here: it reveals
+            // itself on the confirmation page once a table has been
+            // assigned, and is never advertised in the menu.
           ]}
         />
       ) : null}
@@ -2551,7 +2562,7 @@ export function WeddingExperience({
           </div>
         </section>
       ) : null}
-      {inviteData?.afterPartyInvited && token ? (
+      {inviteData?.afterPartyInvited && token && tablesAssigned ? (
         <section
           id="afterparty"
           data-sky="dream-3"
