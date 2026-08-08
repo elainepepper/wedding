@@ -245,6 +245,12 @@ const foodPlaces = [
     score: "Casual local favourite",
   },
   {
+    name: "Oriental Kopi",
+    note: "Kopi, kaya toast and egg tarts — worth the queue.",
+    detail: "10 minutes",
+    score: "4.4 · 6,800 reviews",
+  },
+  {
     name: "White & Black Kampong Kuala Lumpur",
     note: "Kampung cooking done beautifully — sambal petai, asam pedas, rendang.",
     detail: "10 minutes by Grab",
@@ -1133,31 +1139,30 @@ export function WeddingExperience({
   };
 
   const goToSection = (id: string) => {
+    // Steps now exist in the list only when their pages can render, so the
+    // list itself is the authority. (The old check asked the document, but
+    // with strict isolation other steps' pages are never in the document.)
     const index = wizardSteps.findIndex((entry) => entry.sections.includes(id));
     if (index < 0) return;
-    // A step only has something to show once its sections are on the page.
-    // The confirmation, for one, does not exist until a reply has been sent —
-    // jumping there early left a guest on a blank screen.
-    const rendered = wizardSteps[index].sections.some((section) =>
-      document.getElementById(section),
-    );
-    if (!rendered) return;
     setStep(index);
   };
   useEffect(() => {
     if (submitted) setStep(wizardSteps.length - 1);
   }, [submitted, wizardSteps.length]);
-  // Which sections are on screen. This runs whenever the steps are rebuilt —
-  // which is on every answer, since answers open gates — so it must do nothing
-  // but show and hide.
-  // A last resort: if the current step somehow has nothing on it, return to
-  // the invitation rather than leaving a guest on an empty screen.
+  // A last resort: if the current step somehow has nothing on it, step BACK
+  // one page rather than to the very beginning. This used to reset the whole
+  // journey to the invitation — a guest mid-form who tripped it lost their
+  // place entirely. The step they were on is never reset by an answer or a
+  // validation message; only a page with literally nothing to show retreats,
+  // and only by one step at a time.
   useEffect(() => {
     if (inviteLoading || !personalised) return;
     const present = wizardSteps[stepIndex].sections.some((section) =>
       document.getElementById(section),
     );
-    if (!present && stepIndex !== 0) setStep(0);
+    if (!present && stepIndex !== 0) {
+      setStep((value) => Math.max(0, value - 1));
+    }
   }, [stepIndex, wizardSteps, inviteLoading, personalised]);
 
   useEffect(() => {
@@ -1304,8 +1309,15 @@ export function WeddingExperience({
     } as CSSProperties;
   };
 
+  // STRICT VIEW ISOLATION — a page's markup exists only while the wizard is
+  // on the step that shows it. Nothing from another step is in the document,
+  // so no amount of scrolling can ever reach it. (The hidden-attribute pass
+  // and its CSS remain as a second line of defence.)
+  const stepHas = (id: string) =>
+    wizardSteps[stepIndex].sections.includes(id);
+
   const renderCustomPages = (anchor: string) =>
-    (customAfter.get(anchor) ?? []).map((page) => (
+    (stepHas(anchor) ? (customAfter.get(anchor) ?? []) : []).map((page) => (
       <section
         key={page.id}
         id={page.id}
@@ -1658,6 +1670,7 @@ export function WeddingExperience({
         activeScene={activeSection}
       />
 
+      {stepHas("invitation") ? (
       <section
         id="invitation"
         data-sky="dream-2"
@@ -1713,8 +1726,9 @@ export function WeddingExperience({
           <ScrollOn label="The evening unfolds below" />
         </div>
       </section>
+      ) : null}
 
-      {tablesAssigned ? (
+      {stepHas("table") && tablesAssigned ? (
         <section
           id="table"
           data-sky="dream-3"
@@ -1744,7 +1758,7 @@ export function WeddingExperience({
       {renderCustomPages("table")}
 
       {renderCustomPages("invitation")}
-      {!hiddenScenes.has("schedule") ? (
+      {stepHas("schedule") && !hiddenScenes.has("schedule") ? (
         <section
           id="schedule"
           data-sky="dream-1"
@@ -1788,6 +1802,7 @@ export function WeddingExperience({
       ) : null}
       {renderCustomPages("schedule")}
 
+      {stepHas("rsvp") ? (
       <section
         id="rsvp"
         data-sky="dream-2"
@@ -1958,9 +1973,10 @@ export function WeddingExperience({
           ) : null}
         </div>
       </section>
+      ) : null}
 
       {renderCustomPages("rsvp")}
-      {anyYes && !hiddenScenes.has("dress") ? (
+      {stepHas("dress") && anyYes && !hiddenScenes.has("dress") ? (
         <section
           id="dress"
           data-sky="dream-3"
@@ -1989,7 +2005,7 @@ export function WeddingExperience({
       ) : null}
 
       {renderCustomPages("dress")}
-      {anyYes ? (
+      {stepHas("meal") && anyYes ? (
         <section
           id="meal"
           data-sky="dream-1"
@@ -2066,7 +2082,7 @@ export function WeddingExperience({
       ) : null}
 
       {renderCustomPages("meal")}
-      {mealComplete && !hiddenScenes.has("travel") ? (
+      {stepHas("travel") && mealComplete && !hiddenScenes.has("travel") ? (
         <section
           id="travel"
           data-sky="dream-2"
@@ -2260,7 +2276,7 @@ export function WeddingExperience({
 
       {renderCustomPages("travel")}
 
-      {travelComplete && !hiddenScenes.has("venue") ? (
+      {stepHas("venue") && travelComplete && !hiddenScenes.has("venue") ? (
         <section
           id="venue"
           data-sky="dream-3"
@@ -2338,7 +2354,9 @@ export function WeddingExperience({
       ) : null}
       {renderCustomPages("venue")}
 
-      {flyingIn && !hiddenScenes.has("recommendations") ? (
+      {stepHas("recommendations") &&
+      flyingIn &&
+      !hiddenScenes.has("recommendations") ? (
         <section
           id="recommendations"
           data-sky="dream-2"
@@ -2426,7 +2444,7 @@ export function WeddingExperience({
       ) : null}
       {renderCustomPages("recommendations")}
 
-      {journeyDone && !hiddenScenes.has("wishes") ? (
+      {stepHas("wishes") && journeyDone && !hiddenScenes.has("wishes") ? (
         <section
           id="wishes"
           data-sky="dream-2"
@@ -2517,7 +2535,7 @@ export function WeddingExperience({
       ) : null}
       {renderCustomPages("wishes")}
 
-      {submitted ? (
+      {stepHas("confirmation") && submitted ? (
         <section
           id="confirmation"
           data-sky="dream-3"
@@ -2578,7 +2596,10 @@ export function WeddingExperience({
           </div>
         </section>
       ) : null}
-      {inviteData?.afterPartyInvited && token && tablesAssigned ? (
+      {stepHas("afterparty") &&
+      inviteData?.afterPartyInvited &&
+      token &&
+      tablesAssigned ? (
         <section
           id="afterparty"
           data-sky="dream-3"
@@ -2605,7 +2626,7 @@ export function WeddingExperience({
         </section>
       ) : null}
 
-      {journeyDone ? (
+      {stepHas("gallery") && journeyDone ? (
         <section
           id="gallery"
           data-sky="dream-2"
@@ -2620,7 +2641,7 @@ export function WeddingExperience({
           </div>
         </section>
       ) : null}
-      {journeyDone ? (
+      {stepHas("gallery") && journeyDone ? (
         <p className="return-to-start">
           <button type="button" onClick={() => goToSection("invitation")}>
             Return to the beginning ↑
