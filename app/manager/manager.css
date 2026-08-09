@@ -953,3 +953,29 @@
 .household-pick input { width: 20px; height: 20px; accent-color: var(--m-wine, #7d2f45); }
 .household-pick span { font-size: .72rem; font-weight: 700; color: var(--m-muted); }
 .household-card.is-picked { outline: 2px solid var(--m-wine, #7d2f45); outline-offset: -2px; }
+
+/* Sortable column headings - click to sort, click again to reverse. */
+.sort-head {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sort-head:hover { color: var(--m-wine, #8e4258); }
+.sort-head.is-sorted { color: var(--m-wine, #8e4258); font-weight: 700; }
+
+/* Household cards wear their state: replied, sent-and-waiting, not sent. */
+.household-card.is-replied { border-left: 4px solid #b8b9a5; background: #f6f7f0; }
+.household-card.is-sent { border-left: 4px solid #cdba9a; background: #faf5ec; }
+.household-card.is-unsent { border-left: 4px solid #ab5369; background: #faf0f2; }
+.household-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; margin: .3rem 0 .9rem; }
+.household-legend span { display: inline-flex; align-items: center; gap: .4rem; color: #58454c; font-size: .62rem; }
+.household-legend span::before { content: ""; width: .8rem; height: .8rem; border-radius: 3px; }
+.legend-replied::before { background: #b8b9a5; }
+.legend-sent::before { background: #cdba9a; }
+.legend-unsent::before { background: #ab5369; }

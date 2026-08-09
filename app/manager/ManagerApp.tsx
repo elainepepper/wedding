@@ -333,13 +333,52 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
   statusFilter: string; setStatusFilter: (value: string) => void; groupFilter: string; setGroupFilter: (value: string) => void;
   edit: (guest: Guest | "new") => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; rsvpMode: boolean;
 }) {
-  const allSelected = guests.length > 0 && guests.every((guest) => selected.includes(guest.id));
+  // Sorting, the way the polished guest-list tools do it: click a column
+  // heading to sort by it, click again to reverse; the same choices sit in
+  // a Sort dropdown for phones, where table headings are awkward to tap.
+  // "Latest activity" is the natural default — the list arrives from the
+  // server newest-first, so it is simply the incoming order.
+  const [sortKey, setSortKey] = useState<"recent" | "name" | "household" | "group" | "rsvp" | "table">("recent");
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const chooseSort = (key: typeof sortKey) => {
+    if (key === sortKey) setSortDir((dir) => (dir === 1 ? -1 : 1));
+    else { setSortKey(key); setSortDir(1); }
+  };
+  const sortedGuests = useMemo(() => {
+    const byName = (a: Guest, b: Guest) => displayName(a).toLowerCase().localeCompare(displayName(b).toLowerCase());
+    const rsvpRank = (g: Guest) => (g.rsvp_status === "Confirmed" ? 0 : g.rsvp_status === "Pending" ? 1 : 2);
+    const rows = [...guests];
+    if (sortKey === "name") rows.sort(byName);
+    if (sortKey === "household") rows.sort((a, b) => (a.household_name ?? "￿").localeCompare(b.household_name ?? "￿") || byName(a, b));
+    if (sortKey === "group") rows.sort((a, b) => (a.side ?? "").localeCompare(b.side ?? "") || (a.category ?? "").localeCompare(b.category ?? "") || byName(a, b));
+    if (sortKey === "rsvp") rows.sort((a, b) => rsvpRank(a) - rsvpRank(b) || byName(a, b));
+    if (sortKey === "table") rows.sort((a, b) => (a.table_name ?? "￿").localeCompare(b.table_name ?? "￿") || Number(a.seat_number ?? 0) - Number(b.seat_number ?? 0) || byName(a, b));
+    if (sortDir === -1) rows.reverse();
+    return rows;
+  }, [guests, sortKey, sortDir]);
+  const arrow = (key: typeof sortKey) => (sortKey === key ? (sortDir === 1 ? " ↑" : " ↓") : "");
+  const SortHead = ({ id, label }: { id: typeof sortKey; label: string }) => (
+    <th aria-sort={sortKey === id ? (sortDir === 1 ? "ascending" : "descending") : undefined}>
+      <button type="button" className={`sort-head${sortKey === id ? " is-sorted" : ""}`} onClick={() => chooseSort(id)}>{label}{arrow(id)}</button>
+    </th>
+  );
+  const allSelected = sortedGuests.length > 0 && sortedGuests.every((guest) => selected.includes(guest.id));
   return <div className="manager-page">
     {rsvpMode ? <section className="rsvp-banner"><div><span>Latest reply</span><h2>{guests.find((g) => g.rsvp_submitted_at)?.household_name ?? "The guest list"}</h2><p>Updated {dateLabel(guests.find((g) => g.rsvp_submitted_at)?.rsvp_submitted_at)}</p></div><strong>{guests.filter((g) => g.rsvp_status === "Confirmed").length}<small> attending</small></strong></section> : null}
     <section className="manager-panel guest-table-panel">
       <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone or household" /></label>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter by RSVP status"><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select>
         <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option><option>Possible duplicates</option></select>
+        <select value={`${sortKey}:${sortDir}`} onChange={(event) => { const [key, dir] = event.target.value.split(":"); setSortKey(key as typeof sortKey); setSortDir(Number(dir) as 1 | -1); }} aria-label="Sort guests">
+          <option value="recent:1">Sort · Latest activity</option>
+          <option value="recent:-1">Sort · Oldest activity</option>
+          <option value="name:1">Sort · Name A–Z</option>
+          <option value="name:-1">Sort · Name Z–A</option>
+          <option value="household:1">Sort · Household</option>
+          <option value="group:1">Sort · Group &amp; category</option>
+          <option value="rsvp:1">Sort · RSVP status</option>
+          <option value="table:1">Sort · Table</option>
+        </select>
       </div>
       {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" onClick={async () => {
         if (!window.confirm(`Remove ${selected.length} guest${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
@@ -347,8 +386,8 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
         for (const id of selected) await act({ action: "deleteGuest", guestId: id }, `${count} guest${count === 1 ? "" : "s"} removed`);
         setSelected([]);
       }}>Delete</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
-      <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : guests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><th>Guest</th><th>Household</th><th>Group</th><th>RSVP</th><th>Meal &amp; dietary</th><th>Table</th><th>Invitation</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
-        {guests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
+      <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : sortedGuests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><SortHead id="name" label="Guest" /><SortHead id="household" label="Household" /><SortHead id="group" label="Group" /><SortHead id="rsvp" label="RSVP" /><th>Meal &amp; dietary</th><SortHead id="table" label="Table" /><SortHead id="recent" label="Invitation" /><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+        {sortedGuests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
       <footer className="table-footer"><span>{guests.length} guests shown</span><span>Updates use Australia/Perth time</span></footer>
     </section>
@@ -451,10 +490,17 @@ function Households({ households, guests, act, notify , setUndo }: { households:
     {picked.length ? <div className="bulk-bar"><strong>{picked.length} selected</strong>
       <button type="button" onClick={() => setPicked([])}>Clear</button>
       <button type="button" className="bulk-delete" onClick={removePicked}>Delete invitations</button>
-    </div> : null}<section className="household-grid">{households.map((household) => {
+    </div> : null}
+    <div className="household-legend" aria-hidden="true"><span className="legend-replied">Replied</span><span className="legend-sent">Invitation sent · awaiting reply</span><span className="legend-unsent">Not yet sent</span></div>
+    <section className="household-grid">{households.map((household) => {
     const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
     const afterParty = members.some((guest) => guest.after_party_invited);
-    return <article className={`household-card${picked.includes(household.id) ? " is-picked" : ""}`} key={household.id}>
+    // Each card wears its state: someone has replied, or the invitation has
+    // gone out and waits, or it has not been sent at all.
+    const replied = members.some((guest) => guest.rsvp_status === "Confirmed" || guest.rsvp_status === "Declined");
+    const sent = members.some((guest) => guest.invitation_sent);
+    const stateClass = replied ? " is-replied" : sent ? " is-sent" : " is-unsent";
+    return <article className={`household-card${stateClass}${picked.includes(household.id) ? " is-picked" : ""}`} key={household.id}>
       <label className="household-pick"><input type="checkbox" checked={picked.includes(household.id)} onChange={() => toggle(household.id)} aria-label={`Select ${household.name}`} /><span>Select</span></label>
       <header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
         const members = guests.filter((g) => g.household_id === household.id);
