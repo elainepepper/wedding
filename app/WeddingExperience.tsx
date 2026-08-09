@@ -251,28 +251,22 @@ const foodPlaces = [
     score: "4.4 · 6,800 reviews",
   },
   {
-    name: "White & Black Kampong Kuala Lumpur",
-    note: "Kampung cooking done beautifully — sambal petai, asam pedas, rendang.",
+    name: "Jalan Alor Food Street",
+    note: "The famous night food street — satay, grilled seafood and noodles under the lanterns, from dusk till very late.",
     detail: "10 minutes by Grab",
-    score: "4.8 · 5,400 reviews",
+    score: "Night-market institution",
   },
   {
-    name: "Pokok KLCC Lot 91",
-    note: "A leafy all-day place tucked beneath Permata Sapura.",
-    detail: "5 minutes",
-    score: "4.7 · 1,700 reviews",
+    name: "Lot 10 Hutong",
+    note: "Kuala Lumpur's legendary hawker names gathered in one food court beneath Lot 10.",
+    detail: "12 minutes on foot",
+    score: "Heritage hawker hall",
   },
   {
-    name: "The Oriental Park KLCC",
-    note: "Tables beside the fountains. Ask to sit outside at dusk.",
-    detail: "6 minutes",
-    score: "4.5 · 920 reviews",
-  },
-  {
-    name: "Cili Kampung Suria KLCC",
-    note: "Honest Malay food inside Suria — quick, before the shops.",
-    detail: "5 minutes",
-    score: "4.4 · 1,400 reviews",
+    name: "Nyonya Colors",
+    note: "Nyonya laksa, cendol and rainbow kuih — a sweet, quick taste of Peranakan Malaysia.",
+    detail: "Pavilion, 12 minutes",
+    score: "Local favourite",
   },
 ] as const;
 
@@ -350,28 +344,28 @@ const sightseeingPlaces = [
     score: "4.7 · 103,000 reviews",
   },
   {
-    name: "KLCC Park Kuala Lumpur",
-    note: "The park behind the towers. Come at dusk, when the fountains begin.",
-    detail: "6 minutes",
-    score: "4.6 · 63,000 reviews",
-  },
-  {
     name: "Aquaria KLCC",
     note: "A walk-through aquarium beneath the convention centre, next door.",
     detail: "3 minutes",
     score: "4.3 · 40,000 reviews",
   },
   {
-    name: "Menara Kuala Lumpur KL Tower",
-    note: "The one view the towers cannot give you — the towers themselves.",
-    detail: "10 minutes",
-    score: "4.5 · 42,000 reviews",
+    name: "Petaling Street",
+    note: "Chinatown's market street — bargains, old kopitiams and the beautifully restored shophouses around it.",
+    detail: "15 minutes by Grab",
+    score: "The old heart of KL",
   },
   {
-    name: "Islamic Arts Museum Malaysia",
-    note: "Quiet, beautiful, and the loveliest small museum in the city.",
-    detail: "15 minutes",
-    score: "4.7 · 5,900 reviews",
+    name: "Batu Caves",
+    note: "The rainbow steps and the great golden statue — 272 stairs into a limestone cathedral. Go early, before the heat.",
+    detail: "40 minutes by Grab",
+    score: "Worth the morning",
+  },
+  {
+    name: "Merdeka Square",
+    note: "Where independence was declared — the Sultan Abdul Samad Building and the padang, loveliest at golden hour.",
+    detail: "15 minutes by Grab",
+    score: "History in one square",
   },
 ] as const;
 
@@ -395,10 +389,16 @@ const shoppingPlaces = [
     score: "4.3 · 61,000 reviews",
   },
   {
-    name: "Isetan The Japan Store Kuala Lumpur",
-    note: "Four floors of Japanese food, homeware and beauty at Lot 10.",
-    detail: "15 minutes",
-    score: "4.3 · 1,400 reviews",
+    name: "The Exchange TRX",
+    note: "The city's newest mall — Seibu, the big global names and a rooftop park above it all.",
+    detail: "10 minutes by Grab",
+    score: "KL's newest landmark",
+  },
+  {
+    name: "Sungei Wang Plaza",
+    note: "The bargain-hunter's mall — cheap finds of every kind, and famously cheap manicures and pedicures.",
+    detail: "12 minutes",
+    score: "Budget treasure hunt",
   },
 ] as const;
 
@@ -411,11 +411,11 @@ const usefulApps = [
       "https://play.google.com/store/apps/details?id=com.grabtaxi.passenger",
   },
   {
-    name: "Touch \u2019n Go eWallet",
-    note: "Pays for trains, parking and much else. Set it up before you fly.",
-    ios: "https://apps.apple.com/my/app/touch-n-go-ewallet/id1344696702",
+    name: "Wise",
+    note: "Spend in ringgit at the real exchange rate \u2014 the card and app travellers swear by.",
+    ios: "https://apps.apple.com/app/wise-ex-transferwise/id612261027",
     android:
-      "https://play.google.com/store/apps/details?id=my.com.tngdigital.ewallet",
+      "https://play.google.com/store/apps/details?id=com.transferwise.android",
   },
   {
     name: "Google Maps",
