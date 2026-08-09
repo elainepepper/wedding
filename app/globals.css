@@ -5885,3 +5885,28 @@ canvas { pointer-events: none; }
   height: 140%;
   transform: none !important;
 }
+
+/* ============ The code and the number share one line, one height ============ */
+/* On Pixel-class phones the country code sat on a different baseline from
+   the number beside it (an older align-self: end survived underneath), and
+   its column was a whisker too narrow, clipping "+61" to "+6". One final
+   word: both cells stretch to the same 52px row, the code column breathes,
+   and the select centres its text without swallowing the dropdown arrow. */
+.wizard .phone-grid {
+  grid-template-columns: minmax(7rem, auto) minmax(0, 11rem) !important;
+  align-items: stretch !important;
+}
+.wizard .phone-grid .phone-code {
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: stretch !important;
+  margin: 0 !important;
+}
+.wizard .phone-grid .phone-code select {
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+  text-align-last: center;
+  padding: 0 1.3rem 0 .4rem !important;
+}
+.wizard .phone-grid > label:last-child > input { min-height: 52px; }
