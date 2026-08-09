@@ -125,6 +125,9 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const [groupFilter, setGroupFilter] = useState("All");
   const [selected, setSelected] = useState<number[]>([]);
   const [guestModal, setGuestModal] = useState<Guest | "new" | null>(null);
+  // Set when "Add guest" is pressed on a household card, so the modal opens
+  // with that invitation already chosen.
+  const [newGuestHousehold, setNewGuestHousehold] = useState<number | null>(null);
   const [undo, setUndo] = useState<{ label: string; restore: () => Promise<void> } | null>(null);
   useEffect(() => {
     if (!undo) return;
@@ -280,7 +283,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
             groupFilter={groupFilter} setGroupFilter={setGroupFilter} edit={setGuestModal} act={act} rsvpMode={tab === "rsvps"}
           />
         ) : null}
-        {tab === "households" ? <Households households={data.households} guests={data.guests} act={act} notify={notify} setUndo={setUndo} /> : null}
+        {tab === "households" ? <Households households={data.households} guests={data.guests} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
         {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} act={act} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
@@ -298,7 +301,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         <span>{undo.label}</span>
         <button type="button" onClick={async () => { const action = undo.restore; setUndo(null); await action(); notify("Restored"); }}>Undo</button>
       </div> : null}
-      {guestModal ? <GuestModal guest={guestModal} households={data.households} allGuests={data.guests} setUndo={setUndo} close={() => setGuestModal(null)} act={act} /> : null}
+      {guestModal ? <GuestModal guest={guestModal} households={data.households} allGuests={data.guests} setUndo={setUndo} presetHouseholdId={newGuestHousehold} close={() => { setGuestModal(null); setNewGuestHousehold(null); }} act={act} /> : null}
       {toast ? <div className="manager-toast" role="status"><span>✓</span>{toast}</div> : null}
     </div>
   );
@@ -441,8 +444,9 @@ function invitationMessage(names: string, link: string) {
   return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
-function Households({ households, guests, act, notify , setUndo }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void }) {
+function Households({ households, guests, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
   const [picked, setPicked] = useState<number[]>([]);
+  const [householdSearch, setHouseholdSearch] = useState("");
   const [progress, setProgress] = useState("");
   const toggle = (id: number) => setPicked((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   const removePicked = async () => {
@@ -474,8 +478,29 @@ function Households({ households, guests, act, notify , setUndo }: { households:
     await navigator.clipboard.writeText(link);
     notify(afterParty ? "Private after-party link copied" : "Invitation link copied");
   };
+  // Search reaches both the invitation's name and everyone on it, and the
+  // grid groups by where each invitation stands: replied, sent and waiting,
+  // or not yet sent — so a scan shows exactly what still needs doing.
+  const query = householdSearch.trim().toLowerCase();
+  const visible = households.filter((household) => {
+    if (!query) return true;
+    if (String(household.name ?? "").toLowerCase().includes(query)) return true;
+    return guests.some((guest) => Number(guest.household_id) === Number(household.id) && (displayName(guest).toLowerCase().includes(query) || (guest.mobile ?? "").includes(query)));
+  });
+  const stateOf = (household: Household) => {
+    const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+    if (members.some((guest) => guest.rsvp_status === "Confirmed" || guest.rsvp_status === "Declined")) return "replied";
+    if (members.some((guest) => guest.invitation_sent)) return "sent";
+    return "unsent";
+  };
+  const groups = [
+    { id: "unsent", title: "Not yet sent", rows: visible.filter((h) => stateOf(h) === "unsent") },
+    { id: "sent", title: "Invitation sent — awaiting reply", rows: visible.filter((h) => stateOf(h) === "sent") },
+    { id: "replied", title: "Replied", rows: visible.filter((h) => stateOf(h) === "replied") },
+  ].filter((group) => group.rows.length);
   return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>A household is one invitation link, shared by everyone on it. A couple is one household with two people; a single guest is a household of one.</span></div></div>
     <div className="household-tools">
+      <label className="search-field"><span>⌕</span><input value={householdSearch} onChange={(event) => setHouseholdSearch(event.target.value)} placeholder="Search households or guests" aria-label="Search households" /></label>
       <label className="select-all">
         <input
           type="checkbox"
@@ -492,7 +517,9 @@ function Households({ households, guests, act, notify , setUndo }: { households:
       <button type="button" className="bulk-delete" onClick={removePicked}>Delete invitations</button>
     </div> : null}
     <div className="household-legend" aria-hidden="true"><span className="legend-replied">Replied</span><span className="legend-sent">Invitation sent · awaiting reply</span><span className="legend-unsent">Not yet sent</span></div>
-    <section className="household-grid">{households.map((household) => {
+    {!groups.length ? <div className="empty-state"><span>♡</span><h3>No households found</h3><p>Try another search.</p></div> : null}
+    {groups.map((group) => <div key={group.id} className="household-group"><h3 className={`household-group-title is-${group.id}`}>{group.title} · {group.rows.length}</h3>
+    <section className="household-grid">{group.rows.map((household) => {
     const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
     const afterParty = members.some((guest) => guest.after_party_invited);
     // Each card wears its state: someone has replied, or the invitation has
@@ -527,8 +554,8 @@ function Households({ households, guests, act, notify , setUndo }: { households:
             },
           });
         });
-      }}>Delete household</button></div><div className="member-stack">{members.map((guest) => <p key={guest.id}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></p>)}</div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
-  })}</section></div>;
+      }}>Delete household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
+  })}</section></div>)}</div>;
 }
 
 function InvitationLinks({ households, guests, notify, setTab , act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void ; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
@@ -943,6 +970,15 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
       <p className="security-note"><span>✦</span><strong>Invitation-key access</strong> These details appear only to guests whose invitation includes the after-party. Everyone else never sees the page exists.</p>
       <p className="security-note"><span>◇</span><strong>Music is consent-based</strong> Add an MP3 delivery URL here. Guests choose whether to play it; audio never autoplays.</p>
     </form>
+    <section className="manager-panel fresh-start-panel">
+      <div className="panel-head"><div><p className="panel-kicker">Before the real send</p><h3>Fresh start</h3></div></div>
+      <p className="access-copy">Returns every guest to <strong>Pending</strong> and <strong>not sent</strong>, clears all after-party access, and marks every link unopened — while keeping everything you have typed exactly as it is: names, numbers, households, categories, meals, dietary notes, tables and internal notes. Use this once, just before the invitations truly go out.</p>
+      <button type="button" className="danger-button" onClick={() => {
+        if (!window.confirm("Return EVERY guest to Pending and not sent, and clear all after-party access? Guest details themselves are kept.")) return;
+        if (!window.confirm("This rewrites the status of the whole guest list and cannot be undone. Continue?")) return;
+        void act({ action: "prepareForSending" }, "Fresh start complete — everyone is Pending and unsent");
+      }}>Reset statuses for sending</button>
+    </section>
     <section className="manager-panel access-panel">
       <div className="panel-head"><div><p className="panel-kicker">Trusted team</p><h3>Guest manager access</h3></div></div>
       <p className="access-copy">Give your partner or wedding planner their own sign-in. Each person uses their own account and actions are recorded.</p>
@@ -961,10 +997,10 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
   </div>;
 }
 
-function GuestModal({ guest, households, close, act, allGuests, setUndo }: { guest: Guest | "new"; households: Household[]; allGuests?: Guest[]; setUndo?: (u: { label: string; restore: () => Promise<void> } | null) => void; close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
+function GuestModal({ guest, households, close, act, allGuests, setUndo, presetHouseholdId }: { guest: Guest | "new"; households: Household[]; allGuests?: Guest[]; setUndo?: (u: { label: string; restore: () => Promise<void> } | null) => void; presetHouseholdId?: number | null; close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const isNew = guest === "new";
   const current = isNew ? null : guest;
-  const [form, setForm] = useState({ firstName: current?.first_name || "", lastName: current?.last_name || "", preferredName: current?.preferred_name || "", mobile: current?.mobile || "+60 ", householdId: current?.household_id ? String(current.household_id) : "", householdName: "", category: current?.category || "Friends", side: current?.side || "Shared", rsvpStatus: current?.rsvp_status || "Pending", mealSelection: current?.meal_selection || "", dietaryRequirements: current?.dietary_requirements || "", allergies: current?.allergies || "", accessibility: current?.accessibility || "", internalNotes: current?.internal_notes || "", ceremonyInvited: current ? !!current.ceremony_invited : true, receptionInvited: current ? !!current.reception_invited : true, afterPartyEligible: current ? !!current.after_party_eligible : false, afterPartyInvited: current ? !!current.after_party_invited : false, transportRequired: current ? !!current.transport_required : false, accommodationRequired: current ? !!current.accommodation_required : false });
+  const [form, setForm] = useState({ firstName: current?.first_name || "", lastName: current?.last_name || "", preferredName: current?.preferred_name || "", mobile: current?.mobile || "+60 ", householdId: current?.household_id ? String(current.household_id) : presetHouseholdId ? String(presetHouseholdId) : "", householdName: "", category: current?.category || "Friends", side: current?.side || "Shared", rsvpStatus: current?.rsvp_status || "Pending", mealSelection: current?.meal_selection || "", dietaryRequirements: current?.dietary_requirements || "", allergies: current?.allergies || "", accessibility: current?.accessibility || "", internalNotes: current?.internal_notes || "", ceremonyInvited: current ? !!current.ceremony_invited : true, receptionInvited: current ? !!current.reception_invited : true, afterPartyEligible: current ? !!current.after_party_eligible : false, afterPartyInvited: current ? !!current.after_party_invited : false, transportRequired: current ? !!current.transport_required : false, accommodationRequired: current ? !!current.accommodation_required : false });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const submit = async (event: FormEvent) => {

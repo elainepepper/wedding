@@ -78,6 +78,25 @@ export async function POST(request: Request) {
     const payload = await request.json() as Record<string, unknown>;
     const action = clean(payload.action, 60);
 
+    // One number per household: when a mobile is entered for any guest, it
+    // quietly becomes the household's number and fills in every member who
+    // has none of their own. A number someone already has is never replaced.
+    const shareMobileAcrossHousehold = async (rawHouseholdId: unknown, mobile: string) => {
+      const householdId = integer(rawHouseholdId);
+      if (!householdId || !mobile) return;
+      const members = await weddingRef.collection("guests")
+        .where("household_id", "in", [Number(householdId), String(householdId)]).get();
+      const batch = weddingRef.firestore.batch();
+      members.docs.forEach((doc) => {
+        if (!String(doc.data().mobile ?? "").trim()) batch.set(doc.ref, { mobile, updated_at: serverTimestamp() }, { merge: true });
+      });
+      const householdDoc = await docById("households", householdId);
+      if (householdDoc && !String(householdDoc.data().mobile ?? "").trim()) {
+        batch.set(householdDoc.ref, { mobile, updated_at: serverTimestamp() }, { merge: true });
+      }
+      await batch.commit();
+    };
+
     // An invitation with no one on it can still be opened and replied to,
     // which confuses everyone. Whenever the last guest leaves a household —
     // deleted outright or moved to another invitation — the empty household
@@ -114,6 +133,13 @@ export async function POST(request: Request) {
       const guestId = await nextId("guests");
       await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile, category: clean(payload.category, 80) || "Friends", side: clean(payload.side, 40) || "Shared", age_group: "Adult", relationship: null, rsvp_status: clean(payload.rsvpStatus, 30) || "Pending", ceremony_invited: payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: payload.afterPartyEligible ? 1 : 0, after_party_invited: payload.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", meal_selection: null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: clean(payload.accessibility, 800) || null, transport_required: payload.transportRequired ? 1 : 0, accommodation_required: payload.accommodationRequired ? 1 : 0, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: clean(payload.internalNotes, 1500) || null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Guest added", "guest", guestId, `${firstName} ${lastName}`.trim());
+      if (mobile) await shareMobileAcrossHousehold(householdId, mobile);
+      else {
+        // The new arrival inherits the household's number, if there is one.
+        const householdDoc = await docById("households", householdId);
+        const householdMobile = String(householdDoc?.data().mobile ?? "").trim();
+        if (householdMobile) await weddingRef.collection("guests").doc(String(guestId)).set({ mobile: householdMobile, updated_at: serverTimestamp() }, { merge: true });
+      }
       return Response.json({ ok: true });
     }
 
@@ -156,6 +182,7 @@ export async function POST(request: Request) {
       if ("household_id" in update && integer(update.household_id) !== integer(previousHouseholdId)) {
         await removeHouseholdIfEmpty(previousHouseholdId);
       }
+      if (editMobile) await shareMobileAcrossHousehold(update.household_id ?? previousHouseholdId, editMobile);
       return Response.json({ ok: true });
     }
 
@@ -203,6 +230,35 @@ export async function POST(request: Request) {
       await weddingRef.collection("tables").doc(String(id)).set({ id, name, shape: ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round", capacity: Math.max(1, Math.min(200, integer(payload.capacity) ?? 10)), x: Number(payload.x) || 50, y: Number(payload.y) || 50, locked: 0, notes: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Table created", "table", id, name);
       return Response.json({ ok: true });
+    }
+
+    // A clean slate before the invitations truly go out. Every status
+    // returns to the beginning — Pending, not sent, no after-party access,
+    // links unopened — while everything the couple has typed in stays
+    // exactly as it is: names, numbers, categories, meals, dietary notes,
+    // tables, internal notes.
+    if (action === "prepareForSending") {
+      const guestDocs = await weddingRef.collection("guests").get();
+      const householdDocs = await weddingRef.collection("households").get();
+      let batch = weddingRef.firestore.batch();
+      let queued = 0;
+      const flush = async () => { if (queued) { await batch.commit(); batch = weddingRef.firestore.batch(); queued = 0; } };
+      for (const doc of guestDocs.docs) {
+        batch.set(doc.ref, {
+          rsvp_status: "Pending", invitation_sent: 0, invitation_sent_at: null,
+          rsvp_submitted_at: null, ceremony_attending: null, reception_attending: null,
+          after_party_eligible: 0, after_party_invited: 0, after_party_attending: "Pending",
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+        queued += 1; if (queued >= 400) await flush();
+      }
+      for (const doc of householdDocs.docs) {
+        batch.set(doc.ref, { opened_at: null, table_seen_at: null, last_activity_at: null, updated_at: serverTimestamp() }, { merge: true });
+        queued += 1; if (queued >= 400) await flush();
+      }
+      await flush();
+      await addActivity(admin.displayName, "Fresh start for sending", "household", "all", `${guestDocs.size} guests returned to Pending and unsent; after-party access cleared`);
+      return Response.json({ ok: true, guests: guestDocs.size, households: householdDocs.size });
     }
 
     if (action === "deleteHousehold") {

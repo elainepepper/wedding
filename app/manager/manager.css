@@ -979,3 +979,65 @@
 .legend-replied::before { background: #b8b9a5; }
 .legend-sent::before { background: #cdba9a; }
 .legend-unsent::before { background: #ab5369; }
+
+/* Households grouped by where they stand, with their members listed. */
+.household-group { margin-bottom: 1.6rem; }
+.household-group-title {
+  margin: 1.2rem 0 .7rem;
+  padding-left: .7rem;
+  border-left: 4px solid #cbb8bd;
+  color: #58454c;
+  font-size: .74rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.household-group-title.is-replied { border-left-color: #b8b9a5; }
+.household-group-title.is-sent { border-left-color: #cdba9a; }
+.household-group-title.is-unsent { border-left-color: #ab5369; }
+.member-stack { display: grid; gap: .35rem; margin: .7rem 0; }
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  width: 100%;
+  padding: .45rem .55rem;
+  border: 1px solid #eee0dc;
+  border-radius: 10px;
+  background: #fffdfb;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.member-row:hover { border-color: var(--m-wine, #8e4258); background: #fff8f6; }
+.member-row i {
+  width: 1.7rem; height: 1.7rem; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: #edcfcc; color: var(--m-wine, #8e4258);
+  font-style: normal; font-size: .66rem; font-family: Georgia, serif;
+}
+.member-row > span { flex: 1; display: grid; gap: .1rem; font-size: .7rem; }
+.member-row small { color: #99858c; font-size: .58rem; }
+.member-add {
+  padding: .45rem .55rem;
+  border: 1px dashed #d8bfc4;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m-wine, #8e4258);
+  font-size: .66rem;
+  cursor: pointer;
+  text-align: center;
+}
+.member-add:hover { border-style: solid; background: #fff8f6; }
+
+/* The one-time fresh start before sending. */
+.fresh-start-panel .danger-button {
+  padding: .6rem 1.1rem;
+  border: 1px solid #ab5369;
+  border-radius: 10px;
+  background: #fff5f6;
+  color: #8e4258;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fresh-start-panel .danger-button:hover { background: #ab5369; color: #fff; }
