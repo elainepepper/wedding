@@ -53,6 +53,22 @@ function publicGuest(guest: Record<string, unknown>) {
   };
 }
 
+// The couple hold a limited block of rooms at the Grand Hyatt. Once that many
+// households have asked for one, the offer closes itself and later guests are
+// shown the nearby hotels instead of being promised a room that is not there.
+// A household that already asked always keeps its own request editable, and a
+// block size of 0 (or blank) means no limit at all.
+async function roomBlockState(settings: Record<string, unknown>, householdId: number) {
+  const size = Number(settings.room_block_size ?? 0);
+  if (!Number.isFinite(size) || size <= 0) return { size: 0, taken: 0, full: false };
+  // Loose matching: a flag imported as "1" or true must both count.
+  const requested = await weddingRef.collection("guests").where("accommodation_required", "in", [1, true, "1"]).get();
+  const households = new Set(requested.docs.map((doc) => Number(doc.data().household_id)));
+  const mine = households.has(householdId);
+  const taken = households.size;
+  return { size, taken, full: taken >= size && !mine };
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
   if (!/^[abcdefghjkmnpqrstuvwxyz23456789]{12}$/i.test(token)) {
@@ -96,6 +112,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
     .map((event) => ({ id: event.id, name: event.name ?? "", event_date: event.event_date ?? null, event_time: event.event_time ?? null, venue: event.venue ?? null, sort_order: event.sort_order ?? 0 }));
   const settings = settingsSnapshot.data() ?? {};
+  const roomBlock = await roomBlockState(settings, Number(household.id));
   return Response.json({
     household: { id: household.id, name: household.name, maxGuests: guests.length },
     guests: guests.map(publicGuest),
@@ -107,6 +124,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
       music_title: settings.music_title ?? null,
     },
     afterPartyInvited,
+    roomBlock,
   });
 }
 
@@ -128,6 +146,15 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const settingsBefore = (await weddingRef.get()).data() ?? {};
   if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
     return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
+  }
+  // A page opened before the last room went could still ask for one. Judge the
+  // block here too, where the answer cannot be out of date.
+  const wantsRoom = responses.some((response) => response.accommodationRequired);
+  if (wantsRoom) {
+    const block = await roomBlockState(settingsBefore, Number(household.id));
+    if (block.full) {
+      return Response.json({ error: "The last of our rooms at the Grand Hyatt has just been taken. Please reload this page — a few good places within a short walk are waiting there for you." }, { status: 409 });
+    }
   }
   const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get();
   const allowedDocs = allowedSnapshot.docs

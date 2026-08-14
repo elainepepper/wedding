@@ -57,6 +57,9 @@ type InviteData = {
     music_url?: string | null;
     music_title?: string | null;
   } | null;
+  // The couple's room block: `full` closes the offer for anyone who has not
+  // already asked for one.
+  roomBlock?: { size: number; taken: number; full: boolean } | null;
 };
 type MusicSettings = { musicUrl: string | null; musicTitle: string | null };
 type PublicSiteSettings = MusicSettings & { siteDesign?: unknown };
@@ -1011,12 +1014,17 @@ export function WeddingExperience({
       (guest) =>
         guest.rsvpStatus !== "Confirmed" || Boolean(guest.mealSelection),
     );
+  // When the block is full there is no question left to answer, so the step
+  // completes on its own and the guest simply sees the nearby hotels.
+  const roomBlockFull = Boolean(inviteData?.roomBlock?.full);
   const roomComplete =
-    rsvp.roomAtHyatt === true
-      ? Boolean(rsvp.bedPreference) &&
-        Boolean(rsvp.nights) &&
-        Boolean(rsvp.arrivalDate)
-      : rsvp.roomAtHyatt === false;
+    roomBlockFull && rsvp.roomAtHyatt !== true
+      ? true
+      : rsvp.roomAtHyatt === true
+        ? Boolean(rsvp.bedPreference) &&
+          Boolean(rsvp.nights) &&
+          Boolean(rsvp.arrivalDate)
+        : rsvp.roomAtHyatt === false;
   const travelComplete =
     mealComplete &&
     (hiddenScenes.has("travel") ||
@@ -2126,7 +2134,34 @@ export function WeddingExperience({
                 </button>
               </div>
             </fieldset>
-            {rsvp.flyingIn ? (
+            {rsvp.flyingIn && roomBlockFull ? (
+              <div className="slide-open travel-details">
+                <p className="room-offer room-offer--full">
+                  <strong>Our rooms at the Grand Hyatt are all taken</strong>
+                  <span>
+                    We are sorry — the last of the rooms we held has gone. A few
+                    good places within a short walk are below, and the hotel
+                    itself may still have rooms of its own.
+                  </span>
+                </p>
+                <ul className="hotel-list">
+                  {nearbyHotels.map((hotel) => (
+                    <li key={hotel.name}>
+                      <a
+                        href={maps(`${hotel.name} Kuala Lumpur`)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <strong>{hotel.name}</strong>
+                        <span>{hotel.note}</span>
+                        <em className="place-score">★ {hotel.score}</em>
+                        <i>{hotel.walk} away ↗</i>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : rsvp.flyingIn ? (
               <div className="slide-open travel-details">
                 <p className="room-offer">
                   <strong>The Grand Room · RM850++ a night</strong>

@@ -294,7 +294,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "health" ? <HealthCheck authToken={authToken} /> : null}
         {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
 
-        {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} /> : null}
+        {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} guests={data.guests} /> : null}
       </main>
 
       {undo ? <div className="undo-bar" role="status">
@@ -915,13 +915,17 @@ function Exports({ guests, tables }: { guests: Guest[]; tables: SeatingTable[] }
   return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Reports</p><h2>Export centre</h2><span>Purpose-built files with private fields excluded where appropriate.</span></div><select value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select></div><section className="export-grid">{presets.map((preset) => <article key={preset.id}><span>{preset.glyph}</span><h3>{preset.title}</h3><p>{preset.note}</p><dl><div><dt>Guests</dt><dd>{preset.id === "afterparty" ? exportRows.filter((g) => g.after_party_invited).length : exportRows.length}</dd></div>{preset.id === "venue" ? <div><dt>Tables</dt><dd>{tables.length}</dd></div> : null}</dl><button onClick={() => exportCsv(preset.id)}>Download CSV <i>↓</i></button></article>)}</section></div>;
 }
 
-function SettingsPanel({ settings, managers, adminRole, activities, act }: {
+function SettingsPanel({ settings, managers, adminRole, activities, act, guests }: {
   settings: Settings;
   managers: ManagerUser[];
   adminRole: "owner" | "partner" | "planner";
   activities: Activity[];
   act: (payload: Record<string, unknown>, success: string) => Promise<unknown>;
+  guests: Guest[];
 }) {
+  // How many households have asked for a room so far — the same count the
+  // invitation uses to decide whether the offer is still open.
+  const roomsRequested = new Set(guests.filter((guest) => guest.accommodation_required).map((guest) => Number(guest.household_id))).size;
   const [form, setForm] = useState({
     weddingName: settings.wedding_name,
     coupleNames: settings.couple_names,
@@ -940,6 +944,7 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
     afterPartyWhere: (settings.after_party_where as string) || "",
     afterPartyDress: (settings.after_party_dress as string) || "",
     afterPartyEntry: (settings.after_party_entry as string) || "",
+    roomBlockSize: String(settings.room_block_size ?? 15),
   });
   const [managerForm, setManagerForm] = useState({ name: "", email: "", role: "partner" as "partner" | "planner" });
   return <div className="manager-page settings-page">
@@ -959,6 +964,7 @@ function SettingsPanel({ settings, managers, adminRole, activities, act }: {
         <label><span>Music file URL</span><input type="url" value={form.musicUrl} onChange={(event) => setForm({ ...form, musicUrl: event.target.value })} placeholder="Cloudinary MP3 delivery URL" /></label>
         <label><span>Cloudinary cloud name</span><input value={form.cloudinaryCloudName} onChange={(event) => setForm({ ...form, cloudinaryCloudName: event.target.value })} placeholder="Optional" /></label>
         <label><span>Formspree form ID</span><input value={form.formspreeFormId} onChange={(event) => setForm({ ...form, formspreeFormId: event.target.value })} placeholder="Optional" /></label>
+        <label><span>Rooms held at the Grand Hyatt</span><input type="number" min={0} max={999} value={form.roomBlockSize} onChange={(event) => setForm({ ...form, roomBlockSize: event.target.value })} placeholder="15" /><small className="field-hint">{roomsRequested} requested so far. Once this many households have asked, the offer closes itself and later guests are shown the nearby hotels instead. Set to 0 for no limit.</small></label>
       </div>
       <div className="panel-head"><div><p className="panel-kicker">The private chapter</p><h3>After-party details</h3></div></div>
       <div className="settings-grid">

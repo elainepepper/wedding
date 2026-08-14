@@ -1041,3 +1041,6 @@
   cursor: pointer;
 }
 .fresh-start-panel .danger-button:hover { background: #ab5369; color: #fff; }
+
+/* Small explanatory notes under a settings field. */
+.field-hint { display: block; margin-top: .3rem; color: #99858c; font-size: .58rem; line-height: 1.5; }

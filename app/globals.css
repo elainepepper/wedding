@@ -5910,3 +5910,6 @@ canvas { pointer-events: none; }
   padding: 0 1.3rem 0 .4rem !important;
 }
 .wizard .phone-grid > label:last-child > input { min-height: 52px; }
+
+/* When the couple's room block is full, the notice replaces the offer. */
+.room-offer--full { border-left: 3px solid var(--wine, #8e4258); }
