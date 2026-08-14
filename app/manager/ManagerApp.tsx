@@ -39,7 +39,6 @@ type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTa
 type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
-  { id: "links", label: "Invitation links", glyph: "↗" },
   { id: "overview", label: "Overview", glyph: "◫" }, { id: "guests", label: "Guests", glyph: "♙" },
   { id: "households", label: "Households", glyph: "⌂" }, { id: "rsvps", label: "RSVPs", glyph: "✓" },
   { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
@@ -292,7 +291,6 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
           />
         ) : null}
         {tab === "households" ? <Households households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
-        {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} act={act} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
@@ -637,7 +635,7 @@ function Households({ households, guests, archived, adminRole, act, notify , set
   const toggleCard = (id: number) => setOpenCards((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   // Two ways to look at the same invitations: the list for checking over, the
   // deck for the evening you send them.
-  const [mode, setMode] = useState<"list" | "send">("list");
+  const [mode, setMode] = useState<"list" | "send" | "links">("list");
   const toggle = (id: number) => setPicked((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   // Marking a batch as sent, the evening you actually send them.
   const markPickedSent = async () => {
@@ -729,8 +727,10 @@ function Households({ households, guests, archived, adminRole, act, notify , set
     <div className="mode-switch" role="tablist">
       <button type="button" role="tab" aria-selected={mode === "list"} className={mode === "list" ? "is-active" : ""} onClick={() => setMode("list")}>The list</button>
       <button type="button" role="tab" aria-selected={mode === "send"} className={mode === "send" ? "is-active" : ""} onClick={() => setMode("send")}>Send mode</button>
+      <button type="button" role="tab" aria-selected={mode === "links"} className={mode === "links" ? "is-active" : ""} onClick={() => setMode("links")}>All links</button>
     </div>
-    {mode === "send" ? <SendDeck households={households} guests={guests} act={act} notify={notify} edit={edit} addTo={addTo} /> : <>
+    {mode === "send" ? <SendDeck households={households} guests={guests} act={act} notify={notify} edit={edit} addTo={addTo} />
+      : mode === "links" ? <InvitationLinks households={households} guests={guests} notify={notify} act={act} /> : <>
     <div className="household-tools">
       <label className="search-field"><span>⌕</span><input value={householdSearch} onChange={(event) => setHouseholdSearch(event.target.value)} placeholder="Search households or guests" aria-label="Search households" /></label>
       <label className="select-all">
@@ -782,6 +782,16 @@ function Households({ households, guests, archived, adminRole, act, notify , set
     return <article className={`household-card${stateClass}${picked.includes(household.id) ? " is-picked" : ""}${open ? " is-open" : ""}`} key={household.id}>
       <label className="household-pick"><input type="checkbox" checked={picked.includes(household.id)} onChange={() => toggle(household.id)} aria-label={`Select ${household.name}`} /><span>Select</span></label>
       <header><button type="button" className="household-summary" onClick={() => toggleCard(household.id)} aria-expanded={open}><span className="household-caret" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="household-initial">{household.name.slice(0, 1)}</span><span className="household-heading"><strong>{household.name}</strong><small>{household.guest_count} guest{household.guest_count === 1 ? "" : "s"}</small></span></button><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header>
+      {/* Sending never needs the card opened: the three things you actually
+          do — WhatsApp it, copy the link, note that it has gone — sit on the
+          face of every card, closed or open. */}
+      <div className="household-quick">
+        <a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")}>WhatsApp</a>
+        <button type="button" onClick={() => copyLink(household)}>Copy link</button>
+        {sent
+          ? <span className="quick-sent">✓ Sent</span>
+          : <button type="button" className="quick-mark" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")}>Mark sent</button>}
+      </div>
       {open ? <><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
         const members = guests.filter((g) => g.household_id === household.id);
         const warning = members.length
@@ -800,7 +810,7 @@ function Households({ households, guests, archived, adminRole, act, notify , set
   })}</section></div>)}</>}</div>;
 }
 
-function InvitationLinks({ households, guests, notify, setTab , act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void ; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
+function InvitationLinks({ households, guests, notify, act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
   const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
@@ -821,7 +831,8 @@ function InvitationLinks({ households, guests, notify, setTab , act }: { househo
     await navigator.clipboard.writeText(lines.join("\n"));
     notify(`${lines.length} labelled links copied — one per household`);
   };
-  return <div className="manager-page invitation-links-page">
+  // Lives inside the Households page now, so it does not repeat that wrapper.
+  return <div className="invitation-links-page">
     <div className="section-intro-row"><div><p className="panel-kicker">Private invitations</p><h2>Personal link generator</h2><span>Preview each guest journey, then copy its secure link for WhatsApp or text.</span></div><a className="secondary-button" href="/invitation-preview" target="_blank" rel="noreferrer">Preview every page ↗</a></div>
     <section className="manager-panel link-table-panel">
       <div className="table-scroll">
@@ -843,13 +854,16 @@ function InvitationLinks({ households, guests, notify, setTab , act }: { househo
                   <td>{names}</td>
                   <td className="sent-cell">{people.some((guest) => guest.invitation_sent_at)
                     ? <span className="is-sent">Sent {dateLabel(people.find((guest) => guest.invitation_sent_at)?.invitation_sent_at)}</span>
-                    : <button type="button" className="mark-sent" onClick={() => people.forEach((guest) => void act({ action: "markInvitationSent", guestId: guest.id }, "Marked as sent"))}>Mark sent</button>}</td>
+                    // The server marks a whole invitation at once and needs the
+                    // household — sending a guest id returned "Household not
+                    // found", so this button never actually recorded anything.
+                    : <button type="button" className="mark-sent" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Marked as sent")}>Mark sent</button>}</td>
                   <td className="link-cell"><span>{link}</span></td>
                   <td className="link-actions">
                     <button type="button" onClick={async () => { await navigator.clipboard.writeText(link); notify("Link copied"); }}>Copy</button>
                     <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link)); notify("Message copied"); }}>Copy message</button>
                     <a href={waLink(household.mobile, invitationMessage(names, link))} target="_blank" rel="noreferrer"
-                      onClick={() => { people.forEach((guest) => void act({ action: "markInvitationSent", guestId: guest.id }, "")); }}>WhatsApp</a>
+                      onClick={() => { void act({ action: "markInvitationSent", householdId: household.id }, "Marked as sent"); }}>WhatsApp</a>
                     <a href={`${link}`} target="_blank" rel="noreferrer">Preview</a>
                   </td>
                 </tr>

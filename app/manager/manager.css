@@ -1176,3 +1176,16 @@
   .send-deck { max-width: none; }
   .deck-share > * { min-width: calc(50% - .2rem); }
 }
+
+/* Sending from the face of a household card, open or closed. */
+.household-quick { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 .2rem; }
+.household-quick > * {
+  padding: .35rem .7rem; border: 1px solid #d8bfc4; border-radius: 999px;
+  background: #fff; color: var(--m-wine, #8e4258);
+  font-size: .62rem; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.household-quick > *:hover { background: #fff5f6; }
+.household-quick .quick-sent {
+  border-color: #cfd6c2; background: #f6f7f0; color: #6c7355; cursor: default;
+}
+.household-quick .quick-mark { border-style: dashed; }
