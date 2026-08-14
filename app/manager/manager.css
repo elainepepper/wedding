@@ -1044,3 +1044,67 @@
 
 /* Small explanatory notes under a settings field. */
 .field-hint { display: block; margin-top: .3rem; color: #99858c; font-size: .58rem; line-height: 1.5; }
+
+/* Archived invitations: kept whole, restorable, out of the way. */
+.archived-block { margin: .6rem 0 1.2rem; }
+.archived-toggle {
+  padding: .4rem .1rem; border: 0; background: transparent;
+  color: #8b767d; font-size: .66rem; letter-spacing: .06em;
+  text-transform: uppercase; cursor: pointer;
+}
+.archived-toggle:hover { color: var(--m-wine, #8e4258); }
+.archived-list { display: grid; gap: .4rem; padding: .6rem .7rem; border: 1px solid #eee0dc; border-radius: 12px; background: #fdfaf8; }
+.archived-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.archived-row > span { flex: 1; display: grid; gap: .1rem; font-size: .7rem; }
+.archived-row small { color: #99858c; font-size: .58rem; }
+.archived-row button {
+  padding: .3rem .7rem; border: 1px solid #d8bfc4; border-radius: 8px;
+  background: #fff; color: var(--m-wine, #8e4258); font-size: .64rem; cursor: pointer;
+}
+.archived-row button:hover { background: #fff5f6; }
+.archived-row .danger-link { border-color: #e2c3c9; color: #a8465f; }
+
+/* After-party access: a real switch, obviously on or off at a glance.
+   The old maroon circle looked the same whether it was set or not. */
+.party-switch {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .2rem .3rem; border: 0; background: transparent; cursor: pointer;
+}
+.party-switch-track {
+  position: relative; display: block; width: 2.6rem; height: 1.45rem; flex: none;
+  border: 1px solid #d8c6ca; border-radius: 999px; background: #e8dfe1;
+  transition: background .18s ease, border-color .18s ease;
+}
+.party-switch-track i {
+  position: absolute; top: 2px; left: 2px;
+  width: 1.15rem; height: 1.15rem; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(80, 50, 60, .3);
+  transition: transform .18s ease;
+}
+.party-switch.is-on .party-switch-track { border-color: var(--m-wine, #8e4258); background: var(--m-wine, #8e4258); }
+.party-switch.is-on .party-switch-track i { transform: translateX(1.13rem); }
+.party-switch b { min-width: 3.6rem; color: #99858c; font-size: .6rem; font-weight: 600; text-align: left; }
+.party-switch.is-on b { color: var(--m-wine, #8e4258); }
+.party-switch:focus-visible .party-switch-track { outline: 2px solid var(--m-wine, #8e4258); outline-offset: 2px; }
+
+/* Households as an accordion: a hundred invitations you can actually scan. */
+.household-summary {
+  display: flex; align-items: center; gap: .6rem; flex: 1;
+  padding: 0; border: 0; background: transparent; color: inherit;
+  text-align: left; cursor: pointer;
+}
+.household-caret { color: #b39aa1; font-size: .7rem; }
+.household-initial {
+  width: 2rem; height: 2rem; flex: none; display: grid; place-items: center;
+  border-radius: 50%; background: #edcfcc; color: var(--m-wine, #8e4258);
+  font-family: Georgia, serif; font-size: .72rem;
+}
+.household-heading { display: grid; gap: .1rem; }
+.household-heading strong { font-size: .78rem; }
+.household-heading small {
+  justify-self: start; padding: .05rem .4rem; border-radius: 999px;
+  background: #f2e7e9; color: #7d6067; font-size: .56rem;
+}
+.household-card:not(.is-open) { padding-bottom: .7rem; }
+.household-card:not(.is-open) .household-pick { opacity: .55; }
+.household-summary:hover .household-heading strong { color: var(--m-wine, #8e4258); }

@@ -20,6 +20,9 @@ async function householdForToken(token: string) {
   const doc = snapshot.docs[0];
   const enabled = doc.data().invitation_enabled;
   if (enabled === false || enabled === 0 || enabled === "false") return null;
+  // An archived invitation is set aside: its link stops opening, exactly as a
+  // deleted one would, but the record survives so it can be restored.
+  if (Number(doc.data().archived ?? 0)) return null;
   return doc;
 }
 

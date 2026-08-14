@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const households = await weddingRef.collection("households").where("invitation_token", "==", token).limit(1).get();
   if (households.empty) return Response.json({ ok: false, error: "This private chapter is not included in your invitation." }, { status: 403 });
   const householdData = households.docs[0].data();
-  if (householdData.invitation_enabled === false || householdData.invitation_enabled === 0) {
+  if (householdData.invitation_enabled === false || householdData.invitation_enabled === 0 || Number(householdData.archived ?? 0)) {
     return Response.json({ ok: false, error: "This invitation link is no longer active." }, { status: 403 });
   }
   const householdGuests = await weddingRef.collection("guests").where("household_id", "==", Number(householdData.id)).get();

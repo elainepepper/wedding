@@ -23,6 +23,14 @@ import { removeBrokenImage } from "./image-fallback";
  * in which a layer is blank.
  */
 
+// True when the browser says the guest is saving data or on a slow network.
+// Not every browser reports this; when it says nothing we assume plenty.
+export function thriftyConnection() {
+  const link = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  if (!link) return false;
+  return Boolean(link.saveData) || /(^|-)2g$/.test(link.effectiveType ?? "");
+}
+
 const SKIES = ["dream-1", "dream-2", "dream-3"] as const;
 const asset = (name: string) => `/wedding/story/${name}`;
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -63,7 +71,10 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setMotion(!reduce.matches);
+    // The three films are several megabytes each. A guest on a slow connection
+    // or with data-saver switched on gets the paintings alone — the site looks
+    // right either way, and nobody pays for film they did not ask for.
+    const apply = () => setMotion(!reduce.matches && !thriftyConnection());
     apply();
     reduce.addEventListener("change", apply);
     return () => reduce.removeEventListener("change", apply);

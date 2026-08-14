@@ -5913,3 +5913,12 @@ canvas { pointer-events: none; }
 
 /* When the couple's room block is full, the notice replaces the offer. */
 .room-offer--full { border-left: 3px solid var(--wine, #8e4258); }
+
+/* ============ Legible for every guest ============ */
+/* Measured against the pale card the text actually sits on, three items fell
+   below the WCAG AA threshold (4.5:1) — the unchosen half of every yes/no
+   control, and the dish descriptions. Both are now comfortably above it.
+   Older eyes, bright Malaysian daylight and a phone screen all benefit. */
+.wedding-shell .segmented-control button { color: rgba(74, 58, 60, .88); }
+.wedding-shell .segmented-control button.is-selected { color: var(--wine, #8e4258); }
+.wedding-shell .choice-card small { color: rgba(142, 66, 88, .92); }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readToken } from "./invite-token";
 import { beginMusic } from "./music";
+import { thriftyConnection } from "./Dreamscape";
 import { Butterflies } from "./Butterflies";
 import BubbleCursor from "./BubbleCursor";
 
@@ -33,6 +34,9 @@ export function HeroPortal() {
   useEffect(() => {
     const film = videoRef.current;
     if (!film) return;
+    // On a metered or slow connection the poster painting stands alone rather
+    // than pulling several megabytes of film through the arch.
+    if (thriftyConnection()) { film.removeAttribute("src"); film.load(); return; }
     film.muted = true;
     film.defaultMuted = true;
     const start = () => { film.play().then(detach).catch(() => undefined); };

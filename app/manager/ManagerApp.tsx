@@ -32,7 +32,8 @@ type Settings = Record<string, unknown> & {
   website_url?: string | null; invitation_wording?: string | null; confirmation_message?: string | null; date_format?: string | null;
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
-type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
+type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
+type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
 type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
@@ -78,7 +79,12 @@ function downloadFile(filename: string, content: string, type = "text/csv;charse
 
 function csvValue(value: unknown) {
   const text = value == null ? "" : String(value);
-  return `"${text.replaceAll('"', '""')}"`;
+  // Guests type these fields themselves. Excel and Google Sheets treat a value
+  // beginning with = + - @ (or a tab/return) as a formula rather than text, so
+  // a dietary note could become live code in the chef's spreadsheet. A leading
+  // apostrophe tells both programs "this is text" and is not shown in the cell.
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
 }
 
 function Status({ value }: { value: string | null | undefined }) {
@@ -283,7 +289,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
             groupFilter={groupFilter} setGroupFilter={setGroupFilter} edit={setGuestModal} act={act} rsvpMode={tab === "rsvps"}
           />
         ) : null}
-        {tab === "households" ? <Households households={data.households} guests={data.guests} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
+        {tab === "households" ? <Households households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
         {tab === "links" ? <InvitationLinks households={data.households} guests={data.guests} notify={notify} setTab={setTab} act={act} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
@@ -444,15 +450,58 @@ function invitationMessage(names: string, link: string) {
   return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
-function Households({ households, guests, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
+function Households({ households, guests, archived, adminRole, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; archived: ArchivedHousehold[]; adminRole: "owner" | "partner" | "planner"; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
   const [picked, setPicked] = useState<number[]>([]);
   const [householdSearch, setHouseholdSearch] = useState("");
   const [progress, setProgress] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  // With a hundred invitations on screen, everything open at once is a wall.
+  // Each card shows its name, its state and how many guests; opening one
+  // reveals the people and the actions. Searching opens what it finds.
+  const [openCards, setOpenCards] = useState<number[]>([]);
+  const toggleCard = (id: number) => setOpenCards((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   const toggle = (id: number) => setPicked((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  // Marking a batch as sent, the evening you actually send them.
+  const markPickedSent = async () => {
+    const chosen = households.filter((household) => picked.includes(household.id));
+    let done = 0;
+    try {
+      for (const household of chosen) {
+        await act({ action: "markInvitationSent", householdId: household.id }, "");
+        done += 1;
+        setProgress(`Marking sent… ${done} of ${chosen.length}`);
+      }
+      notify(`${chosen.length} invitation${chosen.length === 1 ? "" : "s"} marked as sent`);
+    } catch (failure) {
+      notify(`Stopped after ${done} of ${chosen.length}. ${failure instanceof Error ? failure.message : ""}`);
+    } finally {
+      setProgress("");
+      setPicked([]);
+    }
+  };
+  const archivePicked = async () => {
+    const chosen = households.filter((household) => picked.includes(household.id));
+    const count = chosen.reduce((total, household) => total + guests.filter((g) => Number(g.household_id) === Number(household.id)).length, 0);
+    if (!window.confirm(`Archive ${chosen.length} invitation${chosen.length === 1 ? "" : "s"} and ${count} guest${count === 1 ? "" : "s"}? Their links stop working, and you can restore them at any time from “Archived”.`)) return;
+    let archivedCount = 0;
+    try {
+      for (const household of chosen) {
+        await act({ action: "archiveHousehold", householdId: household.id }, "");
+        archivedCount += 1;
+        setProgress(`Archiving… ${archivedCount} of ${chosen.length}`);
+      }
+      notify(`${chosen.length} invitation${chosen.length === 1 ? "" : "s"} archived — restore them any time`);
+    } catch (failure) {
+      notify(`Stopped after ${archivedCount} of ${chosen.length}. ${failure instanceof Error ? failure.message : ""}`);
+    } finally {
+      setProgress("");
+      setPicked([]);
+    }
+  };
   const removePicked = async () => {
     const chosen = households.filter((household) => picked.includes(household.id));
     const count = chosen.reduce((total, household) => total + guests.filter((g) => Number(g.household_id) === Number(household.id)).length, 0);
-    if (!window.confirm(`Delete ${chosen.length} invitation${chosen.length === 1 ? "" : "s"} and ${count} guest${count === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently delete ${chosen.length} invitation${chosen.length === 1 ? "" : "s"} and ${count} guest${count === 1 ? "" : "s"}? Nothing can bring them back. Archive instead if you are unsure.`)) return;
     // Deleting 120 invitations one after another can outlast the hosting
     // timeout, so progress is reported and a failure says how far it reached
     // rather than leaving you guessing.
@@ -514,10 +563,28 @@ function Households({ households, guests, act, notify , setUndo, edit, addTo }: 
     </div>
     {picked.length ? <div className="bulk-bar"><strong>{picked.length} selected</strong>
       <button type="button" onClick={() => setPicked([])}>Clear</button>
-      <button type="button" className="bulk-delete" onClick={removePicked}>Delete invitations</button>
+      <button type="button" onClick={markPickedSent}>✓ Mark as sent</button>
+      <button type="button" onClick={archivePicked}>Archive</button>
+      {adminRole !== "planner" ? <button type="button" className="bulk-delete" onClick={removePicked}>Delete permanently</button> : null}
     </div> : null}
     <div className="household-legend" aria-hidden="true"><span className="legend-replied">Replied</span><span className="legend-sent">Invitation sent · awaiting reply</span><span className="legend-unsent">Not yet sent</span></div>
     {!groups.length ? <div className="empty-state"><span>♡</span><h3>No households found</h3><p>Try another search.</p></div> : null}
+    {archived.length ? <div className="archived-block">
+      <button type="button" className="archived-toggle" onClick={() => setShowArchived((value) => !value)} aria-expanded={showArchived}>
+        {showArchived ? "▾" : "▸"} Archived · {archived.length}
+      </button>
+      {showArchived ? <div className="archived-list">
+        <p className="import-help">Archived invitations keep every detail and reply. Their links do not open until they are restored.</p>
+        {archived.map((household) => <div key={household.id} className="archived-row">
+          <span><strong>{household.name}</strong><small>{household.guest_count} guest{household.guest_count === 1 ? "" : "s"}{household.archived_at ? ` · archived ${dateLabel(household.archived_at)}` : ""}</small></span>
+          <button type="button" onClick={() => void act({ action: "restoreHousehold", householdId: household.id }, `${household.name} restored`)}>Restore</button>
+          {adminRole !== "planner" ? <button type="button" className="danger-link" onClick={() => {
+            if (!window.confirm(`Permanently delete ${household.name} and its guests? Nothing can bring them back.`)) return;
+            void act({ action: "deleteHousehold", householdId: household.id }, "Permanently deleted");
+          }}>Delete permanently</button> : null}
+        </div>)}
+      </div> : null}
+    </div> : null}
     {groups.map((group) => <div key={group.id} className="household-group"><h3 className={`household-group-title is-${group.id}`}>{group.title} · {group.rows.length}</h3>
     <section className="household-grid">{group.rows.map((household) => {
     const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
@@ -527,34 +594,26 @@ function Households({ households, guests, act, notify , setUndo, edit, addTo }: 
     const replied = members.some((guest) => guest.rsvp_status === "Confirmed" || guest.rsvp_status === "Declined");
     const sent = members.some((guest) => guest.invitation_sent);
     const stateClass = replied ? " is-replied" : sent ? " is-sent" : " is-unsent";
-    return <article className={`household-card${stateClass}${picked.includes(household.id) ? " is-picked" : ""}`} key={household.id}>
+    // A search opens whatever it finds, so results are never hidden.
+    const open = openCards.includes(household.id) || Boolean(query);
+    return <article className={`household-card${stateClass}${picked.includes(household.id) ? " is-picked" : ""}${open ? " is-open" : ""}`} key={household.id}>
       <label className="household-pick"><input type="checkbox" checked={picked.includes(household.id)} onChange={() => toggle(household.id)} aria-label={`Select ${household.name}`} /><span>Select</span></label>
-      <header><div><span>{household.name.slice(0, 1)}</span><div><h3>{household.name}</h3><p>{household.guest_count} of {household.max_guests} guests</p></div></div><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
+      <header><button type="button" className="household-summary" onClick={() => toggleCard(household.id)} aria-expanded={open}><span className="household-caret" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="household-initial">{household.name.slice(0, 1)}</span><span className="household-heading"><strong>{household.name}</strong><small>{household.guest_count} guest{household.guest_count === 1 ? "" : "s"}</small></span></button><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header>
+      {open ? <><div className="household-actions"><button type="button" className="danger-link" onClick={() => {
         const members = guests.filter((g) => g.household_id === household.id);
         const warning = members.length
-          ? `Delete ${household.name} and its ${members.length} guest${members.length === 1 ? "" : "s"}? Their invitation link will stop working. This cannot be undone.`
-          : `Delete ${household.name}? This cannot be undone.`;
+          ? `Archive ${household.name} and its ${members.length} guest${members.length === 1 ? "" : "s"}? Their invitation link stops working, and you can restore them at any time.`
+          : `Archive ${household.name}? You can restore it at any time.`;
         if (!window.confirm(warning)) return;
-        const snapshot = { household, members };
-        void act({ action: "deleteHousehold", householdId: household.id }, "Household deleted").then(() => {
-          // A ten second window to put it back, because this cannot be undone
-          // any other way and one mis-tap costs a whole family.
+        // Archiving keeps everything — the same link, the same replies — so
+        // undo is simply putting it back, not rebuilding it from pieces.
+        void act({ action: "archiveHousehold", householdId: household.id }, "Household archived").then(() => {
           setUndo({
-            label: `${snapshot.household.name} deleted — undo restores them with a new link`,
-            restore: async () => {
-              for (const guest of snapshot.members) {
-                await act({
-                  action: "addGuest", firstName: guest.first_name, lastName: guest.last_name,
-                  preferredName: guest.preferred_name, mobile: guest.mobile,
-                  householdName: snapshot.household.name, category: guest.category,
-                  rsvpStatus: guest.rsvp_status, dietaryRequirements: guest.dietary_requirements,
-                  allergies: guest.allergies, internalNotes: guest.internal_notes,
-                }, "");
-              }
-            },
+            label: `${household.name} archived — undo puts them back exactly as they were`,
+            restore: async () => { await act({ action: "restoreHousehold", householdId: household.id }, "Household restored"); },
           });
         });
-      }}>Delete household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></article>;
+      }}>Archive household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></> : null}</article>;
   })}</section></div>)}</div>;
 }
 
@@ -760,8 +819,16 @@ function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; s
   // screen ever set, so the page sat empty and read as broken. Every guest
   // can now be granted the chapter directly; the toggle is the decision.
   const allEligible = guests;
+  // The counts describe the after-party, not the wedding. Reading them from
+  // every guest made "pending" mean "everyone who has not said yes to a party
+  // they were never asked to" — 122 pending against 70 invited. Only invited
+  // guests are counted now, so the three figures add up to the invited total.
+  const invited = guests.filter((guest) => guest.after_party_invited);
+  const attending = invited.filter((guest) => guest.after_party_attending === "Yes").length;
+  const declined = invited.filter((guest) => guest.after_party_attending === "No").length;
+  const awaiting = invited.length - attending - declined;
   const eligible = allEligible.filter((guest) => !partySearch || displayName(guest).toLowerCase().includes(partySearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(partySearch.toLowerCase()));
-  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{allEligible.filter((g) => g.after_party_invited).length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{allEligible.filter((g) => g.after_party_invited).length}</strong></p><p><span>Attending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Yes").length}</strong></p><p><span>Pending</span><strong>{allEligible.filter((g) => g.after_party_attending === "Pending").length}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span><Status value={guest.after_party_attending} /><button type="button" className={guest.after_party_invited ? "is-on" : ""} onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`Toggle after-party invitation for ${displayName(guest)}`}><span /></button></label>)}</div></section></div>;
+  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{invited.length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{invited.length}</strong></p><p><span>Attending</span><strong>{attending}</strong></p><p><span>Awaiting reply</span><strong>{awaiting}</strong></p><p><span>Cannot come</span><strong>{declined}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span>{guest.after_party_invited ? <Status value={guest.after_party_attending} /> : <span className="muted-cell">Not invited</span>}<button type="button" role="switch" aria-checked={Boolean(guest.after_party_invited)} className={`party-switch${guest.after_party_invited ? " is-on" : ""}`} onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`After-party invitation for ${displayName(guest)}`}><span className="party-switch-track"><i /></span><b>{guest.after_party_invited ? "Invited" : "Off"}</b></button></label>)}</div></section></div>;
 }
 
 function Imports({ act, notify }: { act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void }) {

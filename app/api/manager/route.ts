@@ -36,7 +36,11 @@ export async function GET(request: Request) {
       weddingRef.get(),
       weddingRef.collection("admins").where("active", "==", true).get(),
     ]);
-    const households = householdSnapshot.docs.map(plainDoc);
+    // Archived invitations are kept whole so they can be restored, but they
+    // are held apart from the working list.
+    const allHouseholds = householdSnapshot.docs.map(plainDoc);
+    const households = allHouseholds.filter((item) => !Number(item.archived ?? 0));
+    const archivedHouseholds = allHouseholds.filter((item) => Number(item.archived ?? 0));
     const tables = tableSnapshot.docs.map(plainDoc);
     const householdById = new Map(households.map((item) => [Number(item.id), item]));
     const tableById = new Map(tables.map((item) => [Number(item.id), item]));
@@ -64,6 +68,13 @@ export async function GET(request: Request) {
       activities: activitySnapshot.docs.map(plainDoc),
       settings: settingsSnapshot.data() ?? {},
       managers,
+      // Enough to list and restore them; the full records stay in the database.
+      archivedHouseholds: archivedHouseholds.map((household) => ({
+        id: household.id,
+        name: household.name,
+        archived_at: household.archived_at ?? null,
+        guest_count: guestSnapshot.docs.map(plainDoc).filter((guest) => Number(guest.household_id) === Number(household.id)).length,
+      })).sort((a, b) => String(a.name).localeCompare(String(b.name))),
     });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "The Guest Manager server could not start." }, { status: 500 });
@@ -198,6 +209,9 @@ export async function POST(request: Request) {
     }
 
     if (action === "archiveGuest" || action === "deleteGuest") {
+      if (action === "deleteGuest" && admin.role === "planner") {
+        return Response.json({ error: "Only Elaine or Haykal can delete a guest permanently. You may archive them instead — nothing is lost." }, { status: 403 });
+      }
       const guestId = integer(payload.guestId);
       const guestDoc = guestId ? await docById("guests", guestId) : null;
       if (!guestId || !guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
@@ -238,6 +252,8 @@ export async function POST(request: Request) {
     // exactly as it is: names, numbers, categories, meals, dietary notes,
     // tables, internal notes.
     if (action === "prepareForSending") {
+      // Rewrites the status of the entire guest list — the couple's decision.
+      if (admin.role === "planner") return Response.json({ error: "Only Elaine or Haykal can reset the whole guest list for sending." }, { status: 403 });
       const guestDocs = await weddingRef.collection("guests").get();
       const householdDocs = await weddingRef.collection("households").get();
       let batch = weddingRef.firestore.batch();
@@ -261,7 +277,29 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, guests: guestDocs.size, households: householdDocs.size });
     }
 
+    // Archiving is what the Delete button now does: the invitation and
+    // everyone on it are set aside, their link stops working, and nothing is
+    // lost. Only a deliberate "delete permanently" destroys anything.
+    if (action === "archiveHousehold" || action === "restoreHousehold") {
+      const householdId = integer(payload.householdId);
+      const householdDoc = householdId ? await docById("households", householdId) : null;
+      if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
+      const archived = action === "archiveHousehold" ? 1 : 0;
+      const members = await weddingRef.collection("guests")
+        .where("household_id", "in", [Number(householdId), String(householdId)]).get();
+      const batch = weddingRef.firestore.batch();
+      members.docs.forEach((doc) => batch.set(doc.ref, { archived, updated_at: serverTimestamp() }, { merge: true }));
+      batch.set(householdDoc.ref, { archived, archived_at: archived ? serverTimestamp() : null, updated_at: serverTimestamp() }, { merge: true });
+      await batch.commit();
+      await addActivity(admin.displayName, archived ? "Household archived" : "Household restored", "household", householdId as number,
+        `${String(householdDoc.data().name ?? "")} and ${members.size} guest${members.size === 1 ? "" : "s"}`);
+      return Response.json({ ok: true, members: members.size });
+    }
+
     if (action === "deleteHousehold") {
+      // Permanent removal destroys a family's record outright, so it stays
+      // with the couple rather than the planner.
+      if (admin.role === "planner") return Response.json({ error: "Only Elaine or Haykal can delete an invitation permanently. You may archive it instead — nothing is lost." }, { status: 403 });
       const householdId = integer(payload.householdId);
       const householdDoc = householdId ? await docById("households", householdId) : null;
       if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
