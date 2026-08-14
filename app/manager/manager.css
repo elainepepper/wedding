@@ -1108,3 +1108,71 @@
 .household-card:not(.is-open) { padding-bottom: .7rem; }
 .household-card:not(.is-open) .household-pick { opacity: .55; }
 .household-summary:hover .household-heading strong { color: var(--m-wine, #8e4258); }
+
+/* ============ Send mode ============ */
+.mode-switch { display: inline-flex; gap: .3rem; margin: .2rem 0 1rem; padding: .25rem; border-radius: 999px; background: #f4eaec; }
+.mode-switch button {
+  padding: .4rem 1rem; border: 0; border-radius: 999px; background: transparent;
+  color: #7d6067; font-size: .68rem; font-weight: 600; cursor: pointer;
+}
+.mode-switch button.is-active { background: #fff; color: var(--m-wine, #8e4258); box-shadow: 0 1px 4px rgba(140, 90, 105, .18); }
+
+.send-deck { display: grid; gap: .9rem; max-width: 34rem; }
+.deck-tabs { display: flex; gap: .4rem; }
+.deck-tabs button {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .55rem .4rem; border: 1px solid #eadfe1; border-radius: 12px;
+  background: #fff; color: #7d6067; font-size: .68rem; font-weight: 600; cursor: pointer;
+}
+.deck-tabs button.is-active { border-color: var(--m-wine, #8e4258); color: var(--m-wine, #8e4258); background: #fff6f7; }
+.deck-tabs em { padding: .05rem .4rem; border-radius: 999px; background: #f2e7e9; font-style: normal; font-size: .58rem; }
+.deck-tabs button.is-active em { background: var(--m-wine, #8e4258); color: #fff; }
+
+.deck-card {
+  display: grid; gap: .75rem; padding: 1rem;
+  border: 1px solid #eadfe1; border-radius: 18px; background: #fff;
+  box-shadow: 0 10px 30px rgba(150, 100, 115, .1);
+  touch-action: pan-y;
+}
+.deck-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.deck-card h3 { margin: .1rem 0 0; font-size: 1rem; }
+.deck-position { margin: 0; color: #a08e94; font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; }
+.deck-warnings { display: grid; gap: .3rem; margin: 0; padding: .6rem .7rem; list-style: none; border-radius: 10px; background: #fff5ef; border: 1px solid #f0d9c8; }
+.deck-warnings li { color: #94531f; font-size: .64rem; }
+.deck-facts { display: flex; gap: 1.4rem; margin: 0; }
+.deck-facts dt { color: #a08e94; font-size: .56rem; letter-spacing: .06em; text-transform: uppercase; }
+.deck-facts dd { margin: .15rem 0 0; font-size: .74rem; }
+.deck-members { display: grid; gap: .35rem; }
+.deck-edit { color: var(--m-wine, #8e4258); font-size: .58rem; font-style: normal; }
+.deck-share { display: flex; flex-wrap: wrap; gap: .4rem; }
+.deck-share > * {
+  flex: 1 1 auto; min-width: 6.5rem; padding: .5rem .6rem; border: 1px solid #d8bfc4;
+  border-radius: 10px; background: #fff; color: var(--m-wine, #8e4258);
+  font-size: .66rem; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer;
+}
+.deck-share > *:hover { background: #fff5f6; }
+.deck-actions { display: flex; gap: .4rem; }
+.deck-skip {
+  flex: 0 0 auto; padding: .6rem .8rem; border: 1px solid #eadfe1; border-radius: 10px;
+  background: #fff; color: #7d6067; font-size: .68rem; cursor: pointer;
+}
+.deck-sent {
+  flex: 1; padding: .7rem; border: 0; border-radius: 10px;
+  background: var(--m-wine, #8e4258); color: #fff; font-size: .74rem; font-weight: 700; cursor: pointer;
+}
+.deck-sent:hover { background: #7d2f45; }
+.deck-side-move { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.deck-side-move span { color: #a08e94; font-size: .58rem; letter-spacing: .06em; text-transform: uppercase; }
+.deck-side-move button {
+  padding: .25rem .6rem; border: 1px dashed #d8bfc4; border-radius: 999px;
+  background: transparent; color: #7d6067; font-size: .6rem; cursor: pointer;
+}
+.deck-side-move button:hover { border-style: solid; color: var(--m-wine, #8e4258); }
+.deck-done { padding: 2rem 1rem; text-align: center; border: 1px dashed #e2d3d6; border-radius: 16px; background: #fffdfb; }
+.deck-done span { font-size: 1.6rem; color: var(--m-wine, #8e4258); }
+.deck-done h3 { margin: .5rem 0 .3rem; font-size: .9rem; }
+.deck-done p { margin: 0; color: #99858c; font-size: .68rem; }
+@media (max-width: 640px) {
+  .send-deck { max-width: none; }
+  .deck-share > * { min-width: calc(50% - .2rem); }
+}

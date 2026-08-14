@@ -358,6 +358,32 @@ export async function POST(request: Request) {
       return Response.json({ ok: true });
     }
 
+    // Whose side of the family this invitation belongs to, so the couple can
+    // divide the sending between them. Left unset it is worked out from the
+    // guests themselves.
+    if (action === "setHouseholdSide") {
+      const householdId = integer(payload.householdId);
+      const householdDoc = householdId ? await docById("households", householdId) : null;
+      if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
+      const side = ["Bride", "Groom", "Shared"].includes(clean(payload.side, 20)) ? clean(payload.side, 20) : null;
+      await householdDoc.ref.set({ side, updated_at: serverTimestamp() }, { merge: true });
+      return Response.json({ ok: true });
+    }
+
+    // Undoing a "sent" — a mis-tap while working through the pile.
+    if (action === "markInvitationUnsent") {
+      const householdId = integer(payload.householdId);
+      const householdDoc = householdId ? await docById("households", householdId) : null;
+      if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
+      const members = await weddingRef.collection("guests")
+        .where("household_id", "in", [Number(householdId), String(householdId)]).get();
+      const batch = weddingRef.firestore.batch();
+      members.docs.forEach((doc) => batch.set(doc.ref, { invitation_sent: 0, invitation_sent_at: null, updated_at: serverTimestamp() }, { merge: true }));
+      await batch.commit();
+      await addActivity(admin.displayName, "Invitation marked unsent", "household", householdId as number, String(householdDoc.data().name ?? ""));
+      return Response.json({ ok: true });
+    }
+
     if (action === "regenerateLink" || action === "markInvitationSent") {
       const householdId = integer(payload.householdId);
       const householdDoc = householdId ? await docById("households", householdId) : null;

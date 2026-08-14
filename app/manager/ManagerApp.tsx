@@ -22,6 +22,8 @@ type Household = {
   id: number; name: string; email: string | null; mobile: string | null; max_guests: number; invitation_slug: string;
   invitation_token: string; invitation_enabled: number; opened_at: string | null; last_activity_at: string | null; table_seen_at: string | null;
   guest_count: number; confirmed_count: number; declined_count: number; notes: string | null;
+  side?: string | null;               // set by hand, or worked out from the guests
+  archived?: number;
 };
 
 type SeatingTable = { id: number; name: string; shape: string; capacity: number; x: number; y: number; locked: number; notes: string | null; guest_count: number };
@@ -450,6 +452,179 @@ function invitationMessage(names: string, link: string) {
   return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
+/**
+ * Sending, one invitation at a time.
+ *
+ * The list view is for auditing; this is for the evening you actually send.
+ * The pile holds only invitations that have not gone out, split into Elaine's,
+ * Haykal's and shared, so the two of you can work through your own without
+ * treading on each other. Each card carries everything needed to send — the
+ * names, the number, the link, and a warning if something is missing — and
+ * "Sent" takes it off the pile.
+ *
+ * Deliberately buttons rather than a swipe-to-send gesture: marking an
+ * invitation sent is a state change, and a mis-swipe on a stranger's card is
+ * a real cost. A left/right drag still moves between cards on a phone.
+ */
+function SendDeck({ households, guests, act, notify, edit, addTo }: {
+  households: Household[]; guests: Guest[];
+  act: (payload: Record<string, unknown>, success: string) => Promise<unknown>;
+  notify: (message: string) => void;
+  edit: (guest: Guest | "new") => void;
+  addTo: (householdId: number) => void;
+}) {
+  const [side, setSide] = useState<"Bride" | "Groom" | "Shared">("Bride");
+  const [index, setIndex] = useState(0);
+  const [showSent, setShowSent] = useState(false);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+
+  const membersOf = (household: Household) => guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+  // Whose card is it? An explicit choice wins; otherwise the guests decide,
+  // and anything mixed or unmarked belongs to the shared pile.
+  const sideOf = (household: Household) => {
+    if (household.side === "Bride" || household.side === "Groom" || household.side === "Shared") return household.side;
+    const sides = new Set(membersOf(household).map((guest) => guest.side).filter(Boolean));
+    if (sides.size === 1) {
+      const only = [...sides][0];
+      if (only === "Bride" || only === "Groom") return only;
+    }
+    return "Shared";
+  };
+  const isSent = (household: Household) => membersOf(household).some((guest) => guest.invitation_sent);
+
+  const inSide = households.filter((household) => sideOf(household) === side);
+  const pile = inSide.filter((household) => !isSent(household));
+  const sent = inSide.filter(isSent);
+  const counts = {
+    Bride: households.filter((h) => sideOf(h) === "Bride" && !isSent(h)).length,
+    Groom: households.filter((h) => sideOf(h) === "Groom" && !isSent(h)).length,
+    Shared: households.filter((h) => sideOf(h) === "Shared" && !isSent(h)).length,
+  };
+  const position = Math.min(index, Math.max(0, pile.length - 1));
+  const current = pile[position];
+  const step = (by: number) => setIndex(() => {
+    if (!pile.length) return 0;
+    return (position + by + pile.length) % pile.length;
+  });
+
+  const names = current ? membersOf(current).map(displayName).join(" & ") || current.name : "";
+  const link = current ? inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, current.invitation_token, names) : "";
+  const message = current ? invitationMessage(names, link) : "";
+
+  // What is missing that would embarrass us after the invitation has gone.
+  const problems = (household: Household) => {
+    const members = membersOf(household);
+    const list: string[] = [];
+    if (!members.length) list.push("No guests on this invitation");
+    if (!household.mobile && !members.some((guest) => guest.mobile)) list.push("No phone number — WhatsApp cannot open a chat");
+    if (!household.invitation_token) list.push("No invitation link");
+    const unnamed = members.filter((guest) => !`${guest.first_name ?? ""}${guest.last_name ?? ""}`.trim());
+    if (unnamed.length) list.push(`${unnamed.length} guest${unnamed.length === 1 ? "" : "s"} without a name`);
+    return list;
+  };
+
+  const share = async () => {
+    // The OS share sheet — the only route into Instagram, and it also offers
+    // WhatsApp, Messenger, Mail and everything else the phone has.
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    if (!nav.share) { await navigator.clipboard.writeText(message); notify("Message copied — paste it wherever you like"); return; }
+    try { await nav.share({ title: "Elaine & Haykal", text: message }); }
+    catch { /* the sheet was dismissed; nothing to report */ }
+  };
+
+  const markSent = async (household: Household) => {
+    await act({ action: "markInvitationSent", householdId: household.id }, `${household.name} marked as sent`);
+    setIndex((value) => (pile.length <= 1 ? 0 : value % (pile.length - 1)));
+  };
+
+  return <div className="send-deck">
+    <div className="deck-tabs" role="tablist">
+      {(["Bride", "Groom", "Shared"] as const).map((option) => (
+        <button key={option} type="button" role="tab" aria-selected={side === option}
+          className={side === option ? "is-active" : ""}
+          onClick={() => { setSide(option); setIndex(0); setShowSent(false); }}>
+          {option === "Bride" ? "Elaine’s" : option === "Groom" ? "Haykal’s" : "Shared"}
+          <em>{counts[option]}</em>
+        </button>
+      ))}
+    </div>
+
+    {!pile.length ? <div className="deck-done">
+      <span aria-hidden="true">✦</span>
+      <h3>{sent.length ? "Every invitation on this list has been sent" : "Nothing waiting here"}</h3>
+      <p>{sent.length ? `${sent.length} sent. They move to the list below, where you can undo one if you sent it by mistake.` : "No households on this list yet."}</p>
+    </div> : current ? <article
+      className="deck-card"
+      onTouchStart={(event) => { touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; }}
+      onTouchEnd={(event) => {
+        // A flick sideways moves through the pile; nothing is ever saved by a
+        // gesture, so a stray swipe costs nothing.
+        if (!touch.current) return;
+        const dx = event.changedTouches[0].clientX - touch.current.x;
+        const dy = Math.abs(event.changedTouches[0].clientY - touch.current.y);
+        if (Math.abs(dx) > 60 && dy < 60) step(dx < 0 ? 1 : -1);
+        touch.current = null;
+      }}
+    >
+      <header>
+        <div><p className="deck-position">{position + 1} of {pile.length}</p><h3>{current.name}</h3></div>
+        <Status value={current.confirmed_count === current.guest_count && current.guest_count > 0 ? "Confirmed" : "Pending"} />
+      </header>
+
+      {problems(current).length ? <ul className="deck-warnings">
+        {problems(current).map((problem) => <li key={problem}>⚠️ {problem}</li>)}
+      </ul> : null}
+
+      <dl className="deck-facts">
+        <div><dt>Sending to</dt><dd>{current.mobile || membersOf(current).find((guest) => guest.mobile)?.mobile || "— no number —"}</dd></div>
+        <div><dt>Guests</dt><dd>{membersOf(current).length}</dd></div>
+      </dl>
+
+      <div className="deck-members">
+        {membersOf(current).map((guest) => <button type="button" key={guest.id} className="member-row" onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}>
+          <i>{displayName(guest).slice(0, 1)}</i>
+          <span>{displayName(guest)}<small>{guest.mobile || "no number"} · {guest.category || "—"}</small></span>
+          <em className="deck-edit">Edit</em>
+        </button>)}
+        <button type="button" className="member-add" onClick={() => addTo(current.id)}>＋ Add a guest to this invitation</button>
+      </div>
+
+      <div className="deck-share">
+        <a className="wa-button" href={waLink(current.mobile, message)} target="_blank" rel="noreferrer">WhatsApp</a>
+        <button type="button" onClick={share}>Share…</button>
+        <button type="button" onClick={async () => { await navigator.clipboard.writeText(link); notify("Invitation link copied"); }}>Copy link</button>
+        <a className="deck-messenger" href={`fb-messenger://share/?link=${encodeURIComponent(link)}`}>Messenger</a>
+      </div>
+
+      <div className="deck-actions">
+        <button type="button" className="deck-skip" onClick={() => step(-1)}>← Back</button>
+        <button type="button" className="deck-sent" onClick={() => void markSent(current)}>✓ Sent — next</button>
+        <button type="button" className="deck-skip" onClick={() => step(1)}>Skip →</button>
+      </div>
+      <div className="deck-side-move">
+        <span>Move to</span>
+        {(["Bride", "Groom", "Shared"] as const).filter((option) => option !== side).map((option) => (
+          <button key={option} type="button" onClick={() => void act({ action: "setHouseholdSide", householdId: current.id, side: option }, `Moved to ${option === "Bride" ? "Elaine’s" : option === "Groom" ? "Haykal’s" : "the shared"} list`)}>
+            {option === "Bride" ? "Elaine’s" : option === "Groom" ? "Haykal’s" : "Shared"}
+          </button>
+        ))}
+      </div>
+    </article> : null}
+
+    {sent.length ? <div className="deck-sent-log">
+      <button type="button" className="archived-toggle" onClick={() => setShowSent((value) => !value)} aria-expanded={showSent}>
+        {showSent ? "▾" : "▸"} Recently sent · {sent.length}
+      </button>
+      {showSent ? <div className="archived-list">
+        {sent.slice(0, 40).map((household) => <div key={household.id} className="archived-row">
+          <span><strong>{household.name}</strong><small>{membersOf(household).map(displayName).join(" & ")}</small></span>
+          <button type="button" onClick={() => void act({ action: "markInvitationUnsent", householdId: household.id }, `${household.name} put back on the pile`)}>Undo</button>
+        </div>)}
+      </div> : null}
+    </div> : null}
+  </div>;
+}
+
 function Households({ households, guests, archived, adminRole, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; archived: ArchivedHousehold[]; adminRole: "owner" | "partner" | "planner"; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
   const [picked, setPicked] = useState<number[]>([]);
   const [householdSearch, setHouseholdSearch] = useState("");
@@ -460,6 +635,9 @@ function Households({ households, guests, archived, adminRole, act, notify , set
   // reveals the people and the actions. Searching opens what it finds.
   const [openCards, setOpenCards] = useState<number[]>([]);
   const toggleCard = (id: number) => setOpenCards((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  // Two ways to look at the same invitations: the list for checking over, the
+  // deck for the evening you send them.
+  const [mode, setMode] = useState<"list" | "send">("list");
   const toggle = (id: number) => setPicked((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   // Marking a batch as sent, the evening you actually send them.
   const markPickedSent = async () => {
@@ -548,6 +726,11 @@ function Households({ households, guests, archived, adminRole, act, notify , set
     { id: "replied", title: "Replied", rows: visible.filter((h) => stateOf(h) === "replied") },
   ].filter((group) => group.rows.length);
   return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Shared invitations</p><h2>{households.length} households</h2><span>A household is one invitation link, shared by everyone on it. A couple is one household with two people; a single guest is a household of one.</span></div></div>
+    <div className="mode-switch" role="tablist">
+      <button type="button" role="tab" aria-selected={mode === "list"} className={mode === "list" ? "is-active" : ""} onClick={() => setMode("list")}>The list</button>
+      <button type="button" role="tab" aria-selected={mode === "send"} className={mode === "send" ? "is-active" : ""} onClick={() => setMode("send")}>Send mode</button>
+    </div>
+    {mode === "send" ? <SendDeck households={households} guests={guests} act={act} notify={notify} edit={edit} addTo={addTo} /> : <>
     <div className="household-tools">
       <label className="search-field"><span>⌕</span><input value={householdSearch} onChange={(event) => setHouseholdSearch(event.target.value)} placeholder="Search households or guests" aria-label="Search households" /></label>
       <label className="select-all">
@@ -614,7 +797,7 @@ function Households({ households, guests, archived, adminRole, act, notify , set
           });
         });
       }}>Archive household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></> : null}</article>;
-  })}</section></div>)}</div>;
+  })}</section></div>)}</>}</div>;
 }
 
 function InvitationLinks({ households, guests, notify, setTab , act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; setTab: (tab: Tab) => void ; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
