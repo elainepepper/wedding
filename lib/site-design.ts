@@ -72,6 +72,14 @@ export const fontPairs = [
     // Ogg is a licensed typeface, so this is the closest free stand-in: the
     // same tall, high-contrast, bookish serif, set against Inter for anything
     // a guest types.
+    id: "hilberta-cormorant",
+    label: "Hilberta Austine + Cormorant Garamond",
+    headerFamily: '"Hilberta Austine", "Bodoni Moda", Georgia, serif',
+    bodyFamily: '"Cormorant Garamond", Georgia, serif',
+    headerUrl: "",
+    bodyUrl: "https://fonts.google.com/specimen/Cormorant+Garamond",
+  },
+  {
     id: "bodoni-cormorant",
     name: "Editorial Didone",
     header: "Bodoni Moda",
@@ -176,7 +184,7 @@ export const defaultSiteDesign: SiteDesign = {
   customPages: [],
   motionDamping: .1,
   cursorMotion: true,
-  fontPair: "bodoni-cormorant",
+  fontPair: "hilberta-cormorant",
 };
 
 const legacyCopy: Partial<Record<keyof SiteContent, string>> = {

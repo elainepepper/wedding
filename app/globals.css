@@ -7,7 +7,7 @@
   --coral: #AB5369;
   --manhattan: #A05066;
   --berry: #AB5369;
-  --wine: #8E4258;
+  --wine: #9B3160;
   --ink: #2A2A2A;
   --cream: #FAF6F2;
   --sage: #B8B9A5;
@@ -30,13 +30,13 @@
 .wedding-shell--storybook {
   --enchanted: #8B5E57;
   --enchanted-dark: #5C3A35;
-  --lantern: #CDBA9A;
+  --lantern: #FBB3BB;
 }
 
 .wedding-shell--storybook .scene--welcome {
   background:
     radial-gradient(circle at 50% 22%, rgba(232, 216, 183, .42), transparent 26%),
-    linear-gradient(180deg, #8B5E57 0%, #CDBA9A 33%, #C9A8A0 74%, #F1E6DD 100%);
+    linear-gradient(180deg, #8B5E57 0%, #FBB3BB 33%, #C9A8A0 74%, #F1E6DD 100%);
 }
 
 .storybook-canopy {
@@ -146,7 +146,11 @@
 .venue-card h2,
 .recommendations-card h2 {
   margin: .2rem 0 .65rem;
-  font: italic clamp(3rem, 6vw, 6.4rem)/.9 Georgia, "Times New Roman", serif;
+  /* These two were pinned to Georgia and so ignored the chosen heading face
+     entirely. They follow it now like every other display line. The italic is
+     gone with it: a calligraphic face is already slanted, and asking the
+     browser to slant it again produces a smeared, synthetic oblique. */
+  font: clamp(2.8rem, 5.6vw, 5.8rem)/.98 var(--font-header);
 }
 
 .venue-address {
@@ -274,7 +278,7 @@
 .recommendation-grid span { color: var(--lantern); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
 .recommendation-grid h3 { margin: auto 0 .75rem; font: italic 2rem/1 Georgia, serif; }
 .recommendation-grid p { margin: 0; color: rgba(255, 248, 232, .72); line-height: 1.5; }
-.recommendation-grid i { margin-top: 1.2rem; color: #CDBA9A; font-style: normal; font-size: .8rem; }
+.recommendation-grid i { margin-top: 1.2rem; color: #FBB3BB; font-style: normal; font-size: .8rem; }
 
 @media (max-width: 760px) {
   .lantern--one { left: 5%; }
@@ -1425,7 +1429,7 @@ textarea {
 
 .form-error {
   margin: 0.7rem 0;
-  color: #8E4258;
+  color: #9B3160;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.76rem;
   line-height: 1.45;
@@ -1838,7 +1842,7 @@ legend {
 .party-gate {
   background:
     radial-gradient(circle at center, rgba(160, 80, 102, 0.3), transparent 36%),
-    linear-gradient(145deg, #8E4258, #241E1C 72%);
+    linear-gradient(145deg, #9B3160, #241E1C 72%);
 }
 
 .party-glass {
@@ -3373,7 +3377,7 @@ html { scroll-snap-type: none; }
   font: 600 .58rem/1.7 var(--font-sans);
   letter-spacing: .38em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
   opacity: calc(.35 + var(--near, 0) * .65);
 }
 .is-blue .dream-words .overline { color: #5b79a6; }
@@ -3499,7 +3503,7 @@ html { scroll-snap-type: none; }
   font: 600 .55rem/1 var(--font-sans);
   letter-spacing: .3em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
   text-shadow: 0 0 12px rgba(255, 250, 248, .95);
   transition: opacity .6s ease;
   pointer-events: none;
@@ -3507,7 +3511,7 @@ html { scroll-snap-type: none; }
 .dream-cue i {
   width: 1px;
   height: 34px;
-  background: linear-gradient(#8e4258, transparent);
+  background: linear-gradient(#9B3160, transparent);
   animation: story-cue 2s ease-in-out infinite;
 }
 @keyframes story-cue {
@@ -3539,7 +3543,7 @@ html { scroll-snap-type: none; }
 }
 .room-offer strong {
   font: 500 1.06rem/1.3 var(--font-header, "Playfair Display", Georgia, serif);
-  color: var(--wine, #8E4258);
+  color: var(--wine, #9B3160);
   letter-spacing: .01em;
 }
 .room-offer span {
@@ -3559,7 +3563,7 @@ html { scroll-snap-type: none; }
   font: 600 .62rem/1.6 var(--font-sans, "Montserrat", sans-serif);
   letter-spacing: .28em;
   text-transform: uppercase;
-  color: var(--wine, #8E4258);
+  color: var(--wine, #9B3160);
   text-align: center;
 }
 .rec-group:first-of-type { margin-top: .9rem; }
@@ -3587,7 +3591,7 @@ html { scroll-snap-type: none; }
   letter-spacing: .2em;
   text-transform: uppercase;
   font-style: normal;
-  color: var(--wine, #8E4258);
+  color: var(--wine, #9B3160);
 }
 
 /* Nearby hotels list */
@@ -3597,16 +3601,16 @@ html { scroll-snap-type: none; }
   border: 1px solid rgba(142, 66, 88, .22); border-radius: 12px;
   background: rgba(251, 243, 234, .7); text-decoration: none;
 }
-.hotel-list a:hover { border-color: var(--wine, #8E4258); }
+.hotel-list a:hover { border-color: var(--wine, #9B3160); }
 .hotel-list strong { font: 500 1rem/1.3 var(--font-header, Georgia, serif); color: var(--ink, #4A3A3C); }
 .hotel-list span { font: italic 500 .9rem/1.4 var(--font-body, Georgia, serif); color: rgba(74, 58, 60, .8); }
-.hotel-list i { font: 600 .58rem/1 var(--font-sans, sans-serif); letter-spacing: .14em; text-transform: uppercase; color: var(--wine, #8E4258); font-style: normal; }
+.hotel-list i { font: 600 .58rem/1 var(--font-sans, sans-serif); letter-spacing: .14em; text-transform: uppercase; color: var(--wine, #9B3160); font-style: normal; }
 
 /* Rating badge on recommendation cards */
 .place-score {
   font: 600 .58rem/1 var(--font-sans, sans-serif);
   letter-spacing: .1em;
-  color: var(--wine, #8E4258);
+  color: var(--wine, #9B3160);
   font-style: normal;
   opacity: .85;
 }
@@ -3635,14 +3639,14 @@ html { scroll-snap-type: none; }
 }
 .table-plaques span {
   font: 600 .58rem/1 var(--font-sans, sans-serif);
-  letter-spacing: .22em; text-transform: uppercase; color: var(--wine, #8E4258);
+  letter-spacing: .22em; text-transform: uppercase; color: var(--wine, #9B3160);
 }
 .table-plaques strong {
   font: 500 clamp(1.5rem, 6vw, 2rem)/1.15 var(--font-header, Georgia, serif);
   color: var(--ink, #4A3A3C);
 }
-.wa-button--table { border-color: #8E4258; background: #f7ecf0; color: #8E4258; }
-.wa-button--table:hover { background: #8E4258; color: #fff; }
+.wa-button--table { border-color: #9B3160; background: #f7ecf0; color: #9B3160; }
+.wa-button--table:hover { background: #9B3160; color: #fff; }
 
 /* ==================================================================== */
 /* Softer surfaces: no ruled borders anywhere. Anything a guest types    */
@@ -4058,7 +4062,7 @@ canvas { pointer-events: none; }
   font: 600 .58rem/1.7 var(--font-sans);
   letter-spacing: .4em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
 }
 .welcome-words .script {
   margin: 0;
@@ -4090,14 +4094,14 @@ canvas { pointer-events: none; }
   background: rgba(255, 252, 250, .62);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #8e4258;
+  color: #9B3160;
   font: 600 .64rem/1 var(--font-sans);
   letter-spacing: .26em;
   text-transform: uppercase;
   text-decoration: none;
   transition: transform .25s ease-out, background .25s ease-out, border-color .25s ease-out;
 }
-.welcome-cta:hover { background: rgba(255, 246, 244, .9); border-color: #8e4258; }
+.welcome-cta:hover { background: rgba(255, 246, 244, .9); border-color: #9B3160; }
 .welcome-cta:active { transform: translateY(1px); }
 .welcome-cue {
   position: fixed;
@@ -4113,14 +4117,14 @@ canvas { pointer-events: none; }
   font: 600 .55rem/1 var(--font-sans);
   letter-spacing: .3em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
   text-shadow: 0 0 12px rgba(255, 250, 248, .95);
   pointer-events: none;
 }
 .welcome-cue i {
   width: 1px;
   height: 34px;
-  background: linear-gradient(#8e4258, transparent);
+  background: linear-gradient(#9B3160, transparent);
   animation: story-cue 2s ease-in-out infinite;
 }
 
@@ -4219,7 +4223,7 @@ canvas { pointer-events: none; }
   opacity: 0;
 }
 .scene .segmented-control button.is-selected {
-  color: #8e4258;
+  color: #9B3160;
   background: none !important;
   box-shadow: none !important;
 }
@@ -4272,14 +4276,14 @@ canvas { pointer-events: none; }
   border: 1px solid rgba(142, 66, 88, .5) !important;
   border-radius: 4px;
   background: rgba(255, 252, 250, .7) !important;
-  color: #8e4258 !important;
+  color: #9B3160 !important;
   font: 600 .64rem/1 var(--font-sans);
   letter-spacing: .26em;
   text-transform: uppercase;
   box-shadow: 0 8px 22px rgba(142, 66, 88, .1);
   transition: transform .2s ease-out, background .25s ease-out, border-color .25s ease-out;
 }
-.primary-button:hover { background: rgba(255, 246, 244, .92) !important; border-color: #8e4258 !important; }
+.primary-button:hover { background: rgba(255, 246, 244, .92) !important; border-color: #9B3160 !important; }
 .primary-button:active { transform: translateY(1px); }
 
 
@@ -4322,7 +4326,7 @@ canvas { pointer-events: none; }
   background: rgba(255, 252, 250, .55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #8e4258;
+  color: #9B3160;
   font: 600 .56rem/1 var(--font-sans);
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -4370,7 +4374,7 @@ canvas { pointer-events: none; }
   animation-delay: calc(.06s + var(--i, 0) * .07s);
 }
 .site-menu-overlay a:hover,
-.site-menu-overlay > button:hover { color: #8e4258; }
+.site-menu-overlay > button:hover { color: #9B3160; }
 @keyframes menu-link-in { to { opacity: 1; transform: translateY(0); } }
 
 .fixed-rsvp {
@@ -4387,7 +4391,7 @@ canvas { pointer-events: none; }
   background: rgba(255, 252, 250, .62);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #8e4258;
+  color: #9B3160;
   font: 600 .62rem/1 var(--font-sans);
   letter-spacing: .24em;
   text-transform: uppercase;
@@ -4485,7 +4489,7 @@ canvas { pointer-events: none; }
   transition: color .25s ease-out;
 }
 .wizard-back::before { content: "← "; font-style: normal; }
-.wizard-back:hover { color: #8e4258; }
+.wizard-back:hover { color: #9B3160; }
 .wizard-next {
   isolation: isolate;
   position: absolute;
@@ -4497,7 +4501,7 @@ canvas { pointer-events: none; }
   border-radius: 0 !important;
   background: none !important;
   box-shadow: none !important;
-  color: #8e4258;
+  color: #9B3160;
   font: 600 .68rem/54px var(--font-sans);
   letter-spacing: .26em;
   text-transform: uppercase;
@@ -4573,7 +4577,7 @@ canvas { pointer-events: none; }
   background: none !important;
   filter: drop-shadow(0 0 14px rgba(201, 120, 143, .45)) drop-shadow(0 16px 34px rgba(201, 120, 143, .2));
 }
-.wizard .scene .choice-card.is-selected h3 { color: #8e4258; }
+.wizard .scene .choice-card.is-selected h3 { color: #9B3160; }
 
 /* 6. the horizontal gallery — snapping sideways inside its own rail only */
 .photo-rail {
@@ -4616,7 +4620,7 @@ canvas { pointer-events: none; }
   font: 500 .6rem/1 var(--font-sans);
   letter-spacing: .24em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
   text-decoration: none;
   text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
 }
@@ -4953,7 +4957,7 @@ canvas { pointer-events: none; }
   padding: .6rem 1rem;
   border: 0;
   background: none;
-  color: #8e4258;
+  color: #9B3160;
   font: 600 .68rem/1 var(--font-sans);
   letter-spacing: .3em;
   text-transform: uppercase;
@@ -5076,7 +5080,7 @@ canvas { pointer-events: none; }
   font: 500 .6rem/1.6 var(--font-sans);
   letter-spacing: .26em;
   text-transform: uppercase;
-  color: #8e4258;
+  color: #9B3160;
 }
 .table-fog {
   position: fixed;
@@ -5146,7 +5150,7 @@ canvas { pointer-events: none; }
   /* ink and blush — four values carry the whole invitation */
   --ink-strong: #3f3235;
   --ink:        rgba(74, 58, 60, .88);
-  --blush:      #8e4258;
+  --blush:      #9B3160;
   --blush-soft: #c9788f;
 
   /* motion — one curve, three speeds */
@@ -5366,7 +5370,7 @@ canvas { pointer-events: none; }
   font-size: .78rem !important;
   font-weight: 700 !important;
   letter-spacing: .18em !important;
-  color: #7d2f45 !important;
+  color: #7A2549 !important;
   opacity: 1;
   text-shadow: 0 1px 10px rgba(255, 252, 250, .95), 0 0 22px rgba(255, 252, 250, .8);
 }
@@ -5436,13 +5440,13 @@ canvas { pointer-events: none; }
   padding: 0 .3rem !important;
   min-width: 0 !important;
 }
-.sound-control > span { font-size: 1rem !important; color: #7d2f45; }
+.sound-control > span { font-size: 1rem !important; color: #7A2549; }
 .sound-control small {
   font-size: .78rem !important;
   font-weight: 700 !important;
   letter-spacing: .18em !important;
   text-transform: uppercase;
-  color: #7d2f45 !important;
+  color: #7A2549 !important;
   text-shadow: 0 1px 10px rgba(255, 252, 250, .95);
 }
 .sound-control em { display: none; }
@@ -5466,7 +5470,7 @@ canvas { pointer-events: none; }
 
   --ink-strong: #33282b;      /* was #3f3235 */
   --ink:        rgba(52, 40, 43, .95);
-  --blush:      #7d2f45;      /* was #8e4258 */
+  --blush:      #7A2549;      /* was #9B3160 */
   --blush-soft: #b8536f;
 }
 
@@ -5480,7 +5484,7 @@ canvas { pointer-events: none; }
   gap: .5rem;
   border: 0 !important;
   border-bottom: 0 !important;
-  color: #7d2f45 !important;
+  color: #7A2549 !important;
   font-family: var(--font-sans);
   font-size: .78rem !important;
   font-weight: 700;
@@ -5592,7 +5596,7 @@ canvas { pointer-events: none; }
   margin-top: 2.2rem;
   min-height: 52px;
   padding: 0 2.6rem;
-  color: #7d2f45;
+  color: #7A2549;
   font-family: var(--font-sans);
   font-size: .82rem;
   font-weight: 700;
@@ -5647,7 +5651,7 @@ canvas { pointer-events: none; }
   font-style: normal !important;
   letter-spacing: .16em !important;
   text-transform: uppercase !important;
-  color: #7d2f45 !important;
+  color: #7A2549 !important;
 }
 /* the arrow moves to ::after — ::before is the hover rule and was being
    overwritten, which turned the underline into the arrow glyph */
@@ -5740,7 +5744,7 @@ canvas { pointer-events: none; }
   min-height: 52px;
   margin-top: 2rem;
   padding: 0 2rem;
-  color: #7d2f45;
+  color: #7A2549;
   font: 700 .8rem/1 var(--font-sans);
   letter-spacing: .2em;
   text-transform: uppercase;
@@ -5912,7 +5916,7 @@ canvas { pointer-events: none; }
 .wizard .phone-grid > label:last-child > input { min-height: 52px; }
 
 /* When the couple's room block is full, the notice replaces the offer. */
-.room-offer--full { border-left: 3px solid var(--wine, #8e4258); }
+.room-offer--full { border-left: 3px solid var(--wine, #9B3160); }
 
 /* ============ Legible for every guest ============ */
 /* Measured against the pale card the text actually sits on, three items fell
@@ -5920,5 +5924,39 @@ canvas { pointer-events: none; }
    control, and the dish descriptions. Both are now comfortably above it.
    Older eyes, bright Malaysian daylight and a phone screen all benefit. */
 .wedding-shell .segmented-control button { color: rgba(74, 58, 60, .88); }
-.wedding-shell .segmented-control button.is-selected { color: var(--wine, #8e4258); }
+.wedding-shell .segmented-control button.is-selected { color: var(--wine, #9B3160); }
 .wedding-shell .choice-card small { color: rgba(142, 66, 88, .92); }
+
+/* ============ Hilberta Austine, for the headings ============ */
+/* Served from our own site rather than a font service, so it is covered by
+   the page's own security policy and loads on the first paint. WOFF, because
+   the bundle's SVG font is a format no current browser still reads. */
+@font-face {
+  font-family: "Hilberta Austine";
+  src: url("/fonts/hilberta-austine.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* A calligraphic face earns its keep on the large display lines — the names,
+   the section titles, the closing words. It is kept away from the small
+   practical headings (how to reach us by MRT, by car, by Grab; the running
+   order; the guide) where an older guest reading a phone in daylight needs
+   letterforms that do not join up. */
+.wedding-shell .arrival-grid h3,
+.wedding-shell .evening-timeline h3,
+.wedding-shell .guide h3,
+.wedding-shell .guide-group > button,
+.wedding-shell .hotel-list strong,
+.wedding-shell .recommendation-grid h3,
+.wedding-shell .table-plaques strong,
+.wedding-shell .invitation-only h3 {
+  font-family: "Cormorant Garamond", Georgia, serif !important;
+}
+
+/* Script faces sit small for their point size and ride high on the line;
+   the display lines get a little more room and a touch more size to
+   compensate, so "Elaine & Haykal" still lands as the loudest thing there. */
+.wedding-shell h2 { line-height: 1.18; }
+.wedding-shell .invitation-card h2 { font-size: clamp(2.6rem, 7.4vw, 4.4rem); }
