@@ -1,5 +1,7 @@
 "use client";
 
+import { rsvpDeadlineLabel } from "../../lib/rsvp-window";
+
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Guest = {
@@ -295,7 +297,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
             groupFilter={groupFilter} setGroupFilter={setGroupFilter} edit={setGuestModal} act={act} rsvpMode={tab === "rsvps"} adminRole={data.admin.role}
           />
         ) : null}
-        {tab === "households" ? <Households households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
+        {tab === "households" ? <Households replyBy={rsvpDeadlineLabel(data.settings.rsvp_deadline) ?? ""} households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
@@ -452,8 +454,11 @@ function nudgeMessage(names: string, link: string, deadline: string) {
   return `Hello ${names},\n\nJust a gentle nudge — we are gathering final numbers for our wedding on 7 November${deadline ? `, and replies close on ${deadline}` : ""}. If you have a moment, your invitation is here:\n\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
-function invitationMessage(names: string, link: string) {
-  return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n\nWith love,\nElaine & Haykal`;
+// The reply-by date travels with the invitation itself, so nobody has to be
+// chased for a date they were never told. It comes from Settings, so changing
+// it there changes every message from then on.
+function invitationMessage(names: string, link: string, replyBy = "") {
+  return `Dear ${names},\n\nElaine and Haykal would love you to join them on 7 November 2026 at the Grand Hyatt Kuala Lumpur.\n\nYour personal invitation, with the RSVP, is here:\n${link}\n${replyBy ? `\nKindly reply by ${replyBy}.\n` : ""}\nWith love,\nElaine & Haykal`;
 }
 
 /**
@@ -470,8 +475,8 @@ function invitationMessage(names: string, link: string) {
  * invitation sent is a state change, and a mis-swipe on a stranger's card is
  * a real cost. A left/right drag still moves between cards on a phone.
  */
-function SendDeck({ households, guests, act, notify, edit, addTo }: {
-  households: Household[]; guests: Guest[];
+function SendDeck({ households, guests, replyBy, act, notify, edit, addTo }: {
+  households: Household[]; guests: Guest[]; replyBy: string;
   act: (payload: Record<string, unknown>, success: string) => Promise<unknown>;
   notify: (message: string) => void;
   edit: (guest: Guest | "new") => void;
@@ -515,7 +520,7 @@ function SendDeck({ households, guests, act, notify, edit, addTo }: {
 
   const names = current ? membersOf(current).map(displayName).join(" & ") || current.name : "";
   const link = current ? inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, current.invitation_token, names) : "";
-  const message = current ? invitationMessage(names, link) : "";
+  const message = current ? invitationMessage(names, link, replyBy) : "";
 
   // What is missing that would embarrass us after the invitation has gone.
   const problems = (household: Household) => {
@@ -631,7 +636,7 @@ function SendDeck({ households, guests, act, notify, edit, addTo }: {
   </div>;
 }
 
-function Households({ households, guests, archived, adminRole, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; archived: ArchivedHousehold[]; adminRole: "owner" | "partner" | "planner"; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
+function Households({ households, guests, archived, adminRole, replyBy, act, notify , setUndo, edit, addTo }: { households: Household[]; guests: Guest[]; archived: ArchivedHousehold[]; adminRole: "owner" | "partner" | "planner"; replyBy: string; act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void ; setUndo: (u: { label: string; restore: () => Promise<void> } | null) => void; edit: (guest: Guest | "new") => void; addTo: (householdId: number) => void }) {
   const [picked, setPicked] = useState<number[]>([]);
   const [householdSearch, setHouseholdSearch] = useState("");
   const [progress, setProgress] = useState("");
@@ -737,8 +742,8 @@ function Households({ households, guests, archived, adminRole, act, notify , set
       <button type="button" role="tab" aria-selected={mode === "send"} className={mode === "send" ? "is-active" : ""} onClick={() => setMode("send")}>Send mode</button>
       <button type="button" role="tab" aria-selected={mode === "links"} className={mode === "links" ? "is-active" : ""} onClick={() => setMode("links")}>All links</button>
     </div>
-    {mode === "send" ? <SendDeck households={households} guests={guests} act={act} notify={notify} edit={edit} addTo={addTo} />
-      : mode === "links" ? <InvitationLinks households={households} guests={guests} notify={notify} act={act} /> : <>
+    {mode === "send" ? <SendDeck households={households} guests={guests} replyBy={replyBy} act={act} notify={notify} edit={edit} addTo={addTo} />
+      : mode === "links" ? <InvitationLinks households={households} guests={guests} replyBy={replyBy} notify={notify} act={act} /> : <>
     <div className="household-tools">
       <label className="search-field"><span>⌕</span><input value={householdSearch} onChange={(event) => setHouseholdSearch(event.target.value)} placeholder="Search households or guests" aria-label="Search households" /></label>
       <label className="select-all">
@@ -797,7 +802,7 @@ function Households({ households, guests, archived, adminRole, act, notify , set
         {/* Opening WhatsApp is not the same as having sent the invitation —
             a message can always be closed unsent, so the tick stays a
             deliberate press rather than a side effect of looking. */}
-        <a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>
+        <a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name), replyBy))} target="_blank" rel="noreferrer">WhatsApp</a>
         <button type="button" onClick={() => copyLink(household)}>Copy link</button>
         {sent
           ? <button type="button" className="quick-sent" title="Put this invitation back on the pile" onClick={() => void act({ action: "markInvitationUnsent", householdId: household.id }, `${household.name} put back on the pile`)}>✓ Sent</button>
@@ -817,11 +822,11 @@ function Households({ households, guests, archived, adminRole, act, notify , set
             restore: async () => { await act({ action: "restoreHousehold", householdId: household.id }, "Household restored"); },
           });
         });
-      }} hidden={adminRole === "planner"}>Archive household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></> : null}</article>;
+      }} hidden={adminRole === "planner"}>Archive household</button></div><div className="member-stack">{members.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)} title={`Edit ${displayName(guest)}`}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(household.id)}>＋ Add a guest to this invitation</button></div><dl><div><dt>Primary contact</dt><dd>{household.email || household.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{household.opened_at ? `Opened ${dateLabel(household.opened_at)}` : "Not yet opened"}</dd></div><div><dt>Reply</dt><dd>{members.some((guest) => guest.rsvp_submitted_at) ? `Replied ${dateLabel(members.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string)}` : "No reply yet"}</dd></div><div><dt>Table</dt><dd>{!members.some((guest) => guest.table_name) ? "Not assigned" : household.table_seen_at ? `Seen ${dateLabel(household.table_seen_at)}` : "Not seen yet"}</dd></div></dl><footer><button onClick={() => copyLink(household)}>Copy invitation</button><a className="wa-button" href={waLink(household.mobile, invitationMessage(members.map(displayName).join(" & ") || household.name, inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name), replyBy))} target="_blank" rel="noreferrer">WhatsApp</a>{members.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(household.mobile, tableMessage(members.map(displayName).join(" & ") || household.name, [...new Set(members.map((guest) => guest.table_name).filter(Boolean))].join(" and "), inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, household.invitation_token, members.map(displayName).join(" & ") || household.name)))} target="_blank" rel="noreferrer">Send table</a> : null}{afterParty ? <button onClick={() => copyLink(household, true)}>Copy after-party</button> : null}<button className="icon-button" onClick={() => void act({ action: "regenerateLink", householdId: household.id }, "A new secure link was created")} title="Regenerate secure link">↻</button><button className="icon-button" onClick={() => void act({ action: "markInvitationSent", householdId: household.id }, "Invitation marked as sent")} title="Mark invitation sent">✓</button></footer></> : null}</article>;
   })}</section></div>)}</>}</div>;
 }
 
-function InvitationLinks({ households, guests, notify, act }: { households: Household[]; guests: Guest[]; notify: (message: string) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
+function InvitationLinks({ households, guests, replyBy, notify, act }: { households: Household[]; guests: Guest[]; replyBy: string; notify: (message: string) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
   const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
@@ -872,8 +877,8 @@ function InvitationLinks({ households, guests, notify, act }: { households: Hous
                   <td className="link-cell"><span>{link}</span></td>
                   <td className="link-actions">
                     <button type="button" onClick={async () => { await navigator.clipboard.writeText(link); notify("Link copied"); }}>Copy</button>
-                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link)); notify("Message copied"); }}>Copy message</button>
-                    <a href={waLink(household.mobile, invitationMessage(names, link))} target="_blank" rel="noreferrer"
+                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(invitationMessage(names, link, replyBy)); notify("Message copied"); }}>Copy message</button>
+                    <a href={waLink(household.mobile, invitationMessage(names, link, replyBy))} target="_blank" rel="noreferrer"
                       onClick={() => { void act({ action: "markInvitationSent", householdId: household.id }, "Marked as sent"); }}>WhatsApp</a>
                     <a href={`${link}`} target="_blank" rel="noreferrer">Preview</a>
                   </td>
