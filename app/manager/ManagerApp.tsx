@@ -72,6 +72,13 @@ const dateLabel = (value: string | null | undefined) => {
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Perth" }).format(date);
 };
+const dateTimeLabel = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const text = value.replace(" ", "T");
+  const date = new Date(/(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text}Z`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Perth" }).format(date);
+};
 
 function downloadFile(filename: string, content: string, type = "text/csv;charset=utf-8") {
   const link = document.createElement("a");
@@ -1028,10 +1035,11 @@ function GuestPill({ guest, compact = false }: { guest: Guest; compact?: boolean
 
 function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; selected: number[]; setSelected: (ids: number[]) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [partySearch, setPartySearch] = useState("");
-  // This list once showed only guests pre-marked "eligible" — a field no
-  // screen ever set, so the page sat empty and read as broken. Every guest
-  // can now be granted the chapter directly; the toggle is the decision.
-  const allEligible = guests;
+  // A guest can only be offered the after-party once they have actually
+  // said yes to the wedding itself — offering it earlier means access could
+  // be granted to someone who later declines. Anyone already invited stays
+  // visible regardless, so a change of heart can still be un-invited here.
+  const allEligible = guests.filter((guest) => guest.rsvp_status === "Confirmed" || guest.after_party_invited);
   // The counts describe the after-party, not the wedding. Reading them from
   // every guest made "pending" mean "everyone who has not said yes to a party
   // they were never asked to" — 122 pending against 70 invited. Only invited
@@ -1041,7 +1049,7 @@ function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; s
   const declined = invited.filter((guest) => guest.after_party_attending === "No").length;
   const awaiting = invited.length - attending - declined;
   const eligible = allEligible.filter((guest) => !partySearch || displayName(guest).toLowerCase().includes(partySearch.toLowerCase()) || guest.household_name?.toLowerCase().includes(partySearch.toLowerCase()));
-  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{invited.length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{invited.length}</strong></p><p><span>Attending</span><strong>{attending}</strong></p><p><span>Awaiting reply</span><strong>{awaiting}</strong></p><p><span>Cannot come</span><strong>{declined}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span>{guest.after_party_invited ? <Status value={guest.after_party_attending} /> : <span className="muted-cell">Not invited</span>}<button type="button" role="switch" aria-checked={Boolean(guest.after_party_invited)} className={`party-switch${guest.after_party_invited ? " is-on" : ""}`} onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`After-party invitation for ${displayName(guest)}`}><span className="party-switch-track"><i /></span><b>{guest.after_party_invited ? "Invited" : "Off"}</b></button></label>)}</div></section></div>;
+  return <div className="manager-page afterparty-manager"><section className="night-banner"><span>✦</span><div><p>Secret chapter</p><h2>After the last toast</h2><small>Only selected guests receive access. Everyone else sees nothing.</small></div><strong>{invited.length}<small> invited</small></strong></section><div className="afterparty-stats"><p><span>Invited</span><strong>{invited.length}</strong></p><p><span>Attending</span><strong>{attending}</strong></p><p><span>Awaiting reply</span><strong>{awaiting}</strong></p><p><span>Cannot come</span><strong>{declined}</strong></p></div><section className="manager-panel"><div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={partySearch} onChange={(event) => setPartySearch(event.target.value)} placeholder="Search eligible guests" aria-label="Search eligible guests" /></label>{selected.length ? <button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "Private access enabled")}>Invite {selected.length} guests</button> : null}</div><div className="afterparty-list">{eligible.length === 0 ? <p className="empty-note">{partySearch ? "No confirmed guests match that search." : "No one has confirmed their RSVP yet — guests appear here to be invited as soon as they say yes."}</p> : null}{eligible.map((guest) => <label key={guest.id}><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /><i>{displayName(guest).slice(0, 1)}</i><span><strong>{displayName(guest)}</strong><small>{guest.household_name} · {guest.category}</small></span>{guest.after_party_invited ? <Status value={guest.after_party_attending} /> : <span className="muted-cell">Not invited</span>}<button type="button" role="switch" aria-checked={Boolean(guest.after_party_invited)} className={`party-switch${guest.after_party_invited ? " is-on" : ""}`} onClick={() => void act({ action: "bulkUpdate", guestIds: [guest.id], field: "afterPartyInvited", value: !guest.after_party_invited }, guest.after_party_invited ? "After-party invitation removed" : "After-party invitation enabled")} aria-label={`After-party invitation for ${displayName(guest)}`}><span className="party-switch-track"><i /></span><b>{guest.after_party_invited ? "Invited" : "Off"}</b></button></label>)}</div></section></div>;
 }
 
 function Imports({ act, notify }: { act: (payload: Record<string, unknown>, success: string) => Promise<unknown>; notify: (message: string) => void }) {
@@ -1162,7 +1170,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
       {wishes.length ? <button className="secondary-button" onClick={() => copyAll(wishes, "wishes")}>Copy all</button> : null}
     </div>
     {wishes.length
-      ? <div className="wish-list">{wishes.map((guest) => <blockquote key={`wish-${guest.id}`}><p>{guest.wishes}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      ? <div className="wish-list">{wishes.map((guest) => <blockquote key={`wish-${guest.id}`}><p>{guest.wishes}</p><cite>{named(guest)}<time>{dateTimeLabel(guest.rsvp_submitted_at)}</time></cite></blockquote>)}</div>
       : <p className="empty-note">No wishes have been left yet.</p>}
 
     <div className="panel-head">
@@ -1170,7 +1178,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
       {advice.length ? <button className="secondary-button" onClick={() => copyAll(advice, "marriage_advice")}>Copy all</button> : null}
     </div>
     {advice.length
-      ? <div className="wish-list wish-list--private">{advice.map((guest) => <blockquote key={`advice-${guest.id}`}><p>{guest.marriage_advice}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      ? <div className="wish-list wish-list--private">{advice.map((guest) => <blockquote key={`advice-${guest.id}`}><p>{guest.marriage_advice}</p><cite>{named(guest)}<time>{dateTimeLabel(guest.rsvp_submitted_at)}</time></cite></blockquote>)}</div>
       : <p className="empty-note">No advice has been left yet.</p>}
 
     <div className="panel-head"><div><p className="panel-kicker">Grand Hyatt</p><h3>Room requests ({rooms.length})</h3></div></div>

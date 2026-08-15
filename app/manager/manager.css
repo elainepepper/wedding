@@ -445,6 +445,8 @@
   display: block; margin-top: .45rem; font-style: normal;
   font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: #8E4258;
 }
+.wish-list blockquote cite time { color: #a9808c; font-weight: 400; }
+.wish-list blockquote cite time::before { content: " \00b7 "; }
 .empty-note { margin: 0 0 1.4rem; font-size: .88rem; opacity: .65; }
 
 /* ==================================================================== */
