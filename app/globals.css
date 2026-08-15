@@ -5986,22 +5986,16 @@ canvas { pointer-events: none; }
 /* ============ Ink, not pixels ============ */
 /* Hilberta Austine has no OpenType alternates at all — every letter is
    stamped from the same die each time, which is why the names read as
-   digital no matter how good the script looks. Allura genuinely has
-   swash capitals and alternate joining forms, so it takes over just the
-   two places the couple's names appear as a headline: the archway and the
+   digital no matter how good the script looks. Pinyon Script is a real
+   digitisation of a 1930s engraver's copperplate hand — genuine contextual
+   alternates and discretionary ligatures — so it takes over just the two
+   places the couple's names appear as a headline: the archway and the
    invitation card. Everywhere else keeps the site's normal heading face. */
 .portal-words h1,
 .wedding-shell .invitation-card h2 {
-  font-family: 'Allura', var(--font-header), cursive;
-  font-feature-settings: "fina" 1, "dlig" 1;
+  font-family: 'Pinyon Script', var(--font-header), cursive;
+  font-feature-settings: "calt" 1, "dlig" 1;
   letter-spacing: normal;
-}
-
-/* Swashes belong on the initial only — turning them on for a whole line
-   once made "Elaine & Haykal" render as an unreadable tangle of loops. */
-.portal-words h1 .cap,
-.wedding-shell .invitation-card h2 .cap {
-  font-feature-settings: "swsh" 1, "dlig" 1;
 }
 
 /* The imperfections of real ink: nothing sits perfectly straight, and the
@@ -6015,3 +6009,15 @@ canvas { pointer-events: none; }
 }
 .portal-words h1 .ink { transform: rotate(-.5deg); }
 .wedding-shell .invitation-card h2 .ink { transform: rotate(-.4deg); }
+
+/* ============ Fraunces takes over the small, functional type ============ */
+/* Every question and legend in the RSVP wizard was set in the same thin
+   script as the headings ("Albert", "Dietary requirements or allergies") —
+   legible at hero size, illegible shrunk down. Fraunces has real weight in
+   its strokes at any size, so it replaces the script here specifically. */
+.wizard .scene legend,
+.wizard .scene label > span {
+  font-family: 'Fraunces', var(--font-header), Georgia, serif;
+  font-weight: 700;
+  font-optical-sizing: auto;
+}
