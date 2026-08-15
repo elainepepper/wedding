@@ -6124,3 +6124,80 @@ canvas { pointer-events: none; }
 /* One movement per moment: while a scene's veil is still clearing, its
    artwork holds its breath; ambient drift resumes once the words are in. */
 .scene:not(.is-visible) .scene-art { animation-play-state: paused; }
+
+/* ==================================================================== */
+/* THREE VOICES, NOT SIX — the typographic cohesion pass.               */
+/*                                                                      */
+/* Script is a gesture: the couple's names, a whispered kicker, nothing */
+/* more. Every functional heading — questions, chapter titles, the menu */
+/* — speaks in one editorial serif. Interface whispers in one sans.     */
+/* Before this, a single screen could carry a script heading, a black   */
+/* slab label, a giant grey placeholder and a script menu all at once.  */
+/* ==================================================================== */
+
+/* Functional headings: the editorial serif, set tight and confident. */
+.wedding-shell :where(h1, h2) {
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: -.015em;
+  line-height: 1.04;
+}
+.wizard .scene h2,
+.wedding-shell .form-card h2,
+.wedding-shell .dress-card h2,
+.wedding-shell .wishes-card h2,
+.wedding-shell .confirmation-card h2,
+.wedding-shell .venue-card h2,
+.wedding-shell .recommendations-card h2 {
+  font-size: clamp(2.15rem, 9.4vw, 3.3rem) !important;
+  line-height: 1.06;
+  letter-spacing: -.015em;
+}
+
+/* The two ceremonial moments keep the hand: the archway and the names
+   on the invitation card. The kicker and seal stay script — gestures. */
+.portal-words h1,
+.wedding-shell .invitation-card h2 {
+  font-family: 'Pinyon Script', var(--font-header), cursive;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.1;
+}
+.wedding-shell .script-kicker,
+.wedding-shell .wax-seal span {
+  font-family: var(--font-header);
+  font-weight: 400;
+}
+
+/* The menu speaks in the same editorial serif as the headings. */
+.site-menu-overlay a,
+.site-menu-overlay > button {
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(1.5rem, 6vw, 2.1rem) !important;
+  letter-spacing: .01em !important;
+  color: #3f3235;
+}
+
+/* Questions above a field: the body face at a calm size — a question,
+   not a headline. */
+.wizard .scene legend,
+.wizard .scene label > span {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.02rem, 4.2vw, 1.22rem) !important;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+/* What guests type stays generous but stops shouting; the empty prompt
+   is a whisper in italic, not a headline in grey. */
+.wizard .scene input:not([type="checkbox"]):not([type="radio"]),
+.wizard .scene textarea,
+.wizard .scene select { font-size: clamp(1.12rem, 4.6vw, 1.38rem) !important; }
+.scene textarea::placeholder,
+.scene input::placeholder {
+  font-style: italic;
+  color: rgba(74, 58, 60, .42);
+}
