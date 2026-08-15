@@ -18,7 +18,20 @@ export function AfterPartyExperience() {
   // The invitation itself is the key: the personal token is verified against
   // the guest database on load. No password, nothing to remember.
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token") || "";
+    const params = new URLSearchParams(window.location.search);
+    // Preview: the page opens on placeholder details so the design can be
+    // reviewed end to end. The real when/where stays behind the guest key.
+    if (params.get("preview") === "1") {
+      setDetails({
+        when: "After the final toast",
+        where: "Revealed at the reception",
+        dress: "Come exactly as you are",
+        entry: "Give your name quietly at the door",
+      });
+      setState("unlocked");
+      return;
+    }
+    const token = params.get("token") || "";
     let cancelled = false;
     fetch("/api/after-party", {
       method: "POST",

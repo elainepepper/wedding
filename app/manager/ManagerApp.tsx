@@ -38,7 +38,7 @@ type Settings = Record<string, unknown> & {
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
 };
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
-type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
+export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
 type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
@@ -135,8 +135,8 @@ async function readApiResponse<T>(response: Response): Promise<T & { error?: str
   }
 }
 
-export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignOut }: { initialAdminName: string; signedInEmail: string; authToken: string; onSignOut: () => void | Promise<void> }) {
-  const [data, setData] = useState<ManagerData | null>(null);
+export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignOut, demoData }: { initialAdminName: string; signedInEmail: string; authToken: string; onSignOut: () => void | Promise<void>; demoData?: ManagerData }) {
+  const [data, setData] = useState<ManagerData | null>(demoData ?? null);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -159,6 +159,9 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const toastTimer = useRef<number | null>(null);
 
   const load = async (quiet = false) => {
+    // Demo mode: a fabricated guest list stands in for the database, so the
+    // whole interface can be walked through without exposing a real guest.
+    if (demoData) { setData(demoData); setLoading(false); return; }
     if (!quiet) setLoading(true);
     try {
       const response = await fetch(`/api/manager?at=${Date.now()}`, { cache: "no-store", headers: { Authorization: `Bearer ${authToken}` } });
@@ -183,6 +186,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   // second press from creating a second record while the first is in flight.
   const inFlight = useRef(false);
   const act = async (payload: Record<string, unknown>, success: string) => {
+    if (demoData) { notify("Preview only — nothing is saved here."); return; }
     if (inFlight.current) return;
     inFlight.current = true;
     // Take the row off the screen at once. If the save fails the background

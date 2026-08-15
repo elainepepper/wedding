@@ -663,7 +663,8 @@ export function WeddingExperience({
             rsvpStatus: "Pending",
             ceremonyAttending: true,
             receptionAttending: true,
-            afterPartyInvited: false,
+            // the preview walks the FULL journey, secret chapter included
+            afterPartyInvited: true,
             afterPartyAttending: "Pending",
             mealSelection: "",
             dietaryRequirements: "",
@@ -2664,10 +2665,11 @@ export function WeddingExperience({
           </div>
         </section>
       ) : null}
-      {stepHas("afterparty") &&
-      inviteData?.afterPartyInvited &&
-      token &&
-      tablesAssigned ? (
+      {(stepHas("afterparty") &&
+        inviteData?.afterPartyInvited &&
+        token &&
+        tablesAssigned) ||
+      previewMode ? (
         <section
           id="afterparty"
           data-sky="dream-3"
@@ -2685,7 +2687,11 @@ export function WeddingExperience({
               </p>
               <a
                 className="afterparty-enter"
-                href={`/after-party?token=${encodeURIComponent(token)}`}
+                href={
+                  previewMode
+                    ? "/after-party?preview=1"
+                    : `/after-party?token=${encodeURIComponent(token)}`
+                }
               >
                 Open your invitation
               </a>
