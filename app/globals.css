@@ -687,7 +687,7 @@ body {
 .wedding-shell :where(h1, h2),
 .wedding-shell .guest-name-label strong,
 .wedding-shell .guest-name-label input,
-.wedding-shell .invitation-card h2 span,
+.wedding-shell .invitation-card h2 .amp,
 .wedding-shell .script-kicker,
 .wedding-shell .wax-seal span {
   font-family: var(--font-header);
@@ -1195,7 +1195,7 @@ textarea:focus-visible {
   letter-spacing: -0.045em;
 }
 
-.invitation-card h2 span {
+.invitation-card h2 .amp {
   display: block;
   margin: 0.15rem 0;
   color: var(--coral);
@@ -2824,7 +2824,7 @@ html { scroll-snap-type: none; }
 .wedding-shell :where(p, label, input, select, textarea, button, a, small, legend) { font-family: var(--font-body, "Cormorant Garamond", Georgia, serif); }
 .wedding-shell :where(h1, h2),
 .wedding-shell .guest-name-label strong,
-.wedding-shell .invitation-card h2 span,
+.wedding-shell .invitation-card h2 .amp,
 .wedding-shell .script-kicker,
 .wedding-shell .wax-seal span { font-family: var(--font-header, "Playfair Display", Georgia, serif); -webkit-text-stroke: .25px currentColor; text-rendering: geometricPrecision; }
 .dress-restriction { margin: 1.1rem auto .5rem !important; max-width: 34rem; padding: .85rem 1rem; border-block: 1px solid rgba(190,106,121,.42); color: #8e3f53 !important; font: italic 600 clamp(.86rem, 1.5vw, 1rem)/1.65 var(--font-body, "Cormorant Garamond", Georgia, serif) !important; }
@@ -2971,7 +2971,7 @@ html { scroll-snap-type: none; }
   text-shadow: 0 2px 22px rgba(239,211,203,.95);
 }
 
-.invitation-card h2 span { margin: .25rem 0 .18rem; }
+.invitation-card h2 .amp { margin: .25rem 0 .18rem; }
 .invitation-line { max-width: 30rem; color: var(--ink); }
 .event-details { width: min(590px, 100%); background: rgba(239,211,203,.4); }
 .invitation-card .primary-button { width: min(100%, 540px); }
@@ -4750,7 +4750,7 @@ canvas { pointer-events: none; }
   color: #fff;
   text-shadow: 0 2px 26px rgba(70, 45, 60, .4);
 }
-.portal-words h1 span { font-style: italic; opacity: .9; }
+.portal-words h1 .amp { font-style: italic; opacity: .9; }
 .portal-place {
   margin: 1rem 0 0;
   font: 500 .6rem/1.6 var(--font-sans);
@@ -5163,7 +5163,11 @@ canvas { pointer-events: none; }
 /* titles and questions */
 .wizard .scene h2,
 .portal-words h1,
-.locked-card h1 { font-size: var(--t-display); color: var(--ink-strong); }
+.locked-card h1 { font-size: var(--t-display); }
+/* the archway sits on a dark film, not paper — it keeps its own white,
+   set further up, rather than the ink-dark colour the other two share */
+.wizard .scene h2,
+.locked-card h1 { color: var(--ink-strong); }
 .wizard .scene h3,
 .wizard .scene legend,
 .wizard .scene label > span,
@@ -5978,3 +5982,36 @@ canvas { pointer-events: none; }
   font-weight: 600;
   letter-spacing: .01em;
 }
+
+/* ============ Ink, not pixels ============ */
+/* Hilberta Austine has no OpenType alternates at all — every letter is
+   stamped from the same die each time, which is why the names read as
+   digital no matter how good the script looks. Allura genuinely has
+   swash capitals and alternate joining forms, so it takes over just the
+   two places the couple's names appear as a headline: the archway and the
+   invitation card. Everywhere else keeps the site's normal heading face. */
+.portal-words h1,
+.wedding-shell .invitation-card h2 {
+  font-family: 'Allura', var(--font-header), cursive;
+  font-feature-settings: "fina" 1, "dlig" 1;
+  letter-spacing: normal;
+}
+
+/* Swashes belong on the initial only — turning them on for a whole line
+   once made "Elaine & Haykal" render as an unreadable tangle of loops. */
+.portal-words h1 .cap,
+.wedding-shell .invitation-card h2 .cap {
+  font-feature-settings: "swsh" 1, "dlig" 1;
+}
+
+/* The imperfections of real ink: nothing sits perfectly straight, and the
+   stroke edges bleed very slightly into the paper. The filter lives on an
+   inner wrapper, not the h1/h2 itself, so it doesn't fight the scene's
+   own reveal animation, which also animates `filter` on entrance. */
+.portal-words h1 .ink,
+.wedding-shell .invitation-card h2 .ink {
+  display: block;
+  filter: url(#ink-bleed);
+}
+.portal-words h1 .ink { transform: rotate(-.5deg); }
+.wedding-shell .invitation-card h2 .ink { transform: rotate(-.4deg); }

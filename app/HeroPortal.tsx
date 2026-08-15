@@ -75,7 +75,11 @@ export function HeroPortal() {
         />
         <div className="portal-words">
           <p className="portal-eyebrow">An invitation from</p>
-          <h1>Elaine <span>&amp;</span> Haykal</h1>
+          <h1>
+            <span className="ink">
+              <span className="cap">E</span>laine <span className="amp">&amp;</span> <span className="cap">H</span>aykal
+            </span>
+          </h1>
           <p className="portal-place">Kuala Lumpur</p>
           <button type="button" className="portal-enter" onClick={enter}>Enter</button>
           {refused ? (

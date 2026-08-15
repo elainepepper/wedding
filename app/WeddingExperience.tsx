@@ -19,6 +19,17 @@ import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
 import { removeBrokenImage } from "./image-fallback";
 
+// Splits off the first letter so it can carry a swash capital of its own —
+// the flourish belongs on the initial only, never the whole name.
+function ScriptName({ name }: { name: string }) {
+  return (
+    <>
+      <span className="cap">{name.slice(0, 1)}</span>
+      {name.slice(1)}
+    </>
+  );
+}
+
 type Attendance = "yes" | "no" | null;
 type Meal = "lamb" | "salmon" | null;
 type InvitedGuest = {
@@ -1717,7 +1728,10 @@ export function WeddingExperience({
           <p className="eyebrow">{content.familyLine}</p>
           <p className="invitation-line">{content.invitationLine}</p>
           <h2>
-            {content.brideName} <span>&amp;</span> {content.groomName}
+            <span className="ink">
+              <ScriptName name={content.brideName} /> <span className="amp">&amp;</span>{" "}
+              <ScriptName name={content.groomName} />
+            </span>
           </h2>
           <RibbonDivider />
           <div className="event-details">
