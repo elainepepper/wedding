@@ -196,14 +196,20 @@ const sceneLabels: Record<string, string> = {
 };
 
 // A couple entered as "Mr Lim" and "Mrs Lim" reads as one address:
-// "Mr & Mrs Lim". Any other pair of names keeps the plain "A & B" form.
+// "Mr & Mrs Lim". Malaysian honorifics carry the same pattern — "Dato
+// Ahmad" and "Datin Ahmad" become "Dato & Datin Ahmad" — so any two of
+// these titles sharing a surname combine the same way. Any other pair of
+// names keeps the plain "A & B" form.
+const HONORIFIC_ORDER = ["Datuk", "Dato", "Mr", "Datin", "Mrs", "Miss", "Ms"];
+const HONORIFIC_PATTERN = new RegExp(`^(${HONORIFIC_ORDER.join("|")})\\.?\\s+(.+)$`, "i");
 function joinGuestNames(names: Array<string | null | undefined>) {
   const clean = names.map((name) => (name || "").trim()).filter(Boolean);
   if (clean.length === 2) {
-    const titled = clean.map((name) => name.match(/^(Mr|Mrs)\.?\s+(.+)$/i));
+    const titled = clean.map((name) => name.match(HONORIFIC_PATTERN));
     if (titled[0] && titled[1] && titled[0][2].toLowerCase() === titled[1][2].toLowerCase() && titled[0][1].toLowerCase() !== titled[1][1].toLowerCase()) {
-      const surname = titled.find((match) => match![1].toLowerCase() === "mr")![2];
-      return `Mr & Mrs ${surname}`;
+      const rank = (title: string) => HONORIFIC_ORDER.findIndex((entry) => entry.toLowerCase() === title.toLowerCase());
+      const [first, second] = rank(titled[0][1]) <= rank(titled[1][1]) ? [titled[0], titled[1]] : [titled[1], titled[0]];
+      return `${first[1]} & ${second[1]} ${first[2]}`;
     }
   }
   return clean.join(" & ");

@@ -277,7 +277,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       <aside className={`manager-sidebar${mobileNav ? " is-open" : ""}`}>
         <div className="manager-brand"><span>E <i>&amp;</i> H</span><small>Guest Manager</small></div>
         <nav aria-label="Guest manager">
-          {tabs.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setMobileNav(false); }}><b>{item.glyph}</b><span>{item.label}</span>{item.id === "rsvps" && stats.pending ? <em>{stats.pending}</em> : null}</button>)}
+          {tabs.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setSelected([]); setMobileNav(false); }}><b>{item.glyph}</b><span>{item.label}</span>{item.id === "rsvps" && stats.pending ? <em>{stats.pending}</em> : null}</button>)}
         </nav>
         <div className="manager-profile"><div>{initialAdminName.slice(0, 1).toUpperCase()}</div><p><strong>{initialAdminName}</strong><span>Administrator</span></p><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></div>
       </aside>
@@ -1073,17 +1073,19 @@ function Imports({ act, notify }: { act: (payload: Record<string, unknown>, succ
         const values = line.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g)?.map((cell) => cell.replace(/,$/, "").replace(/^"|"$/g, "").replaceAll('""', '"')) ?? [];
         const row: Record<string, unknown> = {};
         headers.forEach((header, index) => { const key = keyMap[header]; if (key) row[key] = values[index] ?? ""; });
-        // "Mr & Mrs Tan" is two guests sharing one household, so each gets
-        // their own meal and their own line in the reply.
+        // "Mr & Mrs Tan" — or "Dato & Datin Tan", a common Malaysian pairing —
+        // is two guests sharing one household, so each gets their own meal
+        // and their own line in the reply.
         const couple = typeof row.fullName === "string"
-          ? row.fullName.trim().match(/^mr\.?\s*(?:&|and|\+)\s*mrs\.?\s+(.+)$/i)
+          ? row.fullName.trim().match(/^(Datuk|Dato|Mr|Datin|Mrs|Miss|Ms)\.?\s*(?:&|and|\+)\s*(Datuk|Dato|Mr|Datin|Mrs|Miss|Ms)\.?\s+(.+)$/i)
           : null;
         if (couple) {
-          const surname = couple[1].trim();
-          row.firstName = "Mr";
+          const [, title1, title2, surnameRaw] = couple;
+          const surname = surnameRaw.trim();
+          row.firstName = title1;
           row.lastName = surname;
-          row.household = row.household || `Mr & Mrs ${surname}`;
-          row.partnerRow = { firstName: "Mrs", lastName: surname, household: row.household };
+          row.household = row.household || `${title1} & ${title2} ${surname}`;
+          row.partnerRow = { firstName: title2, lastName: surname, household: row.household };
         }
         if (!row.firstName && typeof row.fullName === "string" && row.fullName.trim()) {
           const parts = row.fullName.trim().split(/\s+/);
