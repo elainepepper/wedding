@@ -1499,6 +1499,10 @@ export function WeddingExperience({
       const firstConfirmedId = guestResponses.find(
         (guest) => guest.rsvpStatus === "Confirmed",
       )?.id;
+      // Wishes are collected however a household replies, including a
+      // decline, so this anchors to whoever is first in the party rather
+      // than requiring a confirmed attendee the way advice does.
+      const firstResponseId = guestResponses[0]?.id;
       const guests = guestResponses.map((guest) => ({
         ...guest,
         ceremonyAttending:
@@ -1527,7 +1531,13 @@ export function WeddingExperience({
         transportRequired: false,
         accessibility:
           guest.rsvpStatus === "Confirmed" ? rsvp.accessibilityNote : "",
-        wishes: rsvp.wishes || guest.wishes,
+        // One household submits one wish and one piece of advice, not one
+        // per guest — without this guard, a two-person household wrote the
+        // same wish onto both guest records and the manager showed it twice.
+        wishes:
+          guest.id === firstResponseId || guestResponses.length === 1
+            ? rsvp.wishes
+            : "",
         advice:
           guest.id === firstConfirmedId || guestResponses.length === 1
             ? rsvp.advice
