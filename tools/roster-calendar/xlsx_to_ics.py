@@ -45,6 +45,7 @@ SHIFTS = {
 NON_SHIFTS = {
     "434343": "Annual leave",
     "cccccc": "RDO / day in lieu",
+    "ff0000": "Sick day",
 }
 
 # Cell text -> all-day entry, used when the cell has no meaningful fill.
@@ -282,8 +283,8 @@ def main():
     ap.add_argument("--out", default="roster.ics")
     ap.add_argument("--years", default="", help="comma-separated year tabs (default: all year tabs)")
     ap.add_argument("--no-leave", action="store_true", help="shifts only")
-    ap.add_argument("--from", dest="date_from", default="2026-01-01", metavar="YYYY-MM-DD",
-                    help="ignore days before this (default: 2026-01-01)")
+    ap.add_argument("--from", dest="date_from", default="today", metavar="YYYY-MM-DD",
+                    help="ignore days before this, or 'today' (default: today)")
     ap.add_argument("--to", dest="date_to", default="2027-03-31", metavar="YYYY-MM-DD",
                     help="ignore days after this, i.e. where the roster stops being "
                          "accurate (default: 2027-03-31)")
@@ -292,10 +293,12 @@ def main():
     def bound(text, name):
         if not text:
             return None
+        if text.strip().lower() == "today":
+            return dt.date.today()
         try:
             return dt.datetime.strptime(text, "%Y-%m-%d").date()
         except ValueError:
-            sys.exit("--%s must look like YYYY-MM-DD" % name)
+            sys.exit("--%s must look like YYYY-MM-DD, or be 'today'" % name)
 
     date_from = bound(args.date_from, "from")
     date_to = bound(args.date_to, "to")
@@ -312,13 +315,20 @@ def main():
     if not records:
         sys.exit("no rows found for %s in tabs %s" % (args.person, ", ".join(tabs)))
 
+    # Read one day early so an overnight shift still running at the start of
+    # the window survives the event-level filter below.
+    read_from = date_from - dt.timedelta(days=1) if date_from else None
     kept = [r for r in records
-            if (date_from is None or r[0] >= date_from)
+            if (read_from is None or r[0] >= read_from)
             and (date_to is None or r[0] <= date_to)]
     dropped = len(records) - len(kept)
     records = kept
 
     events = build_events(records, include_leave=not args.no_leave)
+    if date_from:
+        start = dt.datetime(date_from.year, date_from.month, date_from.day)
+        events = [e for e in events
+                  if (e["date"] >= date_from if e["kind"] == "allday" else e["end"] > start)]
     events.sort(key=lambda e: (e["date"], e["kind"]))
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     with open(args.out, "w", newline="") as fh:

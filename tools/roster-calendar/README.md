@@ -33,29 +33,36 @@ sheet through the Sheets API, which keeps them.)
 | Dark orange `#c65911` | 1pm – 9pm | timed event |
 | Dark grey `#434343` | Annual leave | all-day |
 | Light grey `#cccccc` | RDO / day in lieu | all-day |
+| Red `#ff0000` | Sick day | all-day |
 | `PHol` / `PHoE` text | Public holiday | all-day |
 | `DOD` text, or blank | Day off | skipped |
 | Anything else with a colour | unknown | all-day “Rostered – check the sheet”, with the colour code in the notes |
 
 Two of these were inferred rather than read off the legend: dark orange is
 `1-9` typed into the cells (1pm – 9pm), and dark grey is the colour used on the
-`A/L` cells. Red `#ff0000` is deliberately **not** mapped — it appears 8 times
-in 2026 and its meaning isn't clear from the sheet, so those days show up as
-“check the sheet” rather than as a guessed time. If a cell spells out its own
-range (`8-5`, `2-10`, `9.30-2`), that text wins over the colour.
+`A/L` cells. If a cell spells out its own range (`8-5`, `2-10`, `9.30-2`), that
+text wins over the colour.
 
 To change any of this, edit the `SHIFTS` / `NON_SHIFTS` tables at the top of
 `roster-ics.gs` and redeploy.
 
-## How far ahead it publishes
+## What range it publishes
 
-The roster is only accurate from **January 2026 to March 2027**, so that's all
-the feed carries. The year tabs run well past March 2027, but those later
-months are a draft pattern rather than a real roster, and syncing them would
-put shifts on the phone that nobody has committed to. `VALID_FROM` and
-`VALID_TO` in `CONFIG` enforce the limit; the rolling `DAYS_BACK` /
-`DAYS_AHEAD` window is applied on top, so the feed shows whichever range is
-narrower.
+**The calendar starts at today.** Past shifts aren't carried in the feed, and
+because a subscribed calendar mirrors whatever the feed currently says, each
+day's shifts drop off the phone once the day is over — the calendar is a
+forward view of the roster, not a work history. (If you'd rather keep the last
+few weeks visible, set `DAYS_BACK` to e.g. `30`.)
+
+One exception: a night shift that started yesterday and ran into this morning
+stays on today's calendar, since it's part of today. It disappears tomorrow.
+
+The roster is only accurate to **March 2027**, so that's where the feed stops. The year tabs run well past
+March 2027, but those later months are a draft pattern rather than a real
+roster, and syncing them would put shifts on the phone that nobody has
+committed to. `VALID_FROM` and `VALID_TO` in `CONFIG` enforce the limit; the
+rolling `DAYS_BACK` / `DAYS_AHEAD` window is applied on top, so the feed shows
+whichever range is narrower.
 
 **When the boss publishes further ahead, raise `VALID_TO`** and redeploy
 (*Deploy → Manage deployments → edit → New version* — the URL doesn't change,
@@ -130,7 +137,8 @@ that case publish to a Drive file instead:
 | --- | --- | --- |
 | `PERSON` | `Elaine` | Which row of the grid to read. |
 | `TIMEZONE` | `Australia/Perth` | Must match the project time zone. |
-| `DAYS_BACK` / `DAYS_AHEAD` | 30 / 400 | Rolling window around today. |
+| `DAYS_BACK` / `DAYS_AHEAD` | 0 / 400 | Rolling window. `0` back = starts today. |
+| `KEEP_OVERNIGHT_INTO_TODAY` | `true` | Keep last night's shift if it ran into this morning. |
 | `VALID_FROM` / `VALID_TO` | 2026-01-01 / 2027-03-31 | Hard limits on the trusted span — see below. |
 | `SHOW_WINDOW_END_MARKER` | `true` | All-day marker on the last published day. |
 | `INCLUDE_LEAVE` | `true` | All-day entries for leave, RDOs, public holidays. |
@@ -147,9 +155,28 @@ pip install openpyxl
 python3 xlsx_to_ics.py Tech_Roster.xlsx --person Elaine --out elaine.ics
 ```
 
-It applies the same Jan 2026 – Mar 2027 limit by default. Options:
-`--from` / `--to` to change that (`--from ''` for no limit), `--years
-2026,2027` to limit which tabs are read, `--no-leave` for shifts only.
+Like the feed, it runs from today to 31 March 2027 by default. Options:
+`--from` / `--to` to change that (a date, `today`, or `''` for no limit),
+`--years 2026,2027` to limit which tabs are read, `--no-leave` for shifts only.
+
+## Tests
+
+`tests/run_tests.js` runs the Apps Script under Node with the Google globals
+stubbed, against a fixture taken from a real workbook. It covers the time-range
+parsing, the window boundaries around a night shift, the Jan 2026 – Mar 2027
+limit, and the shape of the generated iCalendar — plus a check that **every
+colour in your rows is mapped**, which is how you find out the roster has grown
+a shift type the script doesn't know about.
+
+```bash
+cd tests
+python3 extract_fixture.py ~/Downloads/Tech_Roster.xlsx   # writes fixture.json
+TZ=Australia/Perth node run_tests.js
+```
+
+The fixture holds real roster data for the whole department, so it's gitignored
+— regenerate it locally. Worth re-running after editing `SHIFTS`/`NON_SHIFTS`,
+or when the boss publishes a new stretch of roster.
 Email the `.ics` to yourself and open it on the phone to import.
 
 ## What the script assumes about the sheet

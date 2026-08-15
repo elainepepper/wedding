@@ -1,0 +1,3 @@
+# Real roster data - regenerate locally with extract_fixture.py
+fixture.json
+*.ics

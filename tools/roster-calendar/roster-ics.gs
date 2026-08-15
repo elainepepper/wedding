@@ -22,9 +22,14 @@ var CONFIG = {
 
   TIMEZONE: 'Australia/Perth',
 
-  // How much of the roster to publish, relative to today.
-  DAYS_BACK: 30,
+  // How much of the roster to publish, relative to today. DAYS_BACK: 0 means
+  // the calendar starts at today - past shifts drop off as the days pass.
+  DAYS_BACK: 0,
   DAYS_AHEAD: 400,
+
+  // Keep a night shift that started yesterday and ran into this morning - it
+  // is part of today. Only affects the first day of the window.
+  KEEP_OVERNIGHT_INTO_TODAY: true,
 
   // Hard limits on how far the roster is trusted, as 'YYYY-MM-DD'. Anything
   // outside these is ignored even if the sheet has rows for it - the later
@@ -71,7 +76,8 @@ var SHIFTS = {
 /** Fill colour -> all-day entry (a non-working day, not a shift). */
 var NON_SHIFTS = {
   '#434343': 'Annual leave',
-  '#cccccc': 'RDO / day in lieu'
+  '#cccccc': 'RDO / day in lieu',
+  '#ff0000': 'Sick day'
 };
 
 /** Cell text -> all-day entry, for days with no meaningful fill colour. */
@@ -110,7 +116,9 @@ function doGet(e) {
 function readRoster() {
   var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var window = publishWindow();
-  var from = window.from;
+  // Read one day early so a night shift that started yesterday and ran into
+  // today survives; buildEvents() drops anything that finished before today.
+  var from = CONFIG.KEEP_OVERNIGHT_INTO_TODAY ? addDays(window.from, -1) : window.from;
   var to = window.to;
 
   var days = [];
@@ -148,6 +156,10 @@ function publishWindow() {
 function parseIsoDate(text) {
   var m = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(String(text || ''));
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+
+function addDays(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
 function readYearTab(sheet, year) {
@@ -240,7 +252,15 @@ function normaliseColour(colour) {
 // ------------------------------------------------------------ data -> events --
 
 function buildEvents() {
-  var events = readRoster().map(toEvent).filter(function (e) { return e; });
+  var start = publishWindow().from;
+  var events = readRoster()
+      .map(toEvent)
+      .filter(function (e) {
+        if (!e) return false;
+        // A shift belongs to a day it touches, so last night's shift stays on
+        // today's calendar; anything that finished before today is gone.
+        return e.allDay ? e.date >= start : e.end > start;
+      });
 
   // Without this, the calendar just goes quiet past VALID_TO and there is no
   // way to tell "no shifts" from "the feed stopped".
