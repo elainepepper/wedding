@@ -9,3 +9,5 @@ tests/screens/
 *.log
 .DS_Store
 .pnpm-store/
+__pycache__/
+*.pyc
