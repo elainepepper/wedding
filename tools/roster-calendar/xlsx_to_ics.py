@@ -282,7 +282,23 @@ def main():
     ap.add_argument("--out", default="roster.ics")
     ap.add_argument("--years", default="", help="comma-separated year tabs (default: all year tabs)")
     ap.add_argument("--no-leave", action="store_true", help="shifts only")
+    ap.add_argument("--from", dest="date_from", default="2026-01-01", metavar="YYYY-MM-DD",
+                    help="ignore days before this (default: 2026-01-01)")
+    ap.add_argument("--to", dest="date_to", default="2027-03-31", metavar="YYYY-MM-DD",
+                    help="ignore days after this, i.e. where the roster stops being "
+                         "accurate (default: 2027-03-31)")
     args = ap.parse_args()
+
+    def bound(text, name):
+        if not text:
+            return None
+        try:
+            return dt.datetime.strptime(text, "%Y-%m-%d").date()
+        except ValueError:
+            sys.exit("--%s must look like YYYY-MM-DD" % name)
+
+    date_from = bound(args.date_from, "from")
+    date_to = bound(args.date_to, "to")
 
     wb = openpyxl.load_workbook(args.workbook)
     wanted = [y.strip() for y in args.years.split(",") if y.strip()]
@@ -296,6 +312,12 @@ def main():
     if not records:
         sys.exit("no rows found for %s in tabs %s" % (args.person, ", ".join(tabs)))
 
+    kept = [r for r in records
+            if (date_from is None or r[0] >= date_from)
+            and (date_to is None or r[0] <= date_to)]
+    dropped = len(records) - len(kept)
+    records = kept
+
     events = build_events(records, include_leave=not args.no_leave)
     events.sort(key=lambda e: (e["date"], e["kind"]))
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -304,6 +326,8 @@ def main():
 
     timed = sum(1 for e in events if e["kind"] == "timed")
     print("tabs: %s" % ", ".join(tabs))
+    print("window: %s to %s (%d days outside it ignored)"
+          % (date_from or "start", date_to or "end", dropped))
     print("%d events (%d shifts, %d all-day) -> %s" % (len(events), timed, len(events) - timed, args.out))
 
 

@@ -26,8 +26,19 @@ var CONFIG = {
   DAYS_BACK: 30,
   DAYS_AHEAD: 400,
 
+  // Hard limits on how far the roster is trusted, as 'YYYY-MM-DD'. Anything
+  // outside these is ignored even if the sheet has rows for it - the later
+  // months of a year tab are usually a draft pattern, not a real roster.
+  // Push VALID_TO forward once the boss publishes further ahead.
+  VALID_FROM: '2026-01-01',
+  VALID_TO: '2027-03-31',
+
   // All-day entries for annual leave, RDOs and public holidays.
   INCLUDE_LEAVE: true,
+
+  // Marks the last published day, so an empty calendar past VALID_TO reads as
+  // "nothing rostered yet" rather than "the sync broke".
+  SHOW_WINDOW_END_MARKER: true,
 
   // Plain days off (DOD) as all-day entries. Usually just noise.
   INCLUDE_DAYS_OFF: false,
@@ -98,9 +109,9 @@ function doGet(e) {
 /** Reads every year tab and returns this person's roster days in the window. */
 function readRoster() {
   var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var today = new Date();
-  var from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - CONFIG.DAYS_BACK);
-  var to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + CONFIG.DAYS_AHEAD);
+  var window = publishWindow();
+  var from = window.from;
+  var to = window.to;
 
   var days = [];
   ss.getSheets().forEach(function (sheet) {
@@ -115,6 +126,28 @@ function readRoster() {
 
   days.sort(function (a, b) { return a.date - b.date; });
   return days;
+}
+
+/**
+ * The date range to publish: a rolling window around today, clipped to the
+ * span the roster is actually accurate for.
+ */
+function publishWindow() {
+  var today = new Date();
+  var from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - CONFIG.DAYS_BACK);
+  var to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + CONFIG.DAYS_AHEAD);
+
+  var validFrom = parseIsoDate(CONFIG.VALID_FROM);
+  var validTo = parseIsoDate(CONFIG.VALID_TO);
+  if (validFrom && validFrom > from) from = validFrom;
+  if (validTo && validTo < to) to = validTo;
+  return { from: from, to: to };
+}
+
+/** 'YYYY-MM-DD' -> Date at local midnight; blank or malformed -> null. */
+function parseIsoDate(text) {
+  var m = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(String(text || ''));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 }
 
 function readYearTab(sheet, year) {
@@ -207,7 +240,22 @@ function normaliseColour(colour) {
 // ------------------------------------------------------------ data -> events --
 
 function buildEvents() {
-  return readRoster().map(toEvent).filter(function (e) { return e; });
+  var events = readRoster().map(toEvent).filter(function (e) { return e; });
+
+  // Without this, the calendar just goes quiet past VALID_TO and there is no
+  // way to tell "no shifts" from "the feed stopped".
+  var validTo = parseIsoDate(CONFIG.VALID_TO);
+  if (CONFIG.SHOW_WINDOW_END_MARKER && validTo && validTo <= publishWindow().to) {
+    events.push({
+      allDay: true,
+      date: validTo,
+      summary: 'Roster feed ends here',
+      note: 'The roster is only published to ' + CONFIG.VALID_TO + '. When more ' +
+            'is available, raise VALID_TO in the script and redeploy.',
+      marker: true
+    });
+  }
+  return events;
 }
 
 function toEvent(day) {
@@ -299,7 +347,8 @@ function toIcs(events) {
 
   events.forEach(function (ev) {
     lines.push('BEGIN:VEVENT');
-    lines.push('UID:' + ymd(ev.date) + '-' + slug(CONFIG.PERSON) + '@roster');
+    lines.push('UID:' + (ev.marker ? 'window-end-' : '') +
+               ymd(ev.date) + '-' + slug(CONFIG.PERSON) + '@roster');
     lines.push('DTSTAMP:' + stamp);
     if (ev.allDay) {
       var next = new Date(ev.date.getTime() + 24 * 3600 * 1000);
@@ -403,6 +452,19 @@ function debugReport(events) {
   if (Session.getScriptTimeZone() !== CONFIG.TIMEZONE) {
     lines.push('WARNING: set the project timezone to ' + CONFIG.TIMEZONE +
                ' under Project Settings, or shift times will be wrong.');
+  }
+  var window = publishWindow();
+  lines.push('Publishing: ' + Utilities.formatDate(window.from, CONFIG.TIMEZONE, 'yyyy-MM-dd') +
+             ' to ' + Utilities.formatDate(window.to, CONFIG.TIMEZONE, 'yyyy-MM-dd') +
+             ' (roster trusted ' + CONFIG.VALID_FROM + ' to ' + CONFIG.VALID_TO + ')');
+  var validTo = parseIsoDate(CONFIG.VALID_TO);
+  if (validTo) {
+    var daysLeft = Math.round((validTo - new Date()) / (24 * 3600 * 1000));
+    if (daysLeft < 0) {
+      lines.push('WARNING: VALID_TO has passed - the feed is empty. Raise it and redeploy.');
+    } else if (daysLeft < 60) {
+      lines.push('NOTE: only ' + daysLeft + ' days of roster left. Raise VALID_TO when more is published.');
+    }
   }
   lines.push('Events: ' + events.length);
 

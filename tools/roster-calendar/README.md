@@ -47,6 +47,23 @@ range (`8-5`, `2-10`, `9.30-2`), that text wins over the colour.
 To change any of this, edit the `SHIFTS` / `NON_SHIFTS` tables at the top of
 `roster-ics.gs` and redeploy.
 
+## How far ahead it publishes
+
+The roster is only accurate from **January 2026 to March 2027**, so that's all
+the feed carries. The year tabs run well past March 2027, but those later
+months are a draft pattern rather than a real roster, and syncing them would
+put shifts on the phone that nobody has committed to. `VALID_FROM` and
+`VALID_TO` in `CONFIG` enforce the limit; the rolling `DAYS_BACK` /
+`DAYS_AHEAD` window is applied on top, so the feed shows whichever range is
+narrower.
+
+**When the boss publishes further ahead, raise `VALID_TO`** and redeploy
+(*Deploy → Manage deployments → edit → New version* — the URL doesn't change,
+so the phone needs no changes). Until then the calendar carries an all-day
+“Roster feed ends here” marker on 31 March 2027, so an empty April reads as
+*not published yet* rather than *the sync is broken*. Running `preview` also
+warns once fewer than 60 days of roster remain.
+
 ## Setup (about 10 minutes, once)
 
 You need view access to the roster spreadsheet — no edit rights required, and
@@ -113,7 +130,9 @@ that case publish to a Drive file instead:
 | --- | --- | --- |
 | `PERSON` | `Elaine` | Which row of the grid to read. |
 | `TIMEZONE` | `Australia/Perth` | Must match the project time zone. |
-| `DAYS_BACK` / `DAYS_AHEAD` | 30 / 400 | How much of the roster to publish. |
+| `DAYS_BACK` / `DAYS_AHEAD` | 30 / 400 | Rolling window around today. |
+| `VALID_FROM` / `VALID_TO` | 2026-01-01 / 2027-03-31 | Hard limits on the trusted span — see below. |
+| `SHOW_WINDOW_END_MARKER` | `true` | All-day marker on the last published day. |
 | `INCLUDE_LEAVE` | `true` | All-day entries for leave, RDOs, public holidays. |
 | `INCLUDE_DAYS_OFF` | `false` | All-day entries for ordinary `DOD` days off too. |
 | `TITLE_PREFIX` | `Work: ` | Prefix on shift titles. |
@@ -128,7 +147,9 @@ pip install openpyxl
 python3 xlsx_to_ics.py Tech_Roster.xlsx --person Elaine --out elaine.ics
 ```
 
-Options: `--years 2026,2027` to limit the tabs, `--no-leave` for shifts only.
+It applies the same Jan 2026 – Mar 2027 limit by default. Options:
+`--from` / `--to` to change that (`--from ''` for no limit), `--years
+2026,2027` to limit which tabs are read, `--no-leave` for shifts only.
 Email the `.ics` to yourself and open it on the phone to import.
 
 ## What the script assumes about the sheet
