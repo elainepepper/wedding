@@ -263,7 +263,10 @@ export async function POST(request: Request) {
         batch.set(doc.ref, {
           rsvp_status: "Pending", invitation_sent: 0, invitation_sent_at: null,
           rsvp_submitted_at: null, ceremony_attending: null, reception_attending: null,
-          after_party_eligible: 0, after_party_invited: 0, after_party_attending: "Pending",
+          // after_party_eligible is the couple's own shortlist, typed by hand
+          // in the guest editor — it is kept, like every other typed detail.
+          // Only the access itself is withdrawn.
+          after_party_invited: 0, after_party_attending: "Pending",
           updated_at: serverTimestamp(),
         }, { merge: true });
         queued += 1; if (queued >= 400) await flush();
@@ -281,6 +284,11 @@ export async function POST(request: Request) {
     // everyone on it are set aside, their link stops working, and nothing is
     // lost. Only a deliberate "delete permanently" destroys anything.
     if (action === "archiveHousehold" || action === "restoreHousehold") {
+      // Archiving takes a family's invitation link out of service. Reversible,
+      // but not a planner's call to make across the whole list.
+      if (action === "archiveHousehold" && admin.role === "planner") {
+        return Response.json({ error: "Only Elaine or Haykal can set an invitation aside. Ask them if a household needs removing." }, { status: 403 });
+      }
       const householdId = integer(payload.householdId);
       const householdDoc = householdId ? await docById("households", householdId) : null;
       if (!householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
@@ -288,7 +296,15 @@ export async function POST(request: Request) {
       const members = await weddingRef.collection("guests")
         .where("household_id", "in", [Number(householdId), String(householdId)]).get();
       const batch = weddingRef.firestore.batch();
-      members.docs.forEach((doc) => batch.set(doc.ref, { archived, updated_at: serverTimestamp() }, { merge: true }));
+      members.docs.forEach((doc) => {
+        if (archived) {
+          // Remember who was already put aside on their own, so restoring the
+          // invitation later does not quietly bring them back with it.
+          batch.set(doc.ref, { archived: 1, archived_with_household: Number(doc.data().archived ?? 0) ? 0 : 1, updated_at: serverTimestamp() }, { merge: true });
+        } else if (Number(doc.data().archived_with_household ?? 1)) {
+          batch.set(doc.ref, { archived: 0, archived_with_household: null, updated_at: serverTimestamp() }, { merge: true });
+        }
+      });
       batch.set(householdDoc.ref, { archived, archived_at: archived ? serverTimestamp() : null, updated_at: serverTimestamp() }, { merge: true });
       await batch.commit();
       await addActivity(admin.displayName, archived ? "Household archived" : "Household restored", "household", householdId as number,
@@ -379,6 +395,7 @@ export async function POST(request: Request) {
         .where("household_id", "in", [Number(householdId), String(householdId)]).get();
       const batch = weddingRef.firestore.batch();
       members.docs.forEach((doc) => batch.set(doc.ref, { invitation_sent: 0, invitation_sent_at: null, updated_at: serverTimestamp() }, { merge: true }));
+      batch.set(householdDoc.ref, { invitation_sent: 0, invitation_sent_at: null, updated_at: serverTimestamp() }, { merge: true });
       await batch.commit();
       await addActivity(admin.displayName, "Invitation marked unsent", "household", householdId as number, String(householdDoc.data().name ?? ""));
       return Response.json({ ok: true });
@@ -390,9 +407,17 @@ export async function POST(request: Request) {
       if (!householdId || !householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
       if (action === "regenerateLink") await householdDoc.ref.set({ invitation_token: randomToken(), invitation_enabled: true, updated_at: serverTimestamp() }, { merge: true });
       else {
-        const members = await weddingRef.collection("guests").where("household_id", "==", householdId).get();
+        // Match the id as a number OR as text: imported guests store it either
+        // way, and the strict comparison here silently matched nothing, so
+        // "Mark sent" reported success while recording absolutely nothing.
+        const members = await weddingRef.collection("guests")
+          .where("household_id", "in", [Number(householdId), String(householdId)]).get();
         const batch = weddingRef.firestore.batch();
         members.docs.forEach((doc) => batch.set(doc.ref, { invitation_sent: 1, invitation_sent_at: serverTimestamp(), updated_at: serverTimestamp() }, { merge: true }));
+        // Sending is a fact about the invitation, not about each person on it.
+        // Recording it on the household too means an invitation with no guests
+        // yet — or one that gains a guest later — still reads as sent.
+        batch.set(householdDoc.ref, { invitation_sent: 1, invitation_sent_at: serverTimestamp(), updated_at: serverTimestamp() }, { merge: true });
         await batch.commit();
       }
       await addActivity(admin.displayName, action === "regenerateLink" ? "Invitation link regenerated" : "Invitation marked sent", "household", householdId, "Invitation status updated");

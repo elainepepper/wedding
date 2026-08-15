@@ -1441,7 +1441,10 @@ export function WeddingExperience({
         goToSection("travel");
         return;
       }
-      if (rsvp.flyingIn && rsvp.roomAtHyatt === null) {
+      // Only ask about a room while there is one to offer. Once the block is
+      // full the question is not on the page at all, and demanding an answer
+      // to it left flying-in guests unable to send their reply.
+      if (rsvp.flyingIn && !roomBlockFull && rsvp.roomAtHyatt === null) {
         setError(
           "Do let us know whether a room at the Grand Hyatt would help.",
         );

@@ -66,7 +66,15 @@ async function roomBlockState(settings: Record<string, unknown>, householdId: nu
   if (!Number.isFinite(size) || size <= 0) return { size: 0, taken: 0, full: false };
   // Loose matching: a flag imported as "1" or true must both count.
   const requested = await weddingRef.collection("guests").where("accommodation_required", "in", [1, true, "1"]).get();
-  const households = new Set(requested.docs.map((doc) => Number(doc.data().household_id)));
+  // A room only counts while someone is actually coming to use it. Guests who
+  // were archived, or who later declined, must give their room back — without
+  // this the block filled up with people who were no longer attending and real
+  // guests were told the last room had gone while rooms sat empty.
+  const live = requested.docs
+    .map((doc) => doc.data())
+    .filter((guest) => !Number(guest.archived ?? 0))
+    .filter((guest) => String(guest.rsvp_status ?? "").toLowerCase() !== "declined");
+  const households = new Set(live.map((guest) => Number(guest.household_id)));
   const mine = households.has(householdId);
   const taken = households.size;
   return { size, taken, full: taken >= size && !mine };
