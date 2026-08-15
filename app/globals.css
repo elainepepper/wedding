@@ -3279,7 +3279,7 @@ html { scroll-snap-type: none; }
 .gate-hint {
   margin: 1.4rem 0 0; padding: .8rem 1rem;
   border: 1px dashed rgba(142,66,88,.4); border-radius: 12px;
-  font: 500 .85rem/1.55 var(--font-sans);
+  font: italic 500 .95rem/1.55 var(--font-body, "Cormorant Garamond", Georgia, serif);
   color: var(--wine); background: rgba(216,192,180,.16);
   text-align: center;
 }
