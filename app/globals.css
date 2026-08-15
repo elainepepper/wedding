@@ -4024,17 +4024,27 @@ canvas { pointer-events: none; }
 @media (min-width: 900px) { .venue-map { height: 42svh !important; max-height: 420px; } }
 .field-grid--single { grid-template-columns: 1fr !important; }
 
-/* The programme is two lines now — centre it rather than stretching it */
-.evening-timeline { display: grid; gap: 1.6rem; max-width: 26rem; margin: 2rem auto 0; }
-.evening-timeline li { display: grid; gap: .3rem; text-align: center; }
+/* The programme is a ledger: time and event share one grid, one left
+   edge, one baseline — set like a printed order of service. */
+.evening-timeline { display: grid; gap: 1.1rem; max-width: 24rem; margin: 2rem auto 0; }
+.evening-timeline li {
+  display: grid;
+  grid-template-columns: 6.2rem 1fr;
+  gap: 1.1rem;
+  align-items: baseline;
+  text-align: left;
+}
 .evening-timeline .timeline-time {
-  font: 500 clamp(1.6rem, 6vw, 2.1rem)/1.1 var(--font-header);
+  font: 500 clamp(1.15rem, 4.4vw, 1.4rem)/1.2 "Bodoni Moda", Georgia, serif !important;
+  font-variant-numeric: tabular-nums;
   color: var(--wine);
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 .evening-timeline h3 {
   margin: 0;
-  font: italic 500 clamp(1.02rem, 3.8vw, 1.2rem)/1.45 var(--font-body);
-  color: rgba(74, 58, 60, .88);
+  font: 400 clamp(1.05rem, 4vw, 1.22rem)/1.45 var(--font-body);
+  color: rgba(74, 58, 60, .92);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -4631,15 +4641,24 @@ canvas { pointer-events: none; }
   text-align: center;
 }
 
-/* The way back, once everything else has been read */
+/* The way back, once everything else has been read — the same quiet
+   utility voice as every other control, never a browser-blue link */
 .return-to-start { position: relative; z-index: 1; margin: 0 0 4rem; text-align: center; }
-.return-to-start a {
-  font: 500 .6rem/1 var(--font-sans);
+.return-to-start a,
+.return-to-start button {
+  font: 600 .6rem/1 var(--font-sans);
   letter-spacing: .24em;
   text-transform: uppercase;
   color: #9B3160;
-  text-decoration: none;
+  cursor: pointer;
   text-shadow: 0 1px 14px rgba(255, 250, 248, .95);
+}
+
+/* the invitation's closing line — one quiet sentence under the photographs */
+.closing-line {
+  margin: 2.2rem 0 0;
+  font: italic 400 clamp(1.05rem, 4vw, 1.25rem)/1.6 var(--font-body);
+  color: rgba(74, 58, 60, .8);
 }
 
 /* ==================================================================== */

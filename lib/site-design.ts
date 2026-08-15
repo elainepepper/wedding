@@ -170,10 +170,10 @@ export const defaultSiteDesign: SiteDesign = {
     venueAddress: "Level 1, Grand Hyatt Kuala Lumpur\n12 Jalan Pinang, 50450 Kuala Lumpur",
     dressKicker: "An evening in your finest",
     dressCode: "Formal",
-    dressNote: "Gentlemen in suits, with a tie or bow tie. Ladies in your most elegant dress, or in traditional dress — a qipao, baju kurung or sari would be beautiful.",
-    dressRestriction: "We kindly ask that white, ivory, cream and beige be left to the bride.",
+    dressNote: "Gentlemen: a suit with a tie or bow tie. Ladies: an elegant dress or traditional attire — qipao, baju kurung and sari are all warmly welcomed.",
+    dressRestriction: "We kindly ask that white, ivory, cream and beige be reserved for the bride.",
     wishesKicker: "A few words for our forever",
-    wishesHeading: "Your wishes for our next chapter",
+    wishesHeading: "A few words for us to keep",
   },
   decorations: [
     { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true, motion: "float", motionStrength: .35 },
@@ -198,6 +198,14 @@ const legacyCopy: Partial<Record<keyof SiteContent, string>> = {
   wishesHeading: "Warm wishes & marriage advice",
 };
 
+// A stored copy that matches an earlier default is treated the same way —
+// it upgrades to the current wording rather than pinning the old draft.
+const previousDefaults: Partial<Record<keyof SiteContent, string[]>> = {
+  dressNote: ["Gentlemen in suits, with a tie or bow tie. Ladies in your most elegant dress, or in traditional dress — a qipao, baju kurung or sari would be beautiful."],
+  dressRestriction: ["We kindly ask that white, ivory, cream and beige be left to the bride."],
+  wishesHeading: ["Your wishes for our next chapter"],
+};
+
 const number = (value: unknown, fallback: number, min: number, max: number) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
@@ -210,7 +218,8 @@ export function normaliseSiteDesign(value: unknown): SiteDesign {
   const content = Object.fromEntries(Object.entries(defaultSiteDesign.content).map(([key, fallback]) => {
     const typedKey = key as keyof SiteContent;
     const candidate = typeof sourceContent[typedKey] === "string" ? sourceContent[typedKey] as string : fallback;
-    return [key, legacyCopy[typedKey] === candidate ? fallback : candidate];
+    const isStale = legacyCopy[typedKey] === candidate || (previousDefaults[typedKey] ?? []).includes(candidate);
+    return [key, isStale ? fallback : candidate];
   })) as SiteContent;
   // Custom pages parse before decorations so artwork can be placed on them.
   const customPages: CustomPage[] = Array.isArray(source.customPages) ? source.customPages.slice(0, 6).flatMap((item, index) => {

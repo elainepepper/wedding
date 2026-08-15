@@ -458,8 +458,8 @@ const guideCategories = [
 ] as const;
 
 const eveningMoments = [
-  { time: "6:00pm", title: "Arrival, canapés and drinks" },
-  { time: "7:00pm", title: "The celebration begins" },
+  { time: "6:00 PM", title: "Arrival & canapés" },
+  { time: "7:00 PM", title: "The celebration begins" },
 ] as const;
 
 const WEDDING_START_UTC = "20261107T100000Z"; // 6:00pm in Kuala Lumpur
@@ -481,7 +481,7 @@ function downloadCalendarInvite() {
     `DTSTART:${WEDDING_START_UTC}`,
     `DTEND:${WEDDING_END_UTC}`,
     "SUMMARY:Elaine & Haykal — Wedding Reception",
-    "DESCRIPTION:Arrive from 6:00pm for drinks and canapés\\; the celebration begins at 7:00pm.",
+    "DESCRIPTION:Arrival and canapés from 6:00 PM\\; the celebration begins at 7:00 PM.",
     "LOCATION:The Grand Salon\\, Grand Hyatt Kuala Lumpur\\, 12 Jalan Pinang\\, 50450 Kuala Lumpur",
     "END:VEVENT",
     "END:VCALENDAR",
@@ -1658,7 +1658,7 @@ export function WeddingExperience({
             }
           >
             <span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span>
-            <small>{soundEnabled ? "Pause" : "Play music"}</small>
+            <small>{soundEnabled ? "Pause music" : "Play music"}</small>
             {music.musicTitle ? <em>{music.musicTitle}</em> : null}
           </button>
         </>
@@ -1768,7 +1768,7 @@ export function WeddingExperience({
               <span>Grand Hyatt Kuala Lumpur</span>
             </p>
           </div>
-          <ScrollOn label="The evening unfolds below" />
+          <ScrollOn label="Continue below" />
         </div>
       </section>
       ) : null}
@@ -1821,7 +1821,7 @@ export function WeddingExperience({
           />
           <div className="scene-content schedule-card reveal">
             <p className="step-label">The programme</p>
-            <h2>The evening unfolds</h2>
+            <h2>The evening</h2>
             <ol className="evening-timeline">
               {eveningMoments.map((moment, index) => (
                 <li
@@ -1887,7 +1887,9 @@ export function WeddingExperience({
                     {guestResponses.length > 1 ? (
                       <legend>{guest.name}</legend>
                     ) : (
-                      <legend className="is-quiet">
+                      // The heading directly above already asks the question;
+                      // repeating it visually was the triple-heading pattern.
+                      <legend className="visually-hidden">
                         Will you be joining us?
                       </legend>
                     )}
@@ -2039,9 +2041,7 @@ export function WeddingExperience({
           />
           <div className="scene-content dress-card reveal">
             <p className="step-label">Dress code</p>
-            <p className="script-kicker">{content.dressKicker}</p>
             <h2>{content.dressCode}</h2>
-            <RibbonDivider />
             <p>{content.dressNote}</p>
             <p className="dress-restriction">{content.dressRestriction}</p>
             <ScrollOn />
@@ -2357,7 +2357,7 @@ export function WeddingExperience({
           data-scene
         >
           <div className="scene-content venue-card reveal">
-            <p className="step-label">Finding your way to us</p>
+            <p className="step-label">Getting there</p>
             <h2>{content.venueName}</h2>
             <p className="venue-address">
               {content.venueAddress.split("\n").map((line, index) => (
@@ -2437,11 +2437,10 @@ export function WeddingExperience({
           data-scene
         >
           <div className="scene-content reveal">
-            <p className="step-label">While you are here</p>
-            <h2>Kuala Lumpur</h2>
+            <p className="step-label">Kuala Lumpur</p>
+            <h2>A few places we love</h2>
             <p className="section-intro">
-              Places within twenty minutes, and the apps worth having. Tap to
-              open.
+              For a little exploring between celebrations.
             </p>
             <div className="guide">
               {guideCategories.map((category) => {
@@ -2499,7 +2498,7 @@ export function WeddingExperience({
                               <strong>{place.name}</strong>
                               <span>{place.note}</span>
                               <em>
-                                {place.detail} · ★ {place.score}
+                                {place.detail} <b aria-hidden="true">↗</b>
                               </em>
                             </a>
                           </li>
@@ -2536,35 +2535,34 @@ export function WeddingExperience({
             <p className="step-label">
               From the heart
             </p>
-            <p className="script-kicker">{content.wishesKicker}</p>
             <h2>{content.wishesHeading}</h2>
             {personalised ? (
               <>
                 <label className="full-field">
-                  <span>My wish for you both is</span>
+                  <span>Your message</span>
                   <textarea
                     value={rsvp.wishes}
                     onChange={(event) => update("wishes", event.target.value)}
-                    placeholder="A blessing, a memory, a line we can keep…"
+                    placeholder="A wish, a memory or a little advice…"
                     rows={4}
                     maxLength={1000}
                   />
                 </label>
                 <p className="help-note">
-                  We may share a few of these with everyone on the night.
+                  We may share a few messages with our guests.
                 </p>
                 <label className="full-field">
-                  <span>And a little advice</span>
+                  <span>A word just for us</span>
                   <textarea
                     value={rsvp.advice}
                     onChange={(event) => update("advice", event.target.value)}
-                    placeholder="Something you have learned, or wish someone had told you…"
+                    placeholder="Something you have learned…"
                     rows={4}
                     maxLength={1500}
                   />
                 </label>
                 <p className="help-note private-note">
-                  Only Elaine and Haykal will ever read this one.
+                  Only the two of us will read this one.
                 </p>
                 {error && activeSection === "wishes" ? (
                   <p className="form-error" role="alert">
@@ -2712,16 +2710,16 @@ export function WeddingExperience({
           data-scene
         >
           <div className="scene-content reveal">
-            <p className="step-label">The two of us</p>
-            <h2>Before we go</h2>
+            <h2>Until then.</h2>
             <PhotoRail />
+            <p className="closing-line">See you in Kuala Lumpur.</p>
           </div>
         </section>
       ) : null}
       {stepHas("gallery") && journeyDone ? (
         <p className="return-to-start">
           <button type="button" onClick={() => goToSection("invitation")}>
-            Return to the beginning ↑
+            Back to the beginning ↑
           </button>
         </p>
       ) : null}
