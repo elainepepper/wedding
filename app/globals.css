@@ -5960,3 +5960,21 @@ canvas { pointer-events: none; }
    compensate, so "Elaine & Haykal" still lands as the loudest thing there. */
 .wedding-shell h2 { line-height: 1.18; }
 .wedding-shell .invitation-card h2 { font-size: clamp(2.6rem, 7.4vw, 4.4rem); }
+
+/* ============ Facts stay in a face you can read ============ */
+/* A script is for names and titles, not for information a guest has to act
+   on. The arrival times were rendering as calligraphy — "6:00pm" became a
+   squiggle — and app names, table numbers and the countdown had the same
+   problem. All of them go back to the body face, which is what they are. */
+.wedding-shell .evening-timeline .timeline-time,
+.wedding-shell .guide-app strong,
+.wedding-shell .countdown strong,
+.wedding-shell .countdown span,
+.wedding-shell .table-plaques strong,
+.wedding-shell .room-offer strong,
+.wedding-shell .hotel-list em,
+.wedding-shell .place-score {
+  font-family: var(--font-body, "Cormorant Garamond", Georgia, serif) !important;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
