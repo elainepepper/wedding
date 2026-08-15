@@ -162,10 +162,13 @@ const scrollToSection = (id: string) =>
   document
     .getElementById(id)
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
+// The interaction is taught once, on the invitation card. After that the
+// cue is the silent falling thread alone — the site trusts the guest to
+// scroll, and only speaks when something genuinely needs an answer.
 const ScrollOn = ({
   ready = true,
   hint,
-  label = "Please continue below",
+  label = "",
 }: {
   ready?: boolean;
   hint?: string;
@@ -1860,7 +1863,7 @@ export function WeddingExperience({
           onError={removeBrokenImage}
         />
         <div className="scene-content form-card reveal">
-          <p className="step-label">01 · Your reply</p>
+          <p className="step-label">Your reply</p>
           <h2>Will you join us?</h2>
           {personalised ? (
             <>
@@ -2035,13 +2038,13 @@ export function WeddingExperience({
             onError={removeBrokenImage}
           />
           <div className="scene-content dress-card reveal">
-            <p className="step-label">02 · Dress code</p>
+            <p className="step-label">Dress code</p>
             <p className="script-kicker">{content.dressKicker}</p>
             <h2>{content.dressCode}</h2>
             <RibbonDivider />
             <p>{content.dressNote}</p>
             <p className="dress-restriction">{content.dressRestriction}</p>
-            <ScrollOn label="Keep scrolling to choose your dinner" />
+            <ScrollOn />
           </div>
         </section>
       ) : null}
@@ -2063,7 +2066,7 @@ export function WeddingExperience({
             onError={removeBrokenImage}
           />
           <div className="scene-content form-card reveal">
-            <p className="step-label">03 · At the table</p>
+            <p className="step-label">At the table</p>
             <h2>Choose your main course</h2>
             <p className="section-intro">
               One happy decision before the dancing.
@@ -2141,7 +2144,7 @@ export function WeddingExperience({
             onError={removeBrokenImage}
           />
           <div className="scene-content form-card form-card--glass reveal">
-            <p className="step-label">04 · Your journey</p>
+            <p className="step-label">Your journey</p>
             <h2>Coming from afar?</h2>
             <p className="section-intro">Only if you are travelling to us.</p>
             <fieldset>
@@ -2531,7 +2534,7 @@ export function WeddingExperience({
           />
           <div className="scene-content wishes-card reveal">
             <p className="step-label">
-              {rsvp.attendance === "yes" ? "05" : "02"} · From the heart
+              From the heart
             </p>
             <p className="script-kicker">{content.wishesKicker}</p>
             <h2>{content.wishesHeading}</h2>
