@@ -32,7 +32,7 @@ test("ships the private, server-enforced after-party gate", async () => {
     read("app/after-party/AfterPartyExperience.tsx"),
     read("app/api/after-party/route.ts"),
   ]);
-  assert.match(experience, /For your eyes only/);
+  assert.match(experience, /For invited guests/);
   assert.match(experience, /invitation only/i);
   assert.match(experience, /invitation itself is the key/i);
   // Eligibility is enforced server-side against the invitation token.

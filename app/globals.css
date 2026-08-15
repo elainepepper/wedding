@@ -6201,3 +6201,275 @@ canvas { pointer-events: none; }
   font-style: italic;
   color: rgba(74, 58, 60, .42);
 }
+
+/* ==================================================================== */
+/* THE DESCENT — the secret after-party.                                */
+/*                                                                      */
+/* The same painted wedding world at half past one in the morning. One  */
+/* scroll-driven variable, --party-progress, carries the whole page     */
+/* from ivory into the dark: the sky cross-fades through dusk to night, */
+/* the ink pales to smoked ivory, champagne turns amber, blush turns    */
+/* oxblood. Every scene reads the same clock, so the fall feels like    */
+/* one continuous transformation rather than themed sections.           */
+/* ==================================================================== */
+.after-party.descent {
+  /* the palette, dawn and midnight ends of every colour */
+  --party-ivory: #F6EEE8;
+  --party-smoke: #1b1412;
+  --party-oxblood: #4a1420;
+  --party-cherry: #7A1F35;
+  --party-amber: #D99A5B;
+  --party-silver: #cfc4bd;
+  --party-ink-day: #4A3A3C;
+  --party-ink-night: #E9DDD3;
+  --party-progress: 0;
+  --pp-x: 0;
+  --pp-y: 0;
+  background: var(--party-smoke);
+  color: var(--party-ink-night);
+  overflow-x: hidden;
+}
+
+/* The sky: three fixed paintings cross-fading on the progress clock.
+   Opacity-only compositing — a phone GPU barely notices. */
+.descent-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.descent-sky i {
+  position: absolute;
+  inset: -24px;
+  transform: translate3d(calc(var(--pp-x) * 4px), calc(var(--pp-y) * 2px), 0);
+}
+.descent-sky-day {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 244, 236, .9), transparent 55%),
+    linear-gradient(170deg, #F1E6DD 0%, #EBD8D6 55%, #decbcf 100%);
+  opacity: calc(1 - min(1, var(--party-progress) * 2.4));
+}
+.descent-sky-dusk {
+  background:
+    radial-gradient(circle at 70% 30%, rgba(122, 31, 53, .55), transparent 60%),
+    linear-gradient(170deg, #6e3a4a 0%, #3a1c26 60%, #241318 100%);
+  opacity: calc(min(1, var(--party-progress) * 2.6) - min(1, max(0, var(--party-progress) - .42) * 3));
+}
+.descent-sky-night {
+  background:
+    radial-gradient(ellipse at 50% 96%, rgba(217, 154, 91, .22), transparent 46%),
+    radial-gradient(circle at 82% 18%, rgba(122, 31, 53, .35), transparent 42%),
+    linear-gradient(180deg, #17100f 0%, #1b1412 70%, #201313 100%);
+  opacity: calc(max(0, var(--party-progress) - .38) * 2.4);
+}
+/* the faintest grain, arriving only with the dark */
+.descent-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: calc(max(0, var(--party-progress) - .4) * .5);
+  transform: none;
+}
+
+.after-party.descent .party-scene { scroll-snap-align: none; }
+.after-party.descent .party-scene::after { display: none; }
+.descent-scene {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: max(7vh, env(safe-area-inset-top)) 6vw max(7vh, env(safe-area-inset-bottom));
+}
+.descent-copy { position: relative; width: min(620px, 92vw); text-align: center; }
+
+/* type — the wedding's own voices, after midnight */
+.descent-whisper {
+  margin: 0 0 1.1rem;
+  font: 600 .62rem/1.6 var(--font-sans);
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: var(--party-amber);
+}
+.descent-title {
+  margin: 0;
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2.9rem, 13vw, 5.4rem);
+  line-height: 1.02;
+  letter-spacing: -.015em;
+  color: #F4E9DF;
+}
+.descent-subtitle {
+  margin: 0 0 2rem;
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2rem, 8.4vw, 3rem);
+  color: #F4E9DF;
+}
+.descent-line {
+  margin: 0;
+  font: italic 400 clamp(1.35rem, 5.4vw, 1.9rem)/1.55 var(--font-body);
+  color: var(--party-silver);
+}
+.descent-note {
+  margin: 1.6rem auto 0;
+  max-width: 30rem;
+  font: italic 400 clamp(.95rem, 3.8vw, 1.05rem)/1.7 var(--font-body);
+  color: rgba(207, 196, 189, .78);
+}
+
+/* 1 — the remains: still the wedding's ink on the wedding's paper */
+.descent-scene--remains { align-items: end; padding-bottom: 18svh; }
+.descent-scene--remains .descent-line--serif { color: #4A3A3C; text-shadow: 0 1px 18px rgba(255, 250, 248, .8); }
+
+/* 2 — the hidden door: a veil parted on darkness. The gap breathes very
+   slightly toward the pointer — allowed through, not chased. */
+.descent-scene--door { isolation: isolate; }
+.descent-veil { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.descent-veil i { position: absolute; top: 0; bottom: 0; }
+.descent-veil-dark {
+  left: 50%;
+  width: min(46vw, 340px);
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 60%, rgba(122, 31, 53, .5), rgba(23, 16, 15, .96) 70%);
+  border-radius: 50rem 50rem 0 0;
+  top: 12svh;
+  bottom: 0;
+}
+.descent-veil-left,
+.descent-veil-right {
+  width: 60vw;
+  background: linear-gradient(105deg, rgba(246, 238, 232, .96) 55%, rgba(246, 238, 232, 0));
+  filter: blur(2px);
+}
+.descent-veil-left { left: 0; transform: translateX(calc(-14vw + var(--pp-x) * -6px)); }
+.descent-veil-right {
+  right: 0;
+  background: linear-gradient(255deg, rgba(246, 238, 232, .96) 55%, rgba(246, 238, 232, 0));
+  transform: translateX(calc(14vw + var(--pp-x) * 6px)) scaleX(-1);
+}
+.descent-scene--door .descent-title { color: #F4E9DF; text-shadow: 0 2px 30px rgba(23, 16, 15, .55); }
+/* the note stays inside the darkness of the doorway */
+.descent-scene--door .descent-note { max-width: 15.5rem; color: rgba(233, 221, 211, .8); }
+
+/* 3 — the turning: one pale line in a darkening room */
+.descent-scene--turning .descent-line { color: #d8c4bc; }
+
+/* 4 — the first pour */
+.descent-scene--pour { gap: 1rem; grid-template-rows: auto auto; }
+.pour-figure { width: min(46vw, 210px); margin-inline: auto; }
+.pour-glass { width: 100%; height: auto; display: block; }
+.pour-line {
+  fill: none;
+  stroke: rgba(233, 221, 211, .85);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* the liquid rises on the scroll clock through the pour's scroll band */
+.pour-liquid {
+  fill: color-mix(in oklab, var(--party-amber) 78%, var(--party-cherry));
+  opacity: .9;
+  transform: translateY(calc(58px - min(1, max(0, (var(--party-progress) - .3) * 5)) * 58px));
+  transition: none;
+}
+.pour-surface {
+  fill: rgba(255, 231, 200, .55);
+  transform: translateY(calc(92px - min(1, max(0, (var(--party-progress) - .3) * 5)) * 52px));
+}
+.pour-glint { fill: rgba(255, 240, 224, .9); }
+.descent-title--pour { font-size: clamp(2.1rem, 8.6vw, 3.2rem); }
+
+/* 6 — the loosen: the same serif, enormous, walking off the page */
+.descent-scene--loosen { place-items: center start; overflow: hidden; }
+.descent-scene--loosen .descent-copy { width: auto; text-align: left; }
+.descent-huge {
+  margin: 0;
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-weight: 500;
+  line-height: .96;
+  letter-spacing: -.02em;
+  color: #F4E9DF;
+}
+.descent-huge span,
+.descent-huge em {
+  display: block;
+  font-size: clamp(3.4rem, 17vw, 8.2rem);
+  white-space: nowrap;
+}
+.descent-huge span { margin-left: -.06em; }
+.descent-huge em {
+  font-style: italic;
+  color: var(--party-amber);
+  margin-left: clamp(1.4rem, 12vw, 7rem);
+  margin-right: -14vw;
+}
+
+/* 7 — the broadcast: a tiny red breath, close copy */
+.descent-live {
+  margin: 0 0 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font: 600 .6rem/1 var(--font-sans);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(233, 221, 211, .75);
+}
+.descent-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c2392e;
+  animation: descent-live-breathe 2.6s var(--ease-gentle) infinite;
+}
+@keyframes descent-live-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.descent-line--broadcast {
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-style: normal;
+  font-size: clamp(1.9rem, 8vw, 3rem);
+  line-height: 1.15;
+  color: #F4E9DF;
+}
+
+/* 8 — the practical: a hairline ledger, no card */
+.descent-details {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  text-align: left;
+}
+.descent-details div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 1rem;
+  align-items: baseline;
+  padding: .95rem 0;
+  border-top: 1px solid rgba(217, 154, 91, .28);
+}
+.descent-details div:last-child { border-bottom: 1px solid rgba(217, 154, 91, .28); }
+.descent-details dt {
+  font: 600 .6rem/1.6 var(--font-sans);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--party-amber);
+}
+.descent-details dd {
+  margin: 0;
+  font: 400 clamp(1.05rem, 4.2vw, 1.25rem)/1.5 var(--font-body);
+  color: #EFE3D9;
+}
+
+/* 9 — the finale keeps the shared button language */
+.descent-scene--finale .party-button { margin-top: 2rem; }
+
+/* the dot rail reads against the dark */
+.after-party.descent .party-nav button { border-color: rgba(233, 221, 211, .45); }
+.after-party.descent .party-nav button.is-active { background: var(--party-amber); border-color: var(--party-amber); }
+
+@media (max-width: 760px) {
+  .descent-veil-dark { width: 72vw; }
+  .descent-details div { grid-template-columns: 5.2rem 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descent-sky i { transform: none; }
+  .descent-veil-left, .descent-veil-right { transform: none; filter: none; }
+  .descent-veil-right { transform: scaleX(-1); }
+  .descent-live i { animation: none; }
+  .pour-liquid, .pour-surface { transform: none; }
+}
