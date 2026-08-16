@@ -23,6 +23,9 @@ test("the invitation and manager share the hardened RSVP contract", async () => 
   assert.match(experience, /submissionId: submissionId\.current/);
   assert.match(experience, /transportRequired:\s*\n?\s*guest\.rsvpStatus === "Confirmed" && rsvp\.flyingIn === true/);
   assert.match(experience, /Children&rsquo;s meal/);
+  assert.match(experience, /value=\{rsvp\.advice\}/);
+  assert.match(experience, /wishes: guest\.wishes/);
+  assert.match(inviteRoute, /marriage_advice: Number\(response\.id\) === firstResponseId/);
 
   assert.match(managerRoute, /canonicalRsvpStatus/);
   assert.match(managerRoute, /age_group: ageGroup/);

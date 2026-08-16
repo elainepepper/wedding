@@ -214,10 +214,6 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const batch = weddingRef.firestore.batch();
   let anyAttending = false;
   const firstResponseId = Math.min(...allowedDocs.map((doc) => Number(doc.data().id)));
-  const confirmedIds = responses
-    .filter((response) => canonicalRsvpStatus(response.rsvpStatus) === "Confirmed")
-    .map((response) => Number(response.id));
-  const firstConfirmedId = confirmedIds.length ? Math.min(...confirmedIds) : null;
   for (const response of responses) {
     const allowed = allowedById.get(Number(response.id))!;
     const permission = allowed.permission;
@@ -245,9 +241,9 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       accommodation_name: clean(response.accommodationName, 240) || null,
       bed_preference: response.bedPreference === "King" || response.bedPreference === "Twin" ? response.bedPreference : null,
       room_nights: [1, 2, 3].includes(Number(response.roomNights)) ? Number(response.roomNights) : null,
-      // Both messages reopen only through this same household token. The
-      // Manager continues to distinguish the shareable wish from private advice.
-      marriage_advice: Number(response.id) === firstConfirmedId ? clean(response.advice, 1500) || null : null,
+      // The current invitation exposes one message field and labels it private.
+      // Store it only as private advice, including for an all-declined household.
+      marriage_advice: Number(response.id) === firstResponseId ? clean(response.advice, 1500) || null : null,
       wishes: Number(response.id) === firstResponseId ? clean(response.wishes, 1500) || null : null,
       rsvp_submitted_at: serverTimestamp(), updated_at: serverTimestamp(),
     };

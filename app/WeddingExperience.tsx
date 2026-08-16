@@ -1529,12 +1529,9 @@ export function WeddingExperience({
       }
       localDigits = localDigits.replace(/^0+/, ""); // local trunk zero
       const mobile = localDigits ? `${rsvp.countryCode}${localDigits}` : "";
-      const firstConfirmedId = guestResponses.find(
-        (guest) => guest.rsvpStatus === "Confirmed",
-      )?.id;
-      // Wishes are collected however a household replies, including a
-      // decline, so this anchors to whoever is first in the party rather
-      // than requiring a confirmed attendee the way advice does.
+      // The visible message field is explicitly private. Anchor it to the
+      // first named response even when the whole household declines, while
+      // preserving any legacy shareable guest-book wish already on a record.
       const firstResponseId = guestResponses[0]?.id;
       const guests = guestResponses.map((guest) => ({
         ...guest,
@@ -1565,17 +1562,13 @@ export function WeddingExperience({
           guest.rsvpStatus === "Confirmed" && rsvp.flyingIn === true,
         accessibility:
           guest.rsvpStatus === "Confirmed" ? rsvp.accessibilityNote : "",
-        // One household submits one wish and one piece of advice, not one
-        // per guest — without this guard, a two-person household wrote the
-        // same wish onto both guest records and the manager showed it twice.
-        wishes:
-          guest.id === firstResponseId || guestResponses.length === 1
-            ? rsvp.wishes
-            : "",
+        // Preserve any legacy shareable message in its original field. The
+        // current private note is written only once per household.
+        wishes: guest.wishes,
         advice:
-          guest.id === firstConfirmedId || guestResponses.length === 1
+          guest.id === firstResponseId || guestResponses.length === 1
             ? rsvp.advice
-            : "",
+            : guest.advice,
       }));
       if (!submissionId.current) {
         submissionId.current =
@@ -2689,8 +2682,8 @@ export function WeddingExperience({
                 <label className="full-field">
                   <span>Your message</span>
                   <textarea
-                    value={rsvp.wishes}
-                    onChange={(event) => update("wishes", event.target.value)}
+                    value={rsvp.advice}
+                    onChange={(event) => update("advice", event.target.value)}
                     placeholder="A wish, a memory or a little advice…"
                     rows={4}
                     maxLength={1000}
