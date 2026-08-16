@@ -47,7 +47,7 @@ Required environment-variable names were audited without printing values: `NEXT_
 | Current Wishes text area | Household/private | `marriage_advice` on the first named response | Private Wishes & advice panel and export | Restored privately | Yes at API/invitation level; Manager branch contract tested |
 | Legacy shareable guest-book message | Household/shareable legacy field | `wishes` | Shareable guest-book panel and export | Preserved, never overwritten by the private field | Regression tested |
 | RSVP submitted timestamp | Individual | `rsvp_submitted_at`, `updated_at` | Ledger/activity surfaces | `has_submitted` only | Yes |
-| Table assignment | Individual | `table_id`, optional `seat_number`; resolved to `table_name` | Guest list and seating plan | Correct assigned table returned only to that household | Yes; temporary QA assignment was removed afterward |
+| Table assignment | Individual | `table_id`, optional `seat_number`; resolved to `table_name` | Guest list and seating plan | Correct assigned table returned only to that household | Yes; QA guest remains at a valid table until post-release cleanup |
 
 ## Controlled end-to-end RSVP
 
@@ -63,7 +63,7 @@ Verified closed loop:
 6. Manager accessibility edit persisted and appeared when the invitation was reopened.
 7. Guest meal and travel answers were changed, resubmitted and replaced the prior values.
 8. Reusing the same submission ID returned `{ ok: true, duplicate: true }` and did not create duplicate guest or activity records.
-9. A temporary table assignment appeared on the correct invitation and was removed after verification.
+9. A table assignment appeared only on the correct invitation. Testing its removal exposed and fixed the `0`-versus-`null` bug; the production QA record was returned to a valid table until the corrected Manager API is released.
 
 Failure behaviour verified on the deploy preview:
 
@@ -85,11 +85,14 @@ Confirmed through an authenticated production Manager session using only dedicat
 * per-person attendance, meal and dietary mapping;
 * one phone number shared consistently by the household;
 * accessibility edit, save, refresh and guest-reopen reflection;
-* table assignment, guest reveal and subsequent cleanup;
+* table assignment and correct guest reveal;
 * save-failure input preservation in the existing UI;
-* mobile Manager composition via hosted preview fixtures.
+* mobile Manager composition via hosted preview fixtures;
+* authenticated production health check: all 10 checks pass across 163 guests, 106 households and 2 tables.
 
 The deploy-preview Manager Google popup cannot complete on the temporary Netlify domain, so the new Manager response shape is additionally covered by contract tests. The already authorised production Manager was used for the live database checks. After any production release, the Manager is a mandatory immediate smoke test.
+
+The schema contains `seat_number`, but the current Manager workflow assigns tables rather than an individual numbered chair and the invitation reveals the table name. Part 4 did not invent a new seat-number workflow.
 
 ## Privacy and security acceptance
 
