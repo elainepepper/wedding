@@ -34,6 +34,7 @@ test("the invitation and manager share the hardened RSVP contract", async () => 
   assert.match(managerApp, /Travelling to Kuala Lumpur/);
   assert.match(managerApp, /Private note for Elaine &amp; Haykal/);
   assert.match(managerApp, /confirmed \+ declined === total\) return "Replied"/);
+  assert.match(managerApp, /aria-label="Search guests"/);
   assert.doesNotMatch(managerApp, /throw failure/);
 });
 

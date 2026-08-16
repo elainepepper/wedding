@@ -438,7 +438,7 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
   return <div className="manager-page">
     {rsvpMode ? <section className="rsvp-banner"><div><span>Latest reply</span><h2>{guests.find((g) => g.rsvp_submitted_at)?.household_name ?? "The guest list"}</h2><p>Updated {dateLabel(guests.find((g) => g.rsvp_submitted_at)?.rsvp_submitted_at)}</p></div><strong>{guests.filter((g) => g.rsvp_status === "Confirmed").length}<small> attending</small></strong></section> : null}
     <section className="manager-panel guest-table-panel">
-      <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone or household" /></label>
+      <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone or household" aria-label="Search guests" /></label>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter by RSVP status"><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select>
         <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option><option>Possible duplicates</option></select>
         <select value={`${sortKey}:${sortDir}`} onChange={(event) => { const [key, dir] = event.target.value.split(":"); setSortKey(key as typeof sortKey); setSortDir(Number(dir) as 1 | -1); }} aria-label="Sort guests">
@@ -1058,7 +1058,7 @@ function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: Seating
     <section className="manager-panel seating-unseated">
       <header>
         <div><h3>Still to seat · {unseated.length}</h3><p>Only guests who have accepted appear here.</p></div>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name" />
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name" aria-label="Search unseated guests" />
       </header>
       {unseated.filter(matches).length ? (
         <ol className="seating-list">
