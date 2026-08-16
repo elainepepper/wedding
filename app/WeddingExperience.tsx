@@ -227,14 +227,28 @@ const wizardStepLabels: Record<string, string> = {
 // these titles sharing a surname combine the same way. Any other pair of
 // names keeps the plain "A & B" form.
 const HONORIFIC_ORDER = ["Datuk", "Dato", "Mr", "Datin", "Mrs", "Miss", "Ms"];
-const HONORIFIC_PATTERN = new RegExp(`^(${HONORIFIC_ORDER.join("|")})\\.?\\s+(.+)$`, "i");
+const HONORIFIC_PATTERN = new RegExp(
+  `^(${HONORIFIC_ORDER.join("|")})\\.?\\s+(.+)$`,
+  "i",
+);
 function joinGuestNames(names: Array<string | null | undefined>) {
   const clean = names.map((name) => (name || "").trim()).filter(Boolean);
   if (clean.length === 2) {
     const titled = clean.map((name) => name.match(HONORIFIC_PATTERN));
-    if (titled[0] && titled[1] && titled[0][2].toLowerCase() === titled[1][2].toLowerCase() && titled[0][1].toLowerCase() !== titled[1][1].toLowerCase()) {
-      const rank = (title: string) => HONORIFIC_ORDER.findIndex((entry) => entry.toLowerCase() === title.toLowerCase());
-      const [first, second] = rank(titled[0][1]) <= rank(titled[1][1]) ? [titled[0], titled[1]] : [titled[1], titled[0]];
+    if (
+      titled[0] &&
+      titled[1] &&
+      titled[0][2].toLowerCase() === titled[1][2].toLowerCase() &&
+      titled[0][1].toLowerCase() !== titled[1][1].toLowerCase()
+    ) {
+      const rank = (title: string) =>
+        HONORIFIC_ORDER.findIndex(
+          (entry) => entry.toLowerCase() === title.toLowerCase(),
+        );
+      const [first, second] =
+        rank(titled[0][1]) <= rank(titled[1][1])
+          ? [titled[0], titled[1]]
+          : [titled[1], titled[0]];
       return `${first[1]} & ${second[1]} ${first[2]}`;
     }
   }
@@ -786,14 +800,22 @@ export function WeddingExperience({
       // Already playing — or played before and deliberately paused by the
       // guest. Either way these listeners have nothing left to do; a tap
       // must never restart music someone chose to turn off.
-      if (!player.paused || player.currentTime > 0) { detach(); return; }
-      player.play().then(detach).catch(() => undefined);
+      if (!player.paused || player.currentTime > 0) {
+        detach();
+        return;
+      }
+      player
+        .play()
+        .then(detach)
+        .catch(() => undefined);
     };
     const detach = () => {
       events.forEach((name) => window.removeEventListener(name, start));
     };
     start();
-    events.forEach((name) => window.addEventListener(name, start, { passive: true }));
+    events.forEach((name) =>
+      window.addEventListener(name, start, { passive: true }),
+    );
     return detach;
   }, [music.musicUrl]);
 
@@ -832,7 +854,9 @@ export function WeddingExperience({
         if (cancelled) return;
         setInviteData(result);
         const names = joinGuestNames(
-          result.guests.map((guest) => guest.preferred_name || guest.first_name),
+          result.guests.map(
+            (guest) => guest.preferred_name || guest.first_name,
+          ),
         );
         const phone = splitMobile(
           result.guests.find((guest) => guest.mobile)?.mobile || null,
@@ -1188,9 +1212,7 @@ export function WeddingExperience({
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         document
-          .querySelector<HTMLElement>(
-            `[data-travel-question="${question}"]`,
-          )
+          .querySelector<HTMLElement>(`[data-travel-question="${question}"]`)
           ?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     });
@@ -1385,8 +1407,7 @@ export function WeddingExperience({
   // on the step that shows it. Nothing from another step is in the document,
   // so no amount of scrolling can ever reach it. (The hidden-attribute pass
   // and its CSS remain as a second line of defence.)
-  const stepHas = (id: string) =>
-    wizardSteps[stepIndex].sections.includes(id);
+  const stepHas = (id: string) => wizardSteps[stepIndex].sections.includes(id);
 
   const renderCustomPages = (anchor: string) =>
     (stepHas(anchor) ? (customAfter.get(anchor) ?? []) : []).map((page) => (
@@ -1709,64 +1730,65 @@ export function WeddingExperience({
       />
 
       {stepHas("invitation") ? (
-      <section
-        id="invitation"
-        data-sky="dream-2"
-        style={textStyle("invitation")}
-        className="scene scene--invitation"
-        data-scene
-      >
-        <img
-          className="scene-art scene-art--floral"
-          src="/wedding/floral-frame.webp"
-          alt=""
-          loading="lazy"
-          aria-hidden="true"
-          onError={removeBrokenImage}
-        />
-        <img
-          className="scene-art floating-bloom floating-bloom--left"
-          src="/wedding/pearl-floral.webp"
-          alt=""
-          loading="lazy"
-          aria-hidden="true"
-          onError={removeBrokenImage}
-        />
-        <img
-          className="scene-art floating-bloom floating-bloom--right"
-          src="/wedding/pearl-floral.webp"
-          alt=""
-          loading="lazy"
-          aria-hidden="true"
-          onError={removeBrokenImage}
-        />
-        <div className="scene-content invitation-card reveal">
-          <p className="eyebrow">{content.familyLine}</p>
-          <h2>
-            <span className="ink">
-              <ScriptName name={content.brideName} /> <span className="amp">&amp;</span>{" "}
-              <ScriptName name={content.groomName} />
-            </span>
-          </h2>
-          <p className="invitation-line">{content.invitationLine}</p>
-          <RibbonDivider />
-          <div className="event-details">
-            <p>
-              <strong>Saturday</strong>
-              <span>{content.eventDate}</span>
-            </p>
-            <p>
-              <strong>{content.eventTime.replace(/pm$/i, "")}</strong>
-              <span>in the evening</span>
-            </p>
-            <p>
-              <strong>{content.venueName}</strong>
-              <span>Grand Hyatt Kuala Lumpur</span>
-            </p>
+        <section
+          id="invitation"
+          data-sky="dream-2"
+          style={textStyle("invitation")}
+          className="scene scene--invitation"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--floral"
+            src="/wedding/floral-frame.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <img
+            className="scene-art floating-bloom floating-bloom--left"
+            src="/wedding/pearl-floral.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <img
+            className="scene-art floating-bloom floating-bloom--right"
+            src="/wedding/pearl-floral.webp"
+            alt=""
+            loading="lazy"
+            aria-hidden="true"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content invitation-card reveal">
+            <p className="eyebrow">{content.familyLine}</p>
+            <h2>
+              <span className="ink">
+                <ScriptName name={content.brideName} />{" "}
+                <span className="amp">&amp;</span>{" "}
+                <ScriptName name={content.groomName} />
+              </span>
+            </h2>
+            <p className="invitation-line">{content.invitationLine}</p>
+            <RibbonDivider />
+            <div className="event-details">
+              <p>
+                <strong>Saturday</strong>
+                <span>{content.eventDate}</span>
+              </p>
+              <p>
+                <strong>{content.eventTime.replace(/pm$/i, "")}</strong>
+                <span>in the evening</span>
+              </p>
+              <p>
+                <strong>{content.venueName}</strong>
+                <span>Grand Hyatt Kuala Lumpur</span>
+              </p>
+            </div>
+            <ScrollOn label="Continue below" />
           </div>
-          <ScrollOn label="Continue below" />
-        </div>
-      </section>
+        </section>
       ) : null}
 
       {stepHas("table") && tablesAssigned ? (
@@ -1844,170 +1866,163 @@ export function WeddingExperience({
       {renderCustomPages("schedule")}
 
       {stepHas("rsvp") ? (
-      <section
-        id="rsvp"
-        data-sky="dream-2"
-        style={textStyle("rsvp")}
-        className="scene scene--paper"
-        data-scene
-      >
-        <img
-          className="scene-art scene-art--dinner"
-          src="/wedding/dinner-table.webp"
-          alt="A hand-drawn wedding reception table"
-          loading="lazy"
-          onError={removeBrokenImage}
-        />
-        <div className="scene-content form-card reveal">
-          <p className="step-label">Your reply</p>
-          <h2>Will you join us?</h2>
-          {personalised ? (
-            <>
-              <p className="section-intro">
-                We&rsquo;re delighted to celebrate with everyone named on this
-                invitation.
-              </p>
-              {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
-                <p className="rsvp-deadline-note">
-                  Kindly reply by{" "}
-                  {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}. You
-                  may update your response through this link at any time before
-                  then.
+        <section
+          id="rsvp"
+          data-sky="dream-2"
+          style={textStyle("rsvp")}
+          className="scene scene--paper"
+          data-scene
+        >
+          <img
+            className="scene-art scene-art--dinner"
+            src="/wedding/dinner-table.webp"
+            alt="A hand-drawn wedding reception table"
+            loading="lazy"
+            onError={removeBrokenImage}
+          />
+          <div className="scene-content form-card reveal">
+            <p className="step-label">Your reply</p>
+            <h2>Will you join us?</h2>
+            {personalised ? (
+              <>
+                <p className="section-intro">
+                  We would be so happy to celebrate with everyone named on this
+                  invitation.
                 </p>
-              ) : null}
-              <div className="party-rsvp-list">
-                {guestResponses.map((guest) => (
-                  <fieldset key={guest.id}>
-                    {guestResponses.length > 1 ? (
-                      <legend>{guest.name}</legend>
-                    ) : (
-                      // The heading directly above already asks the question;
-                      // repeating it visually was the triple-heading pattern.
-                      <legend className="visually-hidden">
-                        Will you be joining us?
-                      </legend>
-                    )}
-                    <div className="segmented-control">
-                      <button
-                        type="button"
-                        className={
-                          guest.rsvpStatus === "Confirmed" ? "is-selected" : ""
-                        }
-                        onClick={() =>
-                          updateGuest(guest.id, {
-                            rsvpStatus: "Confirmed",
-                            receptionAttending: true,
-                          })
-                        }
-                      >
-                        Will attend
-                      </button>
-                      <button
-                        type="button"
-                        className={
-                          guest.rsvpStatus === "Declined" ? "is-selected" : ""
-                        }
-                        onClick={() =>
-                          updateGuest(guest.id, {
-                            rsvpStatus: "Declined",
-                            receptionAttending: false,
-                            ceremonyAttending: false,
-                            mealSelection: "",
-                          })
-                        }
-                      >
-                        Unable to attend
-                      </button>
-                    </div>
-                  </fieldset>
-                ))}
-              </div>
-              {someoneAttending ? (
-                <>
-                  <div className="field-grid phone-grid">
-                    <p className="phone-grid-label">Mobile number</p>
-                    <label className="phone-code">
-                      <span className="visually-hidden">Country code</span>
-                      <select
-                        value={rsvp.countryCode}
-                        onChange={(event) =>
-                          update("countryCode", event.target.value)
-                        }
-                        aria-label="Country calling code"
-                      >
-                        {countryCodes.map(([country, code]) => (
-                          <option key={`${country}-${code}`} value={code}>
-                            {country === "Other"
-                              ? "Other"
-                              : `${country} ${code}`}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span className="visually-hidden">Mobile number</span>
-                      <input
-                        required
-                        value={rsvp.phoneNumber}
-                        onChange={(event) =>
-                          update("phoneNumber", event.target.value)
-                        }
-                        type="tel"
-                        inputMode="tel"
-                        autoComplete="tel-national"
-                        placeholder="12 345 6789"
-                        maxLength={24}
-                      />
-                    </label>
-                  </div>
-                  <p className="field-hint">
-                    We&rsquo;ll send your table number here via WhatsApp.
+                {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
+                  <p className="rsvp-deadline-note">
+                    Please reply by{" "}
+                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}.
+                    You can return to this link if your plans change.
                   </p>
-                </>
-              ) : null}
-              {guestResponses.length === 0 ? (
-                <p className="form-error" role="alert">
-                  We are unable to find the names attached to this invitation,
-                  so the reply buttons are missing. Do let Elaine and Haykal
-                  know — nothing entered here can be saved until it is put
-                  right.
+                ) : null}
+                <div className="party-rsvp-list">
+                  {guestResponses.map((guest) => (
+                    <fieldset key={guest.id}>
+                      {guestResponses.length > 1 ? (
+                        <legend>{guest.name}</legend>
+                      ) : (
+                        // The heading directly above already asks the question;
+                        // repeating it visually was the triple-heading pattern.
+                        <legend className="visually-hidden">
+                          Will you be joining us?
+                        </legend>
+                      )}
+                      <div className="segmented-control">
+                        <button
+                          type="button"
+                          className={
+                            guest.rsvpStatus === "Confirmed"
+                              ? "is-selected"
+                              : ""
+                          }
+                          onClick={() =>
+                            updateGuest(guest.id, {
+                              rsvpStatus: "Confirmed",
+                              receptionAttending: true,
+                            })
+                          }
+                        >
+                          Will attend
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            guest.rsvpStatus === "Declined" ? "is-selected" : ""
+                          }
+                          onClick={() =>
+                            updateGuest(guest.id, {
+                              rsvpStatus: "Declined",
+                              receptionAttending: false,
+                              ceremonyAttending: false,
+                              mealSelection: "",
+                            })
+                          }
+                        >
+                          Unable to attend
+                        </button>
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
+                {someoneAttending ? (
+                  <>
+                    <div className="field-grid phone-grid">
+                      <p className="phone-grid-label">Mobile number</p>
+                      <label className="phone-code">
+                        <span className="visually-hidden">Country code</span>
+                        <select
+                          value={rsvp.countryCode}
+                          onChange={(event) =>
+                            update("countryCode", event.target.value)
+                          }
+                          aria-label="Country calling code"
+                        >
+                          {countryCodes.map(([country, code]) => (
+                            <option key={`${country}-${code}`} value={code}>
+                              {country === "Other"
+                                ? "Other"
+                                : `${country} ${code}`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className="visually-hidden">Mobile number</span>
+                        <input
+                          required
+                          value={rsvp.phoneNumber}
+                          onChange={(event) =>
+                            update("phoneNumber", event.target.value)
+                          }
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel-national"
+                          placeholder="12 345 6789"
+                          maxLength={24}
+                        />
+                      </label>
+                    </div>
+                    <p className="field-hint">
+                      We&rsquo;ll share your table number with you on WhatsApp.
+                    </p>
+                  </>
+                ) : null}
+                {guestResponses.length === 0 ? (
+                  <p className="form-error" role="alert">
+                    We are unable to find the names attached to this invitation,
+                    so the reply buttons are missing. Do let Elaine and Haykal
+                    know — nothing entered here can be saved until it is put
+                    right.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <div className="invitation-only">
+                <span aria-hidden="true">🔐</span>
+                <h3>Your invitation is your key</h3>
+                <p>
+                  Replies are opened only through the personal link Elaine and
+                  Haykal have sent you. It carries the names of those they have
+                  invited, and cannot be extended to additional guests.
                 </p>
-              ) : null}
-            </>
-          ) : (
-            <div className="invitation-only">
-              <span aria-hidden="true">🔐</span>
-              <h3>Your invitation is your key</h3>
-              <p>
-                Replies are opened only through the personal link Elaine and
-                Haykal have sent you. It carries the names of those they have
-                invited, and cannot be extended to additional guests.
+                <p className="invitation-only-note">
+                  The rest of the evening — the dress code, the menu, and how to
+                  find us — opens with that link. This is where the page ends
+                  for now.
+                </p>
+              </div>
+            )}
+            {error && activeSection === "rsvp" ? (
+              <p className="form-error" role="alert">
+                {error}
               </p>
-              <p className="invitation-only-note">
-                The rest of the evening — the dress code, the menu, and how to
-                find us — opens with that link. This is where the page ends for
-                now.
-              </p>
-            </div>
-          )}
-          {error && activeSection === "rsvp" ? (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {personalised && guestResponses.length > 0 ? (
-            <ScrollOn
-              ready={rsvpComplete}
-              hint={
-                guestResponses.some((guest) => guest.rsvpStatus === "Pending")
-                  ? "A reply is still awaited above."
-                  : "Add a number we can reach you on."
-              }
-              label="Thank you — please continue below"
-            />
-          ) : null}
-        </div>
-      </section>
+            ) : null}
+            {personalised && guestResponses.length > 0 ? (
+              <ScrollOn ready={rsvpComplete} />
+            ) : null}
+          </div>
+        </section>
       ) : null}
 
       {renderCustomPages("rsvp")}
@@ -2105,10 +2120,7 @@ export function WeddingExperience({
                 {error}
               </p>
             ) : null}
-            <ScrollOn
-              ready={mealComplete}
-              hint="Choose a main course for everyone joining us."
-            />
+            <ScrollOn ready={mealComplete} />
           </div>
         </section>
       ) : null}
@@ -2167,9 +2179,9 @@ export function WeddingExperience({
                 <p className="room-offer room-offer--full">
                   <strong>Our rooms at the Grand Hyatt are all taken</strong>
                   <span>
-                    We are sorry — the last of the rooms we held has gone.
-                    A few nearby options are below, and the hotel itself may
-                    still have rooms of its own.
+                    We are sorry — the last of the rooms we held has gone. A few
+                    nearby options are below, and the hotel itself may still
+                    have rooms of its own.
                   </span>
                 </p>
                 <ul className="hotel-list">
@@ -2182,7 +2194,7 @@ export function WeddingExperience({
                       >
                         <strong>{hotel.name}</strong>
                         <span>{hotel.note}</span>
-                                                <i>{hotel.walk} away ↗</i>
+                        <i>{hotel.walk} away ↗</i>
                       </a>
                     </li>
                   ))}
@@ -2193,12 +2205,14 @@ export function WeddingExperience({
                 <p className="room-offer">
                   <strong>Grand Room — RM850++ per night</strong>
                   <span>
-                    A preferred rate is available for our guests at Grand
-                    Hyatt Kuala Lumpur, where the reception will be held.
+                    We&rsquo;ve arranged a preferred rate at Grand Hyatt Kuala
+                    Lumpur.
                   </span>
                 </p>
                 <fieldset data-travel-question="room">
-                  <legend>Would you like to stay at Grand Hyatt Kuala Lumpur?</legend>
+                  <legend>
+                    Would you like to stay at Grand Hyatt Kuala Lumpur?
+                  </legend>
                   <div className="segmented-control">
                     <button
                       type="button"
@@ -2310,7 +2324,7 @@ export function WeddingExperience({
                           >
                             <strong>{hotel.name}</strong>
                             <span>{hotel.note}</span>
-                            
+
                             <i>{hotel.walk} away ↗</i>
                           </a>
                         </li>
@@ -2384,26 +2398,25 @@ export function WeddingExperience({
             </p>
             <div className="arrival-grid">
               <article>
-                <h3>By MRT</h3>
+                <h3>MRT</h3>
                 <p>
-                  Take the Putrajaya Line to Conlay station, leave by Entrance
-                  A, and follow Jalan Kia Peng towards the Convention Centre —
-                  the hotel appears on your right.
+                  Take the Putrajaya Line to Conlay. Leave via Entrance A, then
+                  follow Jalan Kia Peng towards the Convention Centre; the hotel
+                  will be on your right.
                 </p>
               </article>
               <article>
-                <h3>By car</h3>
+                <h3>Car</h3>
                 <p>
-                  Make your way to the hotel entrance on Jalan Pinang, where the
-                  doormen will greet you. Guest parking sits in the hotel’s own
-                  basement.
+                  Enter from Jalan Pinang. The doormen can direct you to guest
+                  parking in the hotel basement.
                 </p>
               </article>
               <article>
-                <h3>By Grab</h3>
+                <h3>Grab</h3>
                 <p>
-                  Set your destination to Grand Hyatt Kuala Lumpur and ask to
-                  be dropped at the main lobby.
+                  Use Grand Hyatt Kuala Lumpur as your destination and choose
+                  the main lobby.
                 </p>
               </article>
             </div>
@@ -2448,7 +2461,7 @@ export function WeddingExperience({
             <p className="step-label">Kuala Lumpur</p>
             <h2>A few places we love</h2>
             <p className="section-intro">
-              When you are in town.
+              A few favourites for your time in town.
             </p>
             <div className="guide">
               {guideCategories.map((category) => {
@@ -2540,9 +2553,7 @@ export function WeddingExperience({
             onError={removeBrokenImage}
           />
           <div className="scene-content wishes-card reveal">
-            <p className="step-label">
-              From the heart
-            </p>
+            <p className="step-label">From the heart</p>
             <h2>{content.wishesHeading}</h2>
             {personalised ? (
               <>
@@ -2688,7 +2699,8 @@ export function WeddingExperience({
                     : `/after-party?token=${encodeURIComponent(token)}`
                 }
               >
-                See the after-party details <span aria-hidden="true">&rarr;</span>
+                See the after-party details{" "}
+                <span aria-hidden="true">&rarr;</span>
               </a>
             </div>
           </div>
@@ -2732,22 +2744,23 @@ export function WeddingExperience({
             <span />
           )}
           <p className="wizard-position" aria-live="polite">
-            <span>{wizardStepLabels[wizardSteps[stepIndex].id] ?? "Your invitation"}</span>
+            <span>
+              {wizardStepLabels[wizardSteps[stepIndex].id] ?? "Your invitation"}
+            </span>
             <small>
-              {String(stepIndex + 1).padStart(2, "0")} / {String(wizardSteps.length - 1).padStart(2, "0")}
+              {String(stepIndex + 1).padStart(2, "0")} /{" "}
+              {String(wizardSteps.length - 1).padStart(2, "0")}
             </small>
           </p>
           {wizardSteps[stepIndex].cta ? (
             <button
               type="button"
               className="wizard-next"
-              disabled={
-                !wizardSteps[stepIndex].ready &&
-                wizardSteps[stepIndex].id !== "travel"
-              }
+              disabled={!wizardSteps[stepIndex].ready}
               onClick={advance}
             >
-              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"} <span aria-hidden="true">&rarr;</span>
+              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"}{" "}
+              <span aria-hidden="true">&rarr;</span>
             </button>
           ) : (
             <span />
