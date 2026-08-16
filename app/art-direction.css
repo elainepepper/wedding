@@ -580,3 +580,509 @@
     transition: none !important;
   }
 }
+
+/* ========================================================================
+   STRUCTURAL RECOMPOSITION
+   One axis, one spacing rhythm, very few surfaces. Interactive chapters keep
+   the fixed rail; editorial chapters finish in the document flow.
+   ======================================================================== */
+.wedding-shell.wizard {
+  --space-1: 0.5rem;
+  --space-2: 0.875rem;
+  --space-3: 1.35rem;
+  --space-4: 2.1rem;
+  --space-5: 3.35rem;
+  --guest-axis: 34rem;
+  --header-clearance: max(6.15rem, calc(5.15rem + env(safe-area-inset-top)));
+}
+
+.wedding-shell.wizard .scene {
+  padding-top: var(--header-clearance) !important;
+  padding-inline: clamp(1.35rem, 6vw, 4rem) !important;
+  padding-bottom: max(
+    4rem,
+    calc(3rem + env(safe-area-inset-bottom))
+  ) !important;
+}
+
+.wedding-shell.wizard :is(#rsvp, #meal, #travel) {
+  padding-bottom: max(
+    8.5rem,
+    calc(7.4rem + env(safe-area-inset-bottom))
+  ) !important;
+}
+
+.wedding-shell.wizard
+  :is(#rsvp, #dress, #meal, #travel, #recommendations, #venue, #wishes)
+  > .scene-content {
+  width: min(100%, var(--guest-axis)) !important;
+  margin-inline: auto !important;
+  padding: 0 !important;
+}
+
+.wedding-shell.wizard
+  :is(
+    .form-card,
+    .form-card--glass,
+    .dress-card,
+    .wishes-card,
+    .venue-card,
+    .recommendations-card,
+    .invitation-only,
+    .room-offer,
+    .help-note,
+    .field-hint,
+    .rsvp-deadline-note
+  ) {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.wedding-shell.wizard
+  :is(#rsvp, #dress, #meal, #travel, #recommendations, #venue, #wishes)
+  .step-label {
+  width: 100%;
+  margin: 0 0 var(--space-2) !important;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard
+  :is(#rsvp, #dress, #meal, #travel, #recommendations, #venue, #wishes)
+  h2 {
+  width: 100%;
+  margin: 0 auto !important;
+  padding-bottom: 0.12em;
+  text-align: center !important;
+  text-wrap: balance;
+  color: #382b30 !important;
+  text-shadow:
+    0 1px 18px rgba(255, 250, 248, 0.92),
+    0 0 36px rgba(255, 250, 248, 0.62) !important;
+}
+
+.wedding-shell.wizard
+  :is(#rsvp, #dress, #meal, #travel, #recommendations, #venue, #wishes)
+  .section-intro {
+  width: min(100%, 29rem);
+  margin: var(--space-3) auto 0 !important;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard :is(.rsvp-deadline-note, .help-note, .field-hint) {
+  width: min(100%, 29rem);
+  margin: var(--space-3) auto 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  text-align: center !important;
+}
+
+/* RSVP: a single attendance moment, followed by a single contact moment. */
+.wedding-shell.wizard #rsvp .party-rsvp-list {
+  width: 100%;
+  margin: var(--space-4) auto 0 !important;
+  gap: var(--space-3) !important;
+}
+
+.wedding-shell.wizard #rsvp .party-rsvp-list fieldset {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 0 var(--space-3) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--wedding-line) !important;
+  background: transparent !important;
+}
+
+.wedding-shell.wizard #rsvp .party-rsvp-list legend,
+.wedding-shell.wizard #meal .guest-meal-list legend {
+  width: 100%;
+  margin: 0 0 var(--space-2) !important;
+  padding: 0 !important;
+  font-family: var(--wedding-serif) !important;
+  font-size: clamp(1.3rem, 5vw, 1.6rem) !important;
+  font-style: italic !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard #rsvp .segmented-control,
+.wedding-shell.wizard #travel .segmented-control {
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+  border-block: 1px solid rgba(118, 55, 76, 0.13) !important;
+}
+
+.wedding-shell.wizard #rsvp .reply-contact {
+  width: 100%;
+}
+
+.wedding-shell.wizard #rsvp .reply-contact .phone-grid {
+  width: 100%;
+  margin: var(--space-5) auto 0 !important;
+}
+
+.wedding-shell.wizard #rsvp .phone-grid-label {
+  width: 100%;
+  margin: 0 0 var(--space-1) !important;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard .text-button {
+  display: block;
+  margin: var(--space-3) auto 0;
+  padding: 0.45rem 0;
+  border: 0;
+  color: rgba(64, 50, 54, 0.66);
+  background: transparent;
+  font: 600 0.66rem/1 var(--wedding-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.wedding-shell.wizard .chapter-continue {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  margin: var(--space-5) 0 0;
+  padding: var(--space-2) 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 0;
+  border-block: 1px solid rgba(118, 55, 76, 0.2);
+  border-radius: 0;
+  color: var(--wedding-wine);
+  background: transparent;
+  box-shadow: none;
+  font: 600 0.68rem/1 var(--wedding-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.wedding-shell.wizard #rsvp .reply-continue {
+  margin-top: var(--space-4);
+}
+
+/* Meal and travel share the same form axis; the painting remains visible. */
+.wedding-shell.wizard #meal .guest-meal-list,
+.wedding-shell.wizard #meal .guest-meal-list fieldset,
+.wedding-shell.wizard #travel fieldset,
+.wedding-shell.wizard #travel .travel-details,
+.wedding-shell.wizard #travel .full-field {
+  width: 100%;
+  margin-inline: auto !important;
+}
+
+.wedding-shell.wizard #meal .guest-meal-list {
+  margin-top: var(--space-4) !important;
+}
+
+.wedding-shell.wizard #meal .choice-card {
+  border-radius: 0 !important;
+  background-color: rgba(255, 250, 248, 0.055) !important;
+  box-shadow: none !important;
+}
+
+.wedding-shell.wizard #travel .answer-trail {
+  display: grid;
+  width: 100%;
+  margin: var(--space-3) 0 var(--space-4);
+  border-top: 1px solid var(--wedding-line);
+}
+
+.wedding-shell.wizard #travel .answer-trail button {
+  display: grid;
+  min-height: 46px;
+  padding: 0;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-bottom: 1px solid var(--wedding-line);
+  color: var(--wedding-ink);
+  background: transparent;
+  text-align: left;
+}
+
+.wedding-shell.wizard #travel .answer-trail span,
+.wedding-shell.wizard #travel .answer-trail strong {
+  font: 500 0.92rem/1.3 var(--wedding-serif);
+}
+
+.wedding-shell.wizard #travel .answer-trail small {
+  color: var(--wedding-wine);
+  font: 600 0.58rem/1 var(--wedding-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.wedding-shell.wizard #travel .room-offer {
+  width: 100%;
+  max-width: none;
+  margin: var(--space-3) 0 !important;
+  padding: var(--space-3) 0 !important;
+  border-block: 1px solid var(--wedding-line) !important;
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #travel .room-offer :is(strong, span) {
+  display: block;
+}
+
+.wedding-shell.wizard #travel .room-offer span {
+  margin-top: var(--space-1);
+}
+
+.wedding-shell.wizard #travel .hotel-list {
+  width: 100%;
+  margin: var(--space-3) 0 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid var(--wedding-line);
+  list-style: none;
+}
+
+.wedding-shell.wizard #travel .hotel-list li,
+.wedding-shell.wizard #travel .hotel-list a {
+  width: 100%;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.wedding-shell.wizard #travel .hotel-list a {
+  display: grid;
+  padding: var(--space-3) 0 !important;
+  border-bottom: 1px solid var(--wedding-line) !important;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem var(--space-2);
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #travel .hotel-list strong {
+  grid-column: 1 / -1;
+}
+
+.wedding-shell.wizard #travel .accessibility-field {
+  margin-top: var(--space-4) !important;
+}
+
+/* The city guide is a continuous editorial index, never an accordion. */
+.wedding-shell.wizard #recommendations .editorial-guide {
+  width: 100%;
+  margin: var(--space-5) 0 0;
+  border-top: 1px solid rgba(118, 55, 76, 0.25);
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section {
+  padding: var(--space-4) 0;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(118, 55, 76, 0.25) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__heading {
+  display: block;
+  margin: 0 0 var(--space-3);
+  padding: 0 !important;
+  color: var(--wedding-wine);
+  font: 600 0.68rem/1.2 var(--wedding-ui);
+  letter-spacing: 0.22em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__heading i {
+  display: none !important;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section ul {
+  display: grid !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  list-style: none;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section li {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--wedding-line);
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section li:last-child {
+  border-bottom: 0;
+}
+
+.wedding-shell.wizard
+  #recommendations
+  :is(.editorial-guide__section li > a, .guide-app) {
+  display: grid !important;
+  width: 100%;
+  padding: var(--space-3) 0 !important;
+  gap: 0.38rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--wedding-ink) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section strong {
+  color: var(--wedding-ink) !important;
+  font: 500 clamp(1.35rem, 5vw, 1.62rem) / 1.12 var(--wedding-serif) !important;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section li span {
+  color: rgba(64, 50, 54, 0.72) !important;
+  font: 400 1rem/1.52 var(--wedding-serif) !important;
+}
+
+.wedding-shell.wizard #recommendations .editorial-guide__section em,
+.wedding-shell.wizard #recommendations .app-links a {
+  color: rgba(64, 50, 54, 0.58) !important;
+  font: 600 0.6rem/1.4 var(--wedding-ui) !important;
+  font-style: normal !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase;
+}
+
+/* Venue instructions are a ledger; the map is a clean, centred viewport. */
+.wedding-shell.wizard #venue .arrival-grid {
+  width: 100%;
+  margin: var(--space-4) 0 0 !important;
+  border-top: 1px solid var(--wedding-line);
+}
+
+.wedding-shell.wizard #venue .arrival-grid article {
+  display: grid;
+  width: 100%;
+  margin: 0 !important;
+  padding: var(--space-3) 0 !important;
+  grid-template-columns: 4.5rem minmax(0, 1fr) !important;
+  gap: var(--space-3) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--wedding-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #venue .arrival-grid :is(h3, p) {
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #venue .map-button {
+  display: block;
+  width: 100%;
+  margin: var(--space-4) 0 var(--space-3) !important;
+  padding: var(--space-2) 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(118, 55, 76, 0.25) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left;
+}
+
+.wedding-shell.wizard #venue .venue-map {
+  width: 100%;
+  height: auto !important;
+  margin: 0 !important;
+  aspect-ratio: 4 / 3;
+  border: 0 !important;
+  border-block: 1px solid rgba(118, 55, 76, 0.2) !important;
+  border-radius: 0 !important;
+  background: rgba(246, 237, 234, 0.2) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.wedding-shell.wizard #venue .venue-map iframe {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  filter: saturate(0.82) contrast(0.96);
+}
+
+/* The entrance is the environment itself, not a poster floating on a wall. */
+.portal,
+.portal .portal-arch {
+  width: 100vw !important;
+  min-width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.portal .portal-film {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+@media (max-width: 620px) {
+  .wedding-shell.wizard .scene {
+    padding-top: var(--header-clearance) !important;
+    padding-inline: clamp(1.35rem, 6.4vw, 1.7rem) !important;
+    padding-bottom: max(
+      4rem,
+      calc(3rem + env(safe-area-inset-bottom))
+    ) !important;
+  }
+
+  .wedding-shell.wizard :is(#rsvp, #meal, #travel) {
+    padding-bottom: max(
+      8.5rem,
+      calc(7.4rem + env(safe-area-inset-bottom))
+    ) !important;
+  }
+
+  .wedding-shell.wizard #rsvp .form-card > h2,
+  .wedding-shell.wizard #rsvp .reply-contact > h2 {
+    max-width: 100% !important;
+    font-size: clamp(3.55rem, 15vw, 4.35rem) !important;
+  }
+
+  .wedding-shell.wizard #rsvp .segmented-control {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .wedding-shell.wizard #rsvp .segmented-control button {
+    min-width: 0;
+    padding-inline: 0.4rem !important;
+    font-size: 0.97rem !important;
+  }
+
+  .wedding-shell.wizard #travel .segmented-control--three,
+  .wedding-shell.wizard
+    #travel
+    [data-travel-question="nights"]
+    .segmented-control {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .wedding-shell.wizard #recommendations .scene-content,
+  .wedding-shell.wizard #venue .scene-content {
+    text-align: left !important;
+  }
+
+  .wedding-shell.wizard #venue .arrival-grid article {
+    grid-template-columns: 3.75rem minmax(0, 1fr) !important;
+  }
+}
