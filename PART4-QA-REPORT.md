@@ -142,7 +142,7 @@ Automated/hosted checks also confirmed:
 Latest branch result:
 
 * TypeScript: PASS
-* Automated tests: PASS — 12/12
+* Automated tests: PASS — 13/13
 * Production Next.js build: PASS
 * Git whitespace validation: PASS
 * Lint: no lint script is configured
@@ -171,7 +171,8 @@ Fixed:
 * Manager token refresh/save-error handling could leave misleading save state;
 * invitation menu keyboard focus could escape behind the overlay;
 * dynamically generated Blob calendar downloads were fragile on mobile Safari;
-* Manager search controls lacked programmatic labels.
+* Manager search controls lacked programmatic labels;
+* removing a guest from a table stored `0` instead of `null`, leaving an invalid hidden table reference.
 
 Open/operational:
 

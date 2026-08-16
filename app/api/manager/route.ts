@@ -1,6 +1,6 @@
 import { assertFirebaseAdminConfigured, nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { requireAdmin } from "../../../lib/manager-auth";
-import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag } from "../../../lib/rsvp-data.mjs";
+import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag, optionalInteger } from "../../../lib/rsvp-data.mjs";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 
 // Never serve a cached copy: the manager must see a change the instant it is
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
-const integer = (value: unknown) => Number.isInteger(Number(value)) ? Number(value) : null;
+const integer = optionalInteger;
 const ids = (value: unknown) => Array.isArray(value) ? value.map(integer).filter((item): item is number => item !== null) : [];
 
 async function docById(collection: string, id: number) {

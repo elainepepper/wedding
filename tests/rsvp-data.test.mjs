@@ -6,6 +6,7 @@ import {
   isChildAgeGroup,
   isEnabledFlag,
   isValidInternationalMobile,
+  optionalInteger,
 } from "../lib/rsvp-data.mjs";
 
 test("canonicalises current and legacy RSVP values", () => {
@@ -41,4 +42,14 @@ test("normalises imported boolean flags without treating string zero as true", (
   assert.equal(isEnabledFlag("true"), true);
   assert.equal(isEnabledFlag("0"), false);
   assert.equal(isEnabledFlag(false), false);
+});
+
+test("does not turn an empty optional id into a real zero id", () => {
+  assert.equal(optionalInteger(null), null);
+  assert.equal(optionalInteger(undefined), null);
+  assert.equal(optionalInteger(""), null);
+  assert.equal(optionalInteger(false), null);
+  assert.equal(optionalInteger("12"), 12);
+  assert.equal(optionalInteger(12), 12);
+  assert.equal(optionalInteger("12.5"), null);
 });
