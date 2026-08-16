@@ -1413,21 +1413,30 @@
    mask, wall margin and frame shadow so the opening reads as a full-bleed
    cinematic title card. This is deliberately isolated for easy comparison. */
 .portal {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   padding: 0;
   background: #eadfe6;
+  overscroll-behavior: none;
 }
 
 .portal .portal-arch {
-  width: 100vw;
-  height: 100svh;
+  width: 100%;
+  min-height: 100%;
+  height: 100%;
   border-radius: 0;
   box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .portal.is-crossing .portal-arch {
-    width: 100vw;
-    height: 100svh;
+    width: 100%;
+    height: 100%;
     border-radius: 0;
   }
 }
