@@ -896,15 +896,18 @@
 }
 
 .wedding-shell.wizard #afterparty h2 {
-  max-width: 8ch;
+  max-width: 10ch;
   margin: 0 auto;
-  color: #3f3034;
+  color: #382b2f;
   font-family: "Hilberta Austine", "Pinyon Script", cursive;
-  font-size: clamp(3.65rem, 15vw, 6.4rem);
+  font-size: clamp(4.15rem, 17vw, 6.7rem);
   font-weight: 400;
-  line-height: 0.98;
-  letter-spacing: 0;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
   text-align: center;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, 0.78);
+  text-wrap: balance;
 }
 
 .wedding-shell.wizard #afterparty .section-intro {
@@ -1033,13 +1036,16 @@
 }
 
 .after-party-coda__title {
-  margin: 0;
-  color: #3f3034;
-  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
-  font-size: clamp(3rem, 14vw, 5.8rem);
+  max-width: 9ch;
+  margin: 0 auto;
+  color: #382b2f;
+  font-family: "Hilberta Austine", "Pinyon Script", cursive;
+  font-size: clamp(4rem, 16vw, 6.5rem);
   font-weight: 400;
-  line-height: 0.92;
-  letter-spacing: -0.025em;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, 0.78);
 }
 
 .after-party-coda__title span,
@@ -1048,13 +1054,13 @@
 }
 
 .after-party-coda__title em {
-  margin-top: 0.15em;
+  margin-top: 0.04em;
   color: #7a2549;
-  font-family: "Hilberta Austine", "Pinyon Script", cursive;
-  font-size: 1.18em;
+  font-family: inherit;
+  font-size: 1em;
   font-style: normal;
   font-weight: 400;
-  letter-spacing: 0;
+  letter-spacing: inherit;
 }
 
 .after-party-coda__flourish {
@@ -1110,12 +1116,17 @@
 
 .after-party-coda__details h2,
 .after-party-coda__state-copy h1 {
-  margin: 0;
-  color: #3f3034;
+  max-width: 10ch;
+  margin: 0 auto;
+  color: #382b2f;
   font-family: "Hilberta Austine", "Pinyon Script", cursive;
-  font-size: clamp(3.4rem, 14vw, 5.7rem);
+  font-size: clamp(3.8rem, 15vw, 6rem);
   font-weight: 400;
-  line-height: 1;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 14px rgba(255, 250, 248, 0.78);
+  text-wrap: balance;
 }
 
 .after-party-coda__details dl {
