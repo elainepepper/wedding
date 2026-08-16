@@ -63,6 +63,8 @@ type InvitedGuest = {
   last_name: string;
   preferred_name: string | null;
   rsvp_status: string;
+  age_group: "Adult" | "Child";
+  child_meal: number;
   ceremony_invited: number;
   reception_invited: number;
   after_party_invited: number;
@@ -82,6 +84,7 @@ type InvitedGuest = {
   marriage_advice?: string | null;
   wishes: string | null;
   mobile: string | null;
+  has_submitted: boolean;
 };
 type InviteData = {
   household: { id: number; name: string; maxGuests: number };
@@ -121,6 +124,8 @@ type GuestResponse = {
   tableName: string;
   wishes: string;
   advice: string;
+  isChild: boolean;
+  childMeal: boolean;
 };
 type RsvpState = {
   guestName: string;
@@ -657,6 +662,7 @@ function EveningRecap({ guests }: { guests: GuestResponse[] }) {
     (guest) =>
       guest.rsvpStatus === "Confirmed" &&
       (guest.mealSelection ||
+        guest.childMeal ||
         guest.dietaryRequirements.trim() ||
         guest.allergies.trim()),
   );
@@ -684,6 +690,12 @@ function EveningRecap({ guests }: { guests: GuestResponse[] }) {
                       ? "Seared Alaskan salmon"
                       : "Almond dukkha-crusted lamb"}
                   </strong>
+                </p>
+              ) : null}
+              {guest.childMeal ? (
+                <p>
+                  <span>Main course</span>
+                  <strong>Children&rsquo;s meal</strong>
                 </p>
               ) : null}
               {dietary ? (
@@ -761,6 +773,8 @@ export function WeddingExperience({
             tableName: "",
             wishes: "",
             advice: "",
+            isChild: false,
+            childMeal: false,
           },
         ]
       : [],
@@ -771,6 +785,8 @@ export function WeddingExperience({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const submissionInFlight = useRef(false);
+  const submissionId = useRef("");
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [music, setMusic] = useState<MusicSettings>({
     musicUrl: null,
@@ -903,31 +919,60 @@ export function WeddingExperience({
         const phone = splitMobile(
           result.guests.find((guest) => guest.mobile)?.mobile || null,
         );
-        setRsvp((current) => ({
-          ...current,
+        const confirmedGuests = result.guests.filter(
+          (guest) => guest.rsvp_status === "Confirmed",
+        );
+        const travelWasAnswered = confirmedGuests.some(
+          (guest) => guest.has_submitted,
+        );
+        const travelling = confirmedGuests.some(
+          (guest) =>
+            Boolean(guest.transport_required) ||
+            Boolean(guest.travel_arrival) ||
+            Boolean(guest.travel_departure) ||
+            Boolean(guest.accommodation_required) ||
+            Boolean(guest.accommodation_name),
+        );
+        const requestedHyatt = confirmedGuests.some((guest) =>
+          Boolean(guest.accommodation_required),
+        );
+        setRsvp({
+          ...initialRsvp,
           guestName: names || result.household.name,
           ...phone,
+          attendance: confirmedGuests.length
+            ? "yes"
+            : result.guests.every((guest) => guest.rsvp_status === "Declined")
+              ? "no"
+              : null,
+          flyingIn: travelWasAnswered ? travelling : null,
+          roomAtHyatt:
+            travelWasAnswered && travelling ? requestedHyatt : null,
+          arrivalDate:
+            confirmedGuests.map((guest) => guest.travel_arrival || "").find(Boolean) || "",
+          departureDate:
+            confirmedGuests.map((guest) => guest.travel_departure || "").find(Boolean) || "",
+          accommodation:
+            confirmedGuests.map((guest) => guest.accommodation_name || "").find(Boolean) || "",
           accessibilityNote:
-            result.guests
+            confirmedGuests
               .map((guest) => guest.accessibility || "")
-              .find(Boolean) || current.accessibilityNote,
+              .find(Boolean) || "",
           wishes:
-            result.guests.map((guest) => guest.wishes || "").find(Boolean) ||
-            current.wishes,
+            result.guests.map((guest) => guest.wishes || "").find(Boolean) || "",
           advice:
-            result.guests
+            confirmedGuests
               .map((guest) => guest.marriage_advice || "")
-              .find(Boolean) || current.advice,
+              .find(Boolean) || "",
           bedPreference:
-            (result.guests
+            (confirmedGuests
               .map((guest) => guest.bed_preference || "")
-              .find(Boolean) as "King" | "Twin" | undefined) ??
-            current.bedPreference,
+              .find(Boolean) as "King" | "Twin" | undefined) ?? null,
           nights:
-            result.guests
+            confirmedGuests
               .map((guest) => guest.room_nights)
-              .find((value) => typeof value === "number") ?? current.nights,
-        }));
+              .find((value) => typeof value === "number") ?? null,
+        });
         setGuestResponses(
           result.guests.map((guest) => ({
             id: guest.id,
@@ -970,6 +1015,8 @@ export function WeddingExperience({
               typeof guest.room_nights === "number" ? guest.room_nights : null,
             wishes: guest.wishes || "",
             advice: guest.marriage_advice || "",
+            isChild: guest.age_group === "Child",
+            childMeal: Boolean(guest.child_meal),
           })),
         );
       })
@@ -1022,7 +1069,9 @@ export function WeddingExperience({
     anyYes &&
     guestResponses.every(
       (guest) =>
-        guest.rsvpStatus !== "Confirmed" || Boolean(guest.mealSelection),
+        guest.rsvpStatus !== "Confirmed" ||
+        guest.childMeal ||
+        Boolean(guest.mealSelection),
     );
   // When the block is full there is no question left to answer, so the step
   // completes on its own and the guest simply sees the nearby hotels.
@@ -1381,10 +1430,12 @@ export function WeddingExperience({
   }, [submitted]);
 
   const update = <K extends keyof RsvpState>(key: K, value: RsvpState[K]) => {
+    submissionId.current = "";
     setRsvp((current) => ({ ...current, [key]: value }));
     setError("");
   };
   const updateGuest = (id: number, patch: Partial<GuestResponse>) => {
+    submissionId.current = "";
     setGuestResponses((current) =>
       current.map((guest) =>
         guest.id === id ? { ...guest, ...patch } : guest,
@@ -1394,12 +1445,15 @@ export function WeddingExperience({
   };
 
   const submitRsvp = async () => {
+    if (submissionInFlight.current) return;
     if (previewMode) {
+      submissionInFlight.current = true;
       setSubmitting(true);
       setError("");
       window.setTimeout(() => {
         setSubmitting(false);
         setSubmitted(true);
+        submissionInFlight.current = false;
       }, 900);
       return;
     }
@@ -1420,7 +1474,10 @@ export function WeddingExperience({
     }
     if (
       guestResponses.some(
-        (guest) => guest.rsvpStatus === "Confirmed" && !guest.mealSelection,
+        (guest) =>
+          guest.rsvpStatus === "Confirmed" &&
+          !guest.childMeal &&
+          !guest.mealSelection,
       )
     ) {
       setError("A main course is still to be chosen for someone joining us.");
@@ -1455,6 +1512,7 @@ export function WeddingExperience({
         return;
       }
     }
+    submissionInFlight.current = true;
     setSubmitting(true);
     setError("");
     try {
@@ -1470,7 +1528,7 @@ export function WeddingExperience({
         localDigits = localDigits.slice(codeDigits.length); // code typed twice
       }
       localDigits = localDigits.replace(/^0+/, ""); // local trunk zero
-      const mobile = `${rsvp.countryCode}${localDigits}`;
+      const mobile = localDigits ? `${rsvp.countryCode}${localDigits}` : "";
       const firstConfirmedId = guestResponses.find(
         (guest) => guest.rsvpStatus === "Confirmed",
       )?.id;
@@ -1503,7 +1561,8 @@ export function WeddingExperience({
           guest.rsvpStatus === "Confirmed" && rsvp.roomAtHyatt === false
             ? rsvp.accommodation
             : "",
-        transportRequired: false,
+        transportRequired:
+          guest.rsvpStatus === "Confirmed" && rsvp.flyingIn === true,
         accessibility:
           guest.rsvpStatus === "Confirmed" ? rsvp.accessibilityNote : "",
         // One household submits one wish and one piece of advice, not one
@@ -1518,10 +1577,20 @@ export function WeddingExperience({
             ? rsvp.advice
             : "",
       }));
+      if (!submissionId.current) {
+        submissionId.current =
+          typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+      }
       const response = await fetch(`/api/invite/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile, guests }),
+        body: JSON.stringify({
+          mobile,
+          guests,
+          submissionId: submissionId.current,
+        }),
       });
       const result = await readGuestResponse<{ ok?: boolean }>(
         response,
@@ -1538,6 +1607,7 @@ export function WeddingExperience({
       );
     } finally {
       setSubmitting(false);
+      submissionInFlight.current = false;
     }
   };
 
@@ -2035,24 +2105,28 @@ export function WeddingExperience({
                 .map((guest) => (
                   <fieldset key={guest.id}>
                     <legend>{guest.name}</legend>
-                    <div className="choice-grid choice-grid--two meal-choices">
-                      <ChoiceButton
-                        selected={guest.mealSelection === "Salmon"}
-                        title="Seared Alaskan salmon"
-                        detail={salmonDescription}
-                        onClick={() =>
-                          updateGuest(guest.id, { mealSelection: "Salmon" })
-                        }
-                      />
-                      <ChoiceButton
-                        selected={guest.mealSelection === "Lamb"}
-                        title="Almond dukkha-crusted lamb"
-                        detail={lambDescription}
-                        onClick={() =>
-                          updateGuest(guest.id, { mealSelection: "Lamb" })
-                        }
-                      />
-                    </div>
+                    {guest.childMeal ? (
+                      <p className="section-intro">Children&rsquo;s meal</p>
+                    ) : (
+                      <div className="choice-grid choice-grid--two meal-choices">
+                        <ChoiceButton
+                          selected={guest.mealSelection === "Salmon"}
+                          title="Seared Alaskan salmon"
+                          detail={salmonDescription}
+                          onClick={() =>
+                            updateGuest(guest.id, { mealSelection: "Salmon" })
+                          }
+                        />
+                        <ChoiceButton
+                          selected={guest.mealSelection === "Lamb"}
+                          title="Almond dukkha-crusted lamb"
+                          detail={lambDescription}
+                          onClick={() =>
+                            updateGuest(guest.id, { mealSelection: "Lamb" })
+                          }
+                        />
+                      </div>
+                    )}
                     <div className="field-grid field-grid--single">
                       <label>
                         <span>Dietary requirements or allergies</span>

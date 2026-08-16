@@ -1,5 +1,6 @@
 import { assertFirebaseAdminConfigured, weddingRef } from "../../../../lib/firebase-admin";
 import { requireAdmin } from "../../../../lib/manager-auth";
+import { canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag } from "../../../../lib/rsvp-data.mjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +31,11 @@ export async function GET(request: Request) {
     ]);
 
     const households = householdSnap.docs.map((d) => d.data());
-    const guests = guestSnap.docs.map((d) => d.data());
+    const rawGuests: Array<Record<string, unknown>> = guestSnap.docs.map((d) => d.data() as Record<string, unknown>);
+    const guests: Array<Record<string, unknown> & { rsvp_status: ReturnType<typeof canonicalRsvpStatus> }> = rawGuests.map((guest) => ({
+      ...guest,
+      rsvp_status: canonicalRsvpStatus(guest.rsvp_status),
+    }));
     const tables = tableSnap.docs.map((d) => d.data());
     const name = (g: Record<string, unknown>) =>
       `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() || String(g.id ?? "?");
@@ -60,7 +65,7 @@ export async function GET(request: Request) {
     // 4. a guest whose household id does not match any household
     const householdIds = new Set(households.map((h) => String(h.id)));
     add("Every guest belongs to a household that exists",
-      guests.filter((g) => !g.archived && !householdIds.has(String(g.household_id))).map(name),
+      guests.filter((g) => !isEnabledFlag(g.archived) && !householdIds.has(String(g.household_id))).map(name),
       "every guest is attached correctly", "are attached to a household that no longer exists");
 
     // 5. a guest seated at a table that was deleted
@@ -88,7 +93,7 @@ export async function GET(request: Request) {
 
     // 9. guests attending with no meal chosen
     add("Everyone attending has chosen dinner",
-      guests.filter((g) => g.rsvp_status === "Confirmed" && !g.meal_selection).map(name),
+      guests.filter((g) => g.rsvp_status === "Confirmed" && !isChildAgeGroup(g.age_group) && !isEnabledFlag(g.child_meal) && !g.meal_selection).map(name),
       "every meal is chosen", "have accepted but have not chosen a main course");
 
     // 10. ids stored as strings where the code compares numbers
@@ -96,14 +101,20 @@ export async function GET(request: Request) {
       guests.filter((g) => typeof g.household_id === "string" || typeof g.table_id === "string").map(name),
       "every id is a number", "have an id stored as text, which some lookups will miss");
 
+    // 11. imported values such as "pending" render correctly now, but should
+    // still be surfaced so the underlying database can be tidied deliberately.
+    add("RSVP statuses use the canonical values",
+      rawGuests.filter((g) => String(g.rsvp_status ?? "Pending") !== canonicalRsvpStatus(g.rsvp_status)).map(name),
+      "every RSVP status is canonical", "statuses use legacy casing or wording");
+
     const failing = checks.filter((c) => !c.ok);
     return Response.json({
       ok: failing.length === 0,
       summary: failing.length ? `${failing.length} of ${checks.length} checks need attention` : `All ${checks.length} checks pass`,
-      counts: { households: households.length, guests: guests.filter((g) => !g.archived).length, tables: tables.length },
+      counts: { households: households.length, guests: guests.filter((g) => !isEnabledFlag(g.archived)).length, tables: tables.length },
       checks,
     });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "The health check could not run." }, { status: 500 });
+  } catch {
+    return Response.json({ error: "The health check could not run." }, { status: 500 });
   }
 }

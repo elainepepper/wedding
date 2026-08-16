@@ -15,6 +15,7 @@ type Guest = {
   accommodation_required: number; table_id: number | null; seat_number: number | null; invitation_sent: number;
   invitation_sent_at: string | null; rsvp_submitted_at: string | null; internal_notes: string | null;
   wishes?: string | null; marriage_advice?: string | null; bed_preference?: string | null; room_nights?: number | null;
+  travel_arrival?: string | null; travel_departure?: string | null; accommodation_name?: string | null;
   household_name: string | null; invitation_slug: string | null; invitation_token: string | null;
   invitation_enabled: number; opened_at: string | null; last_activity_at: string | null; table_name: string | null;
   updated_at: string;
@@ -230,25 +231,42 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       const message = failure instanceof Error ? failure.message : "The change could not be saved.";
       setSaveState("error");
       notify(message);
-      throw failure;          // callers that do catch still get to react
+      // Restore any row hidden optimistically before a failed archive/delete.
+      // The editor stays open with its local inputs, while the authoritative
+      // list is read back from the server.
+      await load(true);
+      // Resolve with a clear failure sentinel rather than rejecting. Most
+      // manager actions are intentionally fire-and-forget button handlers;
+      // rejecting here produced an unhandled promise in the browser even
+      // though the toast and rollback had already handled the error.
+      return null;
     } finally { inFlight.current = false; }
   };
 
   const stats = useMemo(() => {
     const guests = data?.guests ?? [];
     const confirmed = guests.filter((g) => g.rsvp_status === "Confirmed");
+    const confirmedHouseholds = (predicate: (guest: Guest) => boolean) =>
+      new Set(
+        confirmed
+          .filter(predicate)
+          .map((guest) => guest.household_id ?? `guest-${guest.id}`),
+      ).size;
     return {
       total: guests.length, households: data?.households.length ?? 0, confirmed: confirmed.length,
       declined: guests.filter((g) => g.rsvp_status === "Declined").length,
       pending: guests.filter((g) => g.rsvp_status === "Pending").length,
-      adults: guests.length,
+      adults: guests.filter((g) => g.age_group !== "Child").length,
       dietary: guests.filter((g) => g.dietary_requirements || g.allergies).length,
       afterParty: guests.filter((g) => g.after_party_attending === "Yes").length,
-      transport: guests.filter((g) => g.transport_required).length,
-      accommodation: guests.filter((g) => g.accommodation_required).length,
+      // Travel and room answers are household questions. The API mirrors them
+      // onto each named guest for backwards compatibility, so aggregate each
+      // household once rather than reporting a couple as two room requests.
+      transport: confirmedHouseholds((g) => Boolean(g.transport_required)),
+      accommodation: confirmedHouseholds((g) => Boolean(g.accommodation_required)),
       tables: data?.tables.length ?? 0,
       unassigned: confirmed.filter((g) => !g.table_id).length,
-      meals: confirmed.filter((g) => g.meal_selection).length,
+      meals: confirmed.filter((g) => g.meal_selection || g.child_meal).length,
     };
   }, [data]);
 
@@ -427,11 +445,14 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
       {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" hidden={adminRole === "planner"} onClick={async () => {
         if (!window.confirm(`Remove ${selected.length} guest${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
         const count = selected.length;
-        for (const id of selected) await act({ action: "deleteGuest", guestId: id }, `${count} guest${count === 1 ? "" : "s"} removed`);
+        for (const id of selected) {
+          const result = await act({ action: "deleteGuest", guestId: id }, `${count} guest${count === 1 ? "" : "s"} removed`);
+          if (!result) return;
+        }
         setSelected([]);
       }}>Delete</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
       <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : sortedGuests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><SortHead id="name" label="Guest" /><SortHead id="household" label="Household" /><SortHead id="group" label="Group" /><SortHead id="rsvp" label="RSVP" /><th>Meal &amp; dietary</th><SortHead id="table" label="Table" /><SortHead id="recent" label="Invitation" /><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
-        {sortedGuests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
+        {sortedGuests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.child_meal ? "Children's meal" : guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
       <footer className="table-footer"><span>{guests.length} guests shown</span><span>Updates use Australia/Perth time</span></footer>
     </section>
@@ -571,7 +592,8 @@ function SendDeck({ households, guests, replyBy, act, notify, edit, addTo }: {
   };
 
   const markSent = async (household: Household) => {
-    await act({ action: "markInvitationSent", householdId: household.id }, `${household.name} marked as sent`);
+    const result = await act({ action: "markInvitationSent", householdId: household.id }, `${household.name} marked as sent`);
+    if (!result) return;
     setIndex((value) => (pile.length <= 1 ? 0 : value % (pile.length - 1)));
   };
 
@@ -683,7 +705,8 @@ function Households({ households, guests, archived, adminRole, replyBy, act, not
     let done = 0;
     try {
       for (const household of chosen) {
-        await act({ action: "markInvitationSent", householdId: household.id }, "");
+        const result = await act({ action: "markInvitationSent", householdId: household.id }, "");
+        if (!result) throw new Error("The remaining invitations were not changed.");
         done += 1;
         setProgress(`Marking sent… ${done} of ${chosen.length}`);
       }
@@ -702,7 +725,8 @@ function Households({ households, guests, archived, adminRole, replyBy, act, not
     let archivedCount = 0;
     try {
       for (const household of chosen) {
-        await act({ action: "archiveHousehold", householdId: household.id }, "");
+        const result = await act({ action: "archiveHousehold", householdId: household.id }, "");
+        if (!result) throw new Error("The remaining invitations were not changed.");
         archivedCount += 1;
         setProgress(`Archiving… ${archivedCount} of ${chosen.length}`);
       }
@@ -724,7 +748,8 @@ function Households({ households, guests, archived, adminRole, replyBy, act, not
     let done = 0;
     try {
       for (const household of chosen) {
-        await act({ action: "deleteHousehold", householdId: household.id }, "");
+        const result = await act({ action: "deleteHousehold", householdId: household.id }, "");
+        if (!result) throw new Error("The remaining invitations were not changed.");
         done += 1;
         setProgress(`Deleting… ${done} of ${chosen.length}`);
       }
@@ -843,7 +868,8 @@ function Households({ households, guests, archived, adminRole, replyBy, act, not
         if (!window.confirm(warning)) return;
         // Archiving keeps everything — the same link, the same replies — so
         // undo is simply putting it back, not rebuilding it from pieces.
-        void act({ action: "archiveHousehold", householdId: household.id }, "Household archived").then(() => {
+        void act({ action: "archiveHousehold", householdId: household.id }, "Household archived").then((result) => {
+          if (!result) return;
           setUndo({
             label: `${household.name} archived — undo puts them back exactly as they were`,
             restore: async () => { await act({ action: "restoreHousehold", householdId: household.id }, "Household restored"); },
@@ -946,7 +972,8 @@ function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: Seating
       ? `${preset.label.replace(/ \(\d+\)$/, "")} ${tables.filter((table) => table.shape === preset.shape).length + 1}`
       : name.trim();
     if (!finalName) return;
-    await act({ action: "createTable", name: finalName, shape: chosen.shape, capacity: chosen.capacity }, `${finalName} added`);
+    const result = await act({ action: "createTable", name: finalName, shape: chosen.shape, capacity: chosen.capacity }, `${finalName} added`);
+    if (!result) return;
     setName("");
   };
 
@@ -1163,7 +1190,8 @@ function Imports({ act, notify }: { act: (payload: Record<string, unknown>, succ
       try {
         for (let start = 0; start < rows.length; start += size) {
           const batch = rows.slice(start, start + size);
-          const result = await act({ action: "importGuests", rows: batch, duplicateMode }, "") as { summary?: { added: number; updated: number; skipped: number } } | undefined;
+          const result = await act({ action: "importGuests", rows: batch, duplicateMode }, "") as { summary?: { added: number; updated: number; skipped: number } } | null;
+          if (!result) throw new Error("The remaining rows were not imported.");
           if (result?.summary) { added += result.summary.added; updated += result.summary.updated; skipped += result.summary.skipped; }
           setImportDone(Math.min(start + size, rows.length));
         }
@@ -1179,7 +1207,12 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
   const named = (guest: Guest) => guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim();
   const wishes = guests.filter((guest) => (guest.wishes || "").trim());
   const advice = guests.filter((guest) => (guest.marriage_advice || "").trim());
-  const rooms = guests.filter((guest) => (guest.bed_preference || "").trim() || guest.room_nights);
+  const rooms = [...new Map(
+    guests
+      .filter((guest) => guest.rsvp_status === "Confirmed")
+      .filter((guest) => guest.accommodation_required || (guest.bed_preference || "").trim() || guest.room_nights)
+      .map((guest) => [guest.household_id ?? `guest-${guest.id}`, guest]),
+  ).values()];
   const copyAll = (items: Guest[], field: "wishes" | "marriage_advice") => {
     const text = items.map((guest) => `${named(guest)}\n${(guest[field] || "").trim()}`).join("\n\n");
     navigator.clipboard.writeText(text).catch(() => undefined);
@@ -1203,7 +1236,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
 
     <div className="panel-head"><div><p className="panel-kicker">Grand Hyatt</p><h3>Room requests ({rooms.length})</h3></div></div>
     {rooms.length
-      ? <div className="wish-list">{rooms.map((guest) => <blockquote key={`room-${guest.id}`}><p>{guest.bed_preference === "Twin" ? "Two singles" : guest.bed_preference === "King" ? "One king" : "Bed not stated"}{guest.room_nights ? ` · ${guest.room_nights} night${guest.room_nights > 1 ? "s" : ""}` : ""}</p><cite>{named(guest)}</cite></blockquote>)}</div>
+      ? <div className="wish-list">{rooms.map((guest) => <blockquote key={`room-${guest.household_id ?? guest.id}`}><p>{guest.bed_preference === "Twin" ? "Two singles" : guest.bed_preference === "King" ? "One king" : "Bed not stated"}{guest.room_nights ? ` · ${guest.room_nights} night${guest.room_nights > 1 ? "s" : ""}` : ""}</p><cite>{guest.household_name || named(guest)}</cite></blockquote>)}</div>
       : <p className="empty-note">No rooms have been requested yet.</p>}
   </>;
 }
@@ -1216,7 +1249,7 @@ function Exports({ guests, tables }: { guests: Guest[]; tables: SeatingTable[] }
       venue: [["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["RSVP", (g: Guest) => g.rsvp_status], ["Ceremony", (g: Guest) => g.ceremony_attending], ["Reception", (g: Guest) => g.reception_attending], ["Table", (g: Guest) => g.table_name], ["Seat", (g: Guest) => g.seat_number], ["Accessibility", (g: Guest) => g.accessibility], ["Transport", (g: Guest) => g.transport_required ? "Yes" : "No"]],
       chef: [["Guest", (g: Guest) => displayName(g)], ["Table", (g: Guest) => g.table_name], ["Meal", (g: Guest) => g.meal_selection], ["Dietary", (g: Guest) => g.dietary_requirements], ["Allergies", (g: Guest) => g.allergies]],
       afterparty: [["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["Invited", (g: Guest) => g.after_party_invited ? "Yes" : "No"], ["RSVP", (g: Guest) => g.after_party_attending], ["Table", (g: Guest) => g.table_name], ["Mobile", (g: Guest) => g.mobile]],
-      complete: [["ID", (g: Guest) => g.id], ["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["Mobile", (g: Guest) => g.mobile], ["Category", (g: Guest) => g.category], ["Side", (g: Guest) => g.side], ["RSVP", (g: Guest) => g.rsvp_status], ["Meal", (g: Guest) => g.meal_selection], ["Dietary", (g: Guest) => g.dietary_requirements], ["Allergies", (g: Guest) => g.allergies], ["Table", (g: Guest) => g.table_name], ["Seat", (g: Guest) => g.seat_number], ["Internal notes", (g: Guest) => g.internal_notes]],
+      complete: [["ID", (g: Guest) => g.id], ["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["Age group", (g: Guest) => g.age_group], ["Mobile", (g: Guest) => g.mobile], ["Category", (g: Guest) => g.category], ["Side", (g: Guest) => g.side], ["RSVP", (g: Guest) => g.rsvp_status], ["Meal", (g: Guest) => g.child_meal ? "Children's meal" : g.meal_selection], ["Dietary", (g: Guest) => g.dietary_requirements], ["Allergies", (g: Guest) => g.allergies], ["Accessibility", (g: Guest) => g.accessibility], ["Travelling to Kuala Lumpur", (g: Guest) => g.transport_required ? "Yes" : "No"], ["Grand Hyatt room", (g: Guest) => g.accommodation_required ? "Yes" : "No"], ["Arrival", (g: Guest) => g.travel_arrival], ["Departure", (g: Guest) => g.travel_departure], ["Accommodation", (g: Guest) => g.accommodation_name], ["Bed", (g: Guest) => g.bed_preference], ["Room nights", (g: Guest) => g.room_nights], ["Guest-book message", (g: Guest) => g.wishes], ["Private note", (g: Guest) => g.marriage_advice], ["Table", (g: Guest) => g.table_name], ["Seat", (g: Guest) => g.seat_number], ["Internal notes", (g: Guest) => g.internal_notes]],
     } as const;
     const columns = maps[preset]; const content = [`Report,${csvValue(`${preset[0].toUpperCase()}${preset.slice(1)} export`)}`, `Export date,${csvValue(new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth" }))}`, `Wedding,${csvValue("Elaine & Haykal")}`, `Applied filter,${csvValue(filter)}`, "", columns.map(([label]) => csvValue(label)).join(","), ...exportRows.filter((g) => preset !== "afterparty" || g.after_party_invited).map((guest) => columns.map(([, getter]) => csvValue(getter(guest) as unknown)).join(","))].join("\r\n");
     downloadFile(`elaine-haykal-${preset}-${new Date().toISOString().slice(0, 10)}.csv`, content);
@@ -1300,7 +1333,9 @@ function SettingsPanel({ settings, managers, adminRole, activities, act, guests 
       <p className="access-copy">Give your partner or wedding planner their own sign-in. Each person uses their own account and actions are recorded.</p>
       {adminRole === "owner" ? <form className="access-form" onSubmit={(event) => {
         event.preventDefault();
-        void act({ action: "addManager", ...managerForm }, "Manager access granted").then(() => setManagerForm({ name: "", email: "", role: "partner" }));
+        void act({ action: "addManager", ...managerForm }, "Manager access granted").then((result) => {
+          if (result) setManagerForm({ name: "", email: "", role: "partner" });
+        });
       }}>
         <label><span>Name</span><input required value={managerForm.name} onChange={(event) => setManagerForm({ ...managerForm, name: event.target.value })} /></label>
         <label><span>Account email</span><input required type="email" value={managerForm.email} onChange={(event) => setManagerForm({ ...managerForm, email: event.target.value })} /></label>
@@ -1316,7 +1351,19 @@ function SettingsPanel({ settings, managers, adminRole, activities, act, guests 
 function GuestModal({ guest, households, close, act, allGuests, setUndo, presetHouseholdId }: { guest: Guest | "new"; households: Household[]; allGuests?: Guest[]; setUndo?: (u: { label: string; restore: () => Promise<void> } | null) => void; presetHouseholdId?: number | null; close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const isNew = guest === "new";
   const current = isNew ? null : guest;
-  const [form, setForm] = useState({ firstName: current?.first_name || "", lastName: current?.last_name || "", preferredName: current?.preferred_name || "", mobile: current?.mobile || "+60 ", householdId: current?.household_id ? String(current.household_id) : presetHouseholdId ? String(presetHouseholdId) : "", householdName: "", category: current?.category || "Friends", side: current?.side || "Shared", rsvpStatus: current?.rsvp_status || "Pending", mealSelection: current?.meal_selection || "", dietaryRequirements: current?.dietary_requirements || "", allergies: current?.allergies || "", accessibility: current?.accessibility || "", internalNotes: current?.internal_notes || "", ceremonyInvited: current ? !!current.ceremony_invited : true, receptionInvited: current ? !!current.reception_invited : true, afterPartyEligible: current ? !!current.after_party_eligible : false, afterPartyInvited: current ? !!current.after_party_invited : false, transportRequired: current ? !!current.transport_required : false, accommodationRequired: current ? !!current.accommodation_required : false });
+  const [form, setForm] = useState({
+    firstName: current?.first_name || "", lastName: current?.last_name || "", preferredName: current?.preferred_name || "", mobile: current?.mobile || "",
+    householdId: current?.household_id ? String(current.household_id) : presetHouseholdId ? String(presetHouseholdId) : "", householdName: "",
+    category: current?.category || "Friends", side: current?.side || "Shared", ageGroup: current?.age_group === "Child" ? "Child" : "Adult", childMeal: current ? !!current.child_meal : false,
+    rsvpStatus: current?.rsvp_status || "Pending", mealSelection: current?.meal_selection || "",
+    dietaryRequirements: current?.dietary_requirements || "", allergies: current?.allergies || "", accessibility: current?.accessibility || "", internalNotes: current?.internal_notes || "",
+    travelArrival: current?.travel_arrival || "", travelDeparture: current?.travel_departure || "", accommodationName: current?.accommodation_name || "",
+    bedPreference: current?.bed_preference || "", roomNights: current?.room_nights ? String(current.room_nights) : "",
+    wishes: current?.wishes || "", marriageAdvice: current?.marriage_advice || "",
+    ceremonyInvited: current ? !!current.ceremony_invited : true, receptionInvited: current ? !!current.reception_invited : true,
+    afterPartyEligible: current ? !!current.after_party_eligible : false, afterPartyInvited: current ? !!current.after_party_invited : false,
+    transportRequired: current ? !!current.transport_required : false, accommodationRequired: current ? !!current.accommodation_required : false,
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const submit = async (event: FormEvent) => {
@@ -1325,7 +1372,11 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
     setSaving(true);
     setSaveError("");
     try {
-      await act({ action: isNew ? "addGuest" : "editGuest", guestId: current?.id, ...form, householdId: form.householdId ? Number(form.householdId) : null }, isNew ? "Guest added" : "Guest updated");
+      const result = await act({ action: isNew ? "addGuest" : "editGuest", guestId: current?.id, ...form, householdId: form.householdId ? Number(form.householdId) : null }, isNew ? "Guest added" : "Guest updated");
+      if (!result) {
+        setSaveError("The guest could not be saved. Your changes are still here; please try again.");
+        return;
+      }
       close();
     } catch (error) {
       // Without this the failure was silent: the button simply did nothing.
@@ -1339,29 +1390,38 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
         <label><span>First name *</span><input required value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} /></label>
         <label><span>Last name</span><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} /></label>
         <label><span>Preferred name</span><input value={form.preferredName} onChange={(event) => setForm({ ...form, preferredName: event.target.value })} /></label>
+        <label><span>Guest age group</span><select value={form.ageGroup} onChange={(event) => setForm({ ...form, ageGroup: event.target.value, childMeal: event.target.value === "Child" })}><option>Adult</option><option>Child</option></select></label>
         <label><span>Mobile with country code</span><input type="tel" pattern="\+[0-9][0-9\s()\-]{7,20}" value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value })} placeholder="+60 12 345 6789" /></label>
         <label><span>Invitation household</span><select value={form.householdId} onChange={(event) => setForm({ ...form, householdId: event.target.value })}><option value="">Create a new invitation just for them</option>{households.map((household) => {
           const members = (allGuests ?? []).filter((g) => g.household_id === household.id && g.id !== current?.id).map(displayName).join(" & ");
           return <option key={household.id} value={household.id}>{household.name}{members ? ` — with ${members}` : " — no one else"}</option>;
         })}</select></label>
         {!form.householdId ? <label className="wide"><span>Name this invitation</span><input value={form.householdName} onChange={(event) => setForm({ ...form, householdName: event.target.value })} /></label> : null}
-      </div><p className="security-note"><span>◇</span><strong>Adults-only invitation</strong> Only named guests in this household can RSVP; there are no children or plus-ones.</p></section>
+      </div><p className="security-note"><span>◇</span><strong>Named invitation</strong> Only the people listed in this household can RSVP.</p></section>
       <section><h3>Invitation &amp; RSVP</h3><div className="modal-grid">
         <label><span>Guest category</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option></select></label>
         <label><span>Side</span><select value={form.side} onChange={(event) => setForm({ ...form, side: event.target.value })}><option>Bride</option><option>Groom</option><option>Shared</option></select></label>
         <label><span>RSVP status</span><select value={form.rsvpStatus} onChange={(event) => setForm({ ...form, rsvpStatus: event.target.value })}><option>Pending</option><option>Confirmed</option><option>Declined</option></select></label>
         <label><span>Meal selection</span><select value={form.mealSelection} onChange={(event) => setForm({ ...form, mealSelection: event.target.value })}><option value="">Not selected</option><option value="Lamb">Almond dukkha-crusted lamb</option><option value="Salmon">Seared Alaskan salmon</option></select></label>
-      </div><div className="toggle-grid"><Toggle label="Ceremony invited" value={form.ceremonyInvited} set={(value) => setForm({ ...form, ceremonyInvited: value })} /><Toggle label="Reception invited" value={form.receptionInvited} set={(value) => setForm({ ...form, receptionInvited: value })} /><Toggle label="After-party eligible" value={form.afterPartyEligible} set={(value) => setForm({ ...form, afterPartyEligible: value })} /><Toggle label="After-party invited" value={form.afterPartyInvited} set={(value) => setForm({ ...form, afterPartyInvited: value })} /><Toggle label="Needs transport" value={form.transportRequired} set={(value) => setForm({ ...form, transportRequired: value })} /><Toggle label="Needs accommodation" value={form.accommodationRequired} set={(value) => setForm({ ...form, accommodationRequired: value })} /></div></section>
-      <section><h3>Care notes</h3><div className="modal-grid"><label><span>Dietary requirements</span><textarea value={form.dietaryRequirements} onChange={(event) => setForm({ ...form, dietaryRequirements: event.target.value })} /></label><label><span>Allergies</span><textarea value={form.allergies} onChange={(event) => setForm({ ...form, allergies: event.target.value })} /></label><label className="wide"><span>Accessibility requirements</span><textarea value={form.accessibility} onChange={(event) => setForm({ ...form, accessibility: event.target.value })} /></label><label className="wide"><span>Internal notes · administrators only</span><textarea value={form.internalNotes} onChange={(event) => setForm({ ...form, internalNotes: event.target.value })} /></label></div></section>
+      </div><div className="toggle-grid">{form.ageGroup === "Child" ? <Toggle label="Children's meal" value={form.childMeal} set={(value) => setForm({ ...form, childMeal: value })} /> : null}<Toggle label="Ceremony invited" value={form.ceremonyInvited} set={(value) => setForm({ ...form, ceremonyInvited: value })} /><Toggle label="Reception invited" value={form.receptionInvited} set={(value) => setForm({ ...form, receptionInvited: value })} /><Toggle label="After-party eligible" value={form.afterPartyEligible} set={(value) => setForm({ ...form, afterPartyEligible: value })} /><Toggle label="After-party invited" value={form.afterPartyInvited} set={(value) => setForm({ ...form, afterPartyInvited: value })} /><Toggle label="Travelling to Kuala Lumpur" value={form.transportRequired} set={(value) => setForm({ ...form, transportRequired: value })} /><Toggle label="Requested Grand Hyatt room" value={form.accommodationRequired} set={(value) => setForm({ ...form, accommodationRequired: value })} /></div></section>
+      <section><h3>Travel &amp; accommodation</h3><div className="modal-grid">
+        <label><span>Arrival date</span><input type="date" value={form.travelArrival} onChange={(event) => setForm({ ...form, travelArrival: event.target.value })} /></label>
+        <label><span>Departure date</span><input type="date" value={form.travelDeparture} onChange={(event) => setForm({ ...form, travelDeparture: event.target.value })} /></label>
+        <label className="wide"><span>Accommodation name</span><input value={form.accommodationName} onChange={(event) => setForm({ ...form, accommodationName: event.target.value })} /></label>
+        <label><span>Bed preference</span><select value={form.bedPreference} onChange={(event) => setForm({ ...form, bedPreference: event.target.value })}><option value="">Not supplied</option><option>King</option><option>Twin</option></select></label>
+        <label><span>Room nights</span><select value={form.roomNights} onChange={(event) => setForm({ ...form, roomNights: event.target.value })}><option value="">Not supplied</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+      </div></section>
+      <section><h3>Care notes &amp; messages</h3><div className="modal-grid"><label><span>Dietary requirements</span><textarea value={form.dietaryRequirements} onChange={(event) => setForm({ ...form, dietaryRequirements: event.target.value })} /></label><label><span>Allergies</span><textarea value={form.allergies} onChange={(event) => setForm({ ...form, allergies: event.target.value })} /></label><label className="wide"><span>Accessibility requirements</span><textarea value={form.accessibility} onChange={(event) => setForm({ ...form, accessibility: event.target.value })} /></label><label className="wide"><span>Guest-book message</span><textarea value={form.wishes} onChange={(event) => setForm({ ...form, wishes: event.target.value })} /></label><label className="wide"><span>Private note for Elaine &amp; Haykal</span><textarea value={form.marriageAdvice} onChange={(event) => setForm({ ...form, marriageAdvice: event.target.value })} /></label><label className="wide"><span>Internal notes · administrators only</span><textarea value={form.internalNotes} onChange={(event) => setForm({ ...form, internalNotes: event.target.value })} /></label></div></section>
     </div>
     <footer>{saveError ? <p className="form-error" role="alert">{saveError}</p> : null}{!isNew ? <div><button className="danger-link" type="button" onClick={() => {
         if (!window.confirm(`Archive ${displayName(current!)}? They will be hidden from your lists.`)) return;
         const id = current!.id;
-        void act({ action: "archiveGuest", guestId: id }, "Guest archived").then(() => {
+        void act({ action: "archiveGuest", guestId: id }, "Guest archived").then((result) => {
+          if (!result) return;
           setUndo?.({ label: `${displayName(current!)} archived`, restore: async () => { await act({ action: "restoreGuest", guestId: id }, "Guest restored"); } });
           close();
         });
-      }}>Archive guest</button><button className="danger-link" type="button" onClick={() => { if (window.confirm(`Permanently delete ${displayName(current!)}? This cannot be undone.`)) void act({ action: "deleteGuest", guestId: current!.id }, "Guest deleted").then(close); }}>Delete</button></div> : <span />}<div><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit" disabled={saving}>{saving ? (isNew ? "Adding…" : "Saving…") : (isNew ? "Add guest" : "Save guest")}</button></div></footer>
+      }}>Archive guest</button><button className="danger-link" type="button" onClick={() => { if (window.confirm(`Permanently delete ${displayName(current!)}? This cannot be undone.`)) void act({ action: "deleteGuest", guestId: current!.id }, "Guest deleted").then((result) => { if (result) close(); }); }}>Delete</button></div> : <span />}<div><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit" disabled={saving}>{saving ? (isNew ? "Adding…" : "Saving…") : (isNew ? "Add guest" : "Save guest")}</button></div></footer>
   </form></div>;
 }
 
@@ -1369,7 +1429,7 @@ function Toggle({ label, value, set }: { label: string; value: boolean; set: (va
 
 function NewTableModal({ close, act }: { close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [name, setName] = useState(""); const [shape, setShape] = useState("round"); const [capacity, setCapacity] = useState(10);
-  return <div className="modal-backdrop"><form className="small-modal" onSubmit={async (event) => { event.preventDefault(); await act({ action: "createTable", name, shape, capacity, x: 50, y: 50 }, "Table created"); close(); }}><header><h2>Create a table</h2><button type="button" onClick={close} aria-label="Close">×</button></header><label><span>Table name</span><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Moonlight" /></label><label><span>Shape</span><select value={shape} onChange={(event) => setShape(event.target.value)}><option value="round">Round</option><option value="rectangular">Rectangular</option><option value="banquet">Long banquet</option></select></label><label><span>Capacity</span><input type="number" min="2" max="30" value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label><footer><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit">Create table</button></footer></form></div>;
+  return <div className="modal-backdrop"><form className="small-modal" onSubmit={async (event) => { event.preventDefault(); const result = await act({ action: "createTable", name, shape, capacity, x: 50, y: 50 }, "Table created"); if (result) close(); }}><header><h2>Create a table</h2><button type="button" onClick={close} aria-label="Close">×</button></header><label><span>Table name</span><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Moonlight" /></label><label><span>Shape</span><select value={shape} onChange={(event) => setShape(event.target.value)}><option value="round">Round</option><option value="rectangular">Rectangular</option><option value="banquet">Long banquet</option></select></label><label><span>Capacity</span><input type="number" min="2" max="30" value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label><footer><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit">Create table</button></footer></form></div>;
 }
 
 
@@ -1399,7 +1459,7 @@ function HealthCheck({ authToken }: { authToken: string }) {
       <div>
         <p className="panel-kicker">Before you send</p>
         <h2>Health check</h2>
-        <span>Ten checks against your real guest list, looking for the quiet faults that never show an error — a link that cannot open, a guest attached to nothing, a number WhatsApp cannot dial.</span>
+        <span>Checks against your real guest list, looking for the quiet faults that never show an error — a link that cannot open, a guest attached to nothing, a number WhatsApp cannot dial.</span>
       </div>
       <button className="primary" onClick={run} disabled={running}>{running ? "Checking…" : "Run the check"}</button>
     </div>

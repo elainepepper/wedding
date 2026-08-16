@@ -1,5 +1,6 @@
 import { assertFirebaseAdminConfigured, nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { requireAdmin } from "../../../lib/manager-auth";
+import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag } from "../../../lib/rsvp-data.mjs";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 
 // Never serve a cached copy: the manager must see a change the instant it is
@@ -39,18 +40,36 @@ export async function GET(request: Request) {
     // Archived invitations are kept whole so they can be restored, but they
     // are held apart from the working list.
     const allHouseholds = householdSnapshot.docs.map(plainDoc);
-    const households = allHouseholds.filter((item) => !Number(item.archived ?? 0));
-    const archivedHouseholds = allHouseholds.filter((item) => Number(item.archived ?? 0));
+    const households = allHouseholds.filter((item) => !isEnabledFlag(item.archived));
+    const archivedHouseholds = allHouseholds.filter((item) => isEnabledFlag(item.archived));
     const tables = tableSnapshot.docs.map(plainDoc);
     const householdById = new Map(households.map((item) => [Number(item.id), item]));
     const tableById = new Map(tables.map((item) => [Number(item.id), item]));
     const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc)
-      .filter((item) => !Number(item.archived ?? 0))
-      .filter((item) => !/^(child|infant|baby|kid)$/i.test(String(item.age_group ?? "Adult").trim()))
+      .filter((item) => !isEnabledFlag(item.archived))
       .map((guest): Record<string, unknown> => {
       const household = householdById.get(Number(guest.household_id));
       const table = tableById.get(Number(guest.table_id));
-      return { ...guest, household_name: household?.name ?? null, invitation_slug: household?.invitation_slug ?? null, invitation_token: household?.invitation_token ?? null, invitation_enabled: household?.invitation_enabled ?? 0, opened_at: household?.opened_at ?? null, last_activity_at: household?.last_activity_at ?? null, table_seen_at: household?.table_seen_at ?? null, table_name: table?.name ?? null };
+      return {
+        ...guest,
+        rsvp_status: canonicalRsvpStatus(guest.rsvp_status),
+        age_group: canonicalAgeGroup(guest.age_group),
+        child_meal: isChildAgeGroup(guest.age_group) || isEnabledFlag(guest.child_meal) ? 1 : 0,
+        ceremony_invited: isEnabledFlag(guest.ceremony_invited) ? 1 : 0,
+        reception_invited: isEnabledFlag(guest.reception_invited) ? 1 : 0,
+        after_party_eligible: isEnabledFlag(guest.after_party_eligible) ? 1 : 0,
+        after_party_invited: isEnabledFlag(guest.after_party_invited) ? 1 : 0,
+        transport_required: isEnabledFlag(guest.transport_required) ? 1 : 0,
+        accommodation_required: isEnabledFlag(guest.accommodation_required) ? 1 : 0,
+        household_name: household?.name ?? null,
+        invitation_slug: household?.invitation_slug ?? null,
+        invitation_token: household?.invitation_token ?? null,
+        invitation_enabled: household?.invitation_enabled == null || isEnabledFlag(household.invitation_enabled) ? 1 : 0,
+        opened_at: household?.opened_at ?? null,
+        last_activity_at: household?.last_activity_at ?? null,
+        table_seen_at: household?.table_seen_at ?? null,
+        table_name: table?.name ?? null,
+      };
     }).sort((a, b) => String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")));
     const householdRows: Array<Record<string, unknown>> = households.map((household): Record<string, unknown> => {
       const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
@@ -75,9 +94,9 @@ export async function GET(request: Request) {
         archived_at: household.archived_at ?? null,
         guest_count: guestSnapshot.docs.map(plainDoc).filter((guest) => Number(guest.household_id) === Number(household.id)).length,
       })).sort((a, b) => String(a.name).localeCompare(String(b.name))),
-    });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "The Guest Manager server could not start." }, { status: 500 });
+    }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
+  } catch {
+    return Response.json({ error: "The Guest Manager server could not start." }, { status: 500 });
   }
 }
 
@@ -90,20 +109,22 @@ export async function POST(request: Request) {
     const action = clean(payload.action, 60);
 
     // One number per household: when a mobile is entered for any guest, it
-    // quietly becomes the household's number and fills in every member who
-    // has none of their own. A number someone already has is never replaced.
+    // becomes the household's number and fills every member. The invitation
+    // collects one WhatsApp contact for the household, so leaving different
+    // copies behind would make the Manager and the guest link disagree.
     const shareMobileAcrossHousehold = async (rawHouseholdId: unknown, mobile: string) => {
       const householdId = integer(rawHouseholdId);
-      if (!householdId || !mobile) return;
+      if (!householdId) return;
+      const storedMobile = mobile || null;
       const members = await weddingRef.collection("guests")
         .where("household_id", "in", [Number(householdId), String(householdId)]).get();
       const batch = weddingRef.firestore.batch();
       members.docs.forEach((doc) => {
-        if (!String(doc.data().mobile ?? "").trim()) batch.set(doc.ref, { mobile, updated_at: serverTimestamp() }, { merge: true });
+        batch.set(doc.ref, { mobile: storedMobile, updated_at: serverTimestamp() }, { merge: true });
       });
       const householdDoc = await docById("households", householdId);
-      if (householdDoc && !String(householdDoc.data().mobile ?? "").trim()) {
-        batch.set(householdDoc.ref, { mobile, updated_at: serverTimestamp() }, { merge: true });
+      if (householdDoc) {
+        batch.set(householdDoc.ref, { mobile: storedMobile, updated_at: serverTimestamp() }, { merge: true });
       }
       await batch.commit();
     };
@@ -135,6 +156,8 @@ export async function POST(request: Request) {
       if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) {
         return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
       }
+      const ageGroup = canonicalAgeGroup(payload.ageGroup);
+      const rsvpStatus = canonicalRsvpStatus(payload.rsvpStatus);
       let householdId = integer(payload.householdId);
       if (!householdId) {
         householdId = await nextId("households");
@@ -142,7 +165,7 @@ export async function POST(request: Request) {
         await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile: mobile || null, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, opened_at: null, last_activity_at: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       }
       const guestId = await nextId("guests");
-      await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile, category: clean(payload.category, 80) || "Friends", side: clean(payload.side, 40) || "Shared", age_group: "Adult", relationship: null, rsvp_status: clean(payload.rsvpStatus, 30) || "Pending", ceremony_invited: payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: payload.afterPartyEligible ? 1 : 0, after_party_invited: payload.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", meal_selection: null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: clean(payload.accessibility, 800) || null, transport_required: payload.transportRequired ? 1 : 0, accommodation_required: payload.accommodationRequired ? 1 : 0, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: clean(payload.internalNotes, 1500) || null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+      await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile, category: clean(payload.category, 80) || "Friends", side: clean(payload.side, 40) || "Shared", age_group: ageGroup, child_meal: ageGroup === "Child" && payload.childMeal !== false ? 1 : 0, relationship: null, rsvp_status: rsvpStatus, ceremony_invited: payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: payload.afterPartyEligible ? 1 : 0, after_party_invited: payload.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", meal_selection: null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: clean(payload.accessibility, 800) || null, transport_required: payload.transportRequired ? 1 : 0, accommodation_required: payload.accommodationRequired ? 1 : 0, travel_arrival: clean(payload.travelArrival, 20) || null, travel_departure: clean(payload.travelDeparture, 20) || null, accommodation_name: clean(payload.accommodationName, 240) || null, bed_preference: payload.bedPreference === "King" || payload.bedPreference === "Twin" ? payload.bedPreference : null, room_nights: [1, 2, 3].includes(Number(payload.roomNights)) ? Number(payload.roomNights) : null, wishes: clean(payload.wishes, 1500) || null, marriage_advice: clean(payload.marriageAdvice, 1500) || null, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: clean(payload.internalNotes, 1500) || null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Guest added", "guest", guestId, `${firstName} ${lastName}`.trim());
       if (mobile) await shareMobileAcrossHousehold(householdId, mobile);
       else {
@@ -163,9 +186,20 @@ export async function POST(request: Request) {
       if ("mobile" in payload && editMobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(editMobile)) {
         return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
       }
-      const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", rsvpStatus: "rsvp_status", mealSelection: "meal_selection", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", afterPartyAttending: "after_party_attending", accommodationName: "accommodation_name" };
-      const update: Record<string, unknown> = { age_group: "Adult", updated_at: serverTimestamp() };
-      Object.entries(fields).forEach(([key, field]) => { if (key in payload) update[field] = clean(payload[key], key === "internalNotes" ? 1500 : 800) || null; });
+      const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", afterPartyAttending: "after_party_attending", accommodationName: "accommodation_name", travelArrival: "travel_arrival", travelDeparture: "travel_departure", wishes: "wishes", marriageAdvice: "marriage_advice" };
+      const ageGroup = canonicalAgeGroup("ageGroup" in payload ? payload.ageGroup : guestDoc.data().age_group);
+      const update: Record<string, unknown> = {
+        age_group: ageGroup,
+        child_meal: ageGroup === "Child" && payload.childMeal !== false ? 1 : 0,
+        updated_at: serverTimestamp(),
+      };
+      Object.entries(fields).forEach(([key, field]) => {
+        if (key in payload) update[field] = clean(payload[key], ["internalNotes", "wishes", "marriageAdvice"].includes(key) ? 1500 : 800) || null;
+      });
+      if ("rsvpStatus" in payload) update.rsvp_status = canonicalRsvpStatus(payload.rsvpStatus);
+      if ("mealSelection" in payload) update.meal_selection = payload.mealSelection === "Lamb" || payload.mealSelection === "Salmon" ? payload.mealSelection : null;
+      if ("bedPreference" in payload) update.bed_preference = payload.bedPreference === "King" || payload.bedPreference === "Twin" ? payload.bedPreference : null;
+      if ("roomNights" in payload) update.room_nights = [1, 2, 3].includes(Number(payload.roomNights)) ? Number(payload.roomNights) : null;
       const booleans: Record<string, string> = { ceremonyInvited: "ceremony_invited", receptionInvited: "reception_invited", afterPartyEligible: "after_party_eligible", afterPartyInvited: "after_party_invited", transportRequired: "transport_required", accommodationRequired: "accommodation_required" };
       Object.entries(booleans).forEach(([key, field]) => { if (key in payload) update[field] = payload[key] ? 1 : 0; });
       // Moving a guest to another invitation — this was never handled, so
@@ -193,7 +227,7 @@ export async function POST(request: Request) {
       if ("household_id" in update && integer(update.household_id) !== integer(previousHouseholdId)) {
         await removeHouseholdIfEmpty(previousHouseholdId);
       }
-      if (editMobile) await shareMobileAcrossHousehold(update.household_id ?? previousHouseholdId, editMobile);
+      if ("mobile" in payload) await shareMobileAcrossHousehold(update.household_id ?? previousHouseholdId, editMobile);
       return Response.json({ ok: true });
     }
 
@@ -229,6 +263,7 @@ export async function POST(request: Request) {
       if (!guestIds.length || !targetField) return Response.json({ error: "Choose guests and a valid update." }, { status: 400 });
       let value: unknown = payload.value;
       if (field === "tableId") value = integer(value);
+      if (field === "rsvpStatus") value = canonicalRsvpStatus(value);
       if (field === "afterPartyEligible" || field === "afterPartyInvited") value = value ? 1 : 0;
       const batch = weddingRef.firestore.batch();
       for (const guestId of guestIds) { const doc = await docById("guests", guestId); if (doc) batch.set(doc.ref, { [targetField]: value ?? null, updated_at: serverTimestamp() }, { merge: true }); }
@@ -300,8 +335,8 @@ export async function POST(request: Request) {
         if (archived) {
           // Remember who was already put aside on their own, so restoring the
           // invitation later does not quietly bring them back with it.
-          batch.set(doc.ref, { archived: 1, archived_with_household: Number(doc.data().archived ?? 0) ? 0 : 1, updated_at: serverTimestamp() }, { merge: true });
-        } else if (Number(doc.data().archived_with_household ?? 1)) {
+          batch.set(doc.ref, { archived: 1, archived_with_household: isEnabledFlag(doc.data().archived) ? 0 : 1, updated_at: serverTimestamp() }, { merge: true });
+        } else if (doc.data().archived_with_household == null || isEnabledFlag(doc.data().archived_with_household)) {
           batch.set(doc.ref, { archived: 0, archived_with_household: null, updated_at: serverTimestamp() }, { merge: true });
         }
       });
@@ -480,7 +515,7 @@ export async function POST(request: Request) {
       const seenByName = new Map<string, { ref: FirebaseFirestore.DocumentReference }>();
       guestSnap.docs.forEach((doc) => {
         const guest = doc.data();
-        if (Number(guest.archived ?? 0)) return;
+        if (isEnabledFlag(guest.archived)) return;
         if (guest.mobile) seenByMobile.set(String(guest.mobile), { ref: doc.ref });
         seenByName.set(`${String(guest.first_name ?? "").toLowerCase()}|${String(guest.last_name ?? "").toLowerCase()}`, { ref: doc.ref });
       });
@@ -507,14 +542,16 @@ export async function POST(request: Request) {
 
         const nameKey = `${firstName.toLowerCase()}|${lastName.toLowerCase()}`;
         const existing = (mobile ? seenByMobile.get(mobile) : undefined) ?? seenByName.get(nameKey);
+        const ageGroup = canonicalAgeGroup(row.ageGroup);
 
         const shared = {
           preferred_name: clean(row.preferredName, 100) || null,
           mobile: mobile || null,
           category: clean(row.category, 80) || "Friends",
           side: clean(row.side, 40) || "Shared",
-          age_group: "Adult",
-          rsvp_status: clean(row.rsvpStatus, 40) || "Pending",
+          age_group: ageGroup,
+          child_meal: ageGroup === "Child" && row.childMeal !== false ? 1 : 0,
+          rsvp_status: canonicalRsvpStatus(row.rsvpStatus),
           dietary_requirements: clean(row.dietaryRequirements, 400) || null,
           allergies: clean(row.allergies, 400) || null,
           internal_notes: clean(row.notes, 800) || null,
@@ -569,7 +606,7 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ error: "Unknown manager action." }, { status: 400 });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "The change could not be saved." }, { status: 500 });
+  } catch {
+    return Response.json({ error: "The change could not be saved." }, { status: 500 });
   }
 }

@@ -5,7 +5,7 @@ Production-oriented Next.js source package for Netlify, Firebase Authentication 
 ## What is included
 
 - Cinematic, responsive storybook invitation for 7 November 2026
-- Named-adult-only RSVP: no children, plus-ones or uninvited additions
+- Named-guest RSVP: only the adults and children listed on a household invitation can reply; no uninvited additions
 - Individual attendance choices for both people in a couple
 - Mandatory international phone number with Malaysia, Australia and Singapore first
 - Exact salmon and lamb menu selections

@@ -1,4 +1,11 @@
 import { serverTimestamp, weddingRef } from "../../../../lib/firebase-admin";
+import {
+  canonicalAgeGroup,
+  canonicalRsvpStatus,
+  isChildAgeGroup,
+  isEnabledFlag,
+  isValidInternationalMobile,
+} from "../../../../lib/rsvp-data.mjs";
 import { rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
 
 // Never serve a cached copy: the manager must see a change the instant it is
@@ -6,7 +13,14 @@ import { rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type InvitePermission = { id: number; ceremony_invited: number; reception_invited: number; after_party_invited: number };
+type InvitePermission = {
+  id: number;
+  ceremony_invited: number;
+  reception_invited: number;
+  after_party_invited: number;
+  age_group?: unknown;
+  child_meal?: unknown;
+};
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
 
 async function householdForToken(token: string) {
@@ -19,10 +33,11 @@ async function householdForToken(token: string) {
   if (snapshot.empty) return null;
   const doc = snapshot.docs[0];
   const enabled = doc.data().invitation_enabled;
-  if (enabled === false || enabled === 0 || enabled === "false") return null;
+  const enabledText = String(enabled ?? "").trim().toLowerCase();
+  if (enabled === false || enabled === 0 || enabledText === "false" || enabledText === "0") return null;
   // An archived invitation is set aside: its link stops opening, exactly as a
   // deleted one would, but the record survives so it can be restored.
-  if (Number(doc.data().archived ?? 0)) return null;
+  if (isEnabledFlag(doc.data().archived)) return null;
   return doc;
 }
 
@@ -34,17 +49,19 @@ function publicGuest(guest: Record<string, unknown>) {
     first_name: guest.first_name ?? "",
     last_name: guest.last_name ?? "",
     preferred_name: guest.preferred_name ?? null,
-    rsvp_status: guest.rsvp_status ?? "Pending",
-    ceremony_invited: guest.ceremony_invited ?? 0,
-    reception_invited: guest.reception_invited ?? 0,
-    after_party_invited: guest.after_party_invited ?? 0,
+    rsvp_status: canonicalRsvpStatus(guest.rsvp_status),
+    age_group: canonicalAgeGroup(guest.age_group),
+    child_meal: isChildAgeGroup(guest.age_group) || isEnabledFlag(guest.child_meal) ? 1 : 0,
+    ceremony_invited: isEnabledFlag(guest.ceremony_invited) ? 1 : 0,
+    reception_invited: isEnabledFlag(guest.reception_invited) ? 1 : 0,
+    after_party_invited: isEnabledFlag(guest.after_party_invited) ? 1 : 0,
     after_party_attending: guest.after_party_attending ?? "Pending",
     meal_selection: guest.meal_selection ?? null,
     dietary_requirements: guest.dietary_requirements ?? null,
     allergies: guest.allergies ?? null,
     accessibility: guest.accessibility ?? null,
-    transport_required: guest.transport_required ?? 0,
-    accommodation_required: guest.accommodation_required ?? 0,
+    transport_required: isEnabledFlag(guest.transport_required) ? 1 : 0,
+    accommodation_required: isEnabledFlag(guest.accommodation_required) ? 1 : 0,
     travel_arrival: guest.travel_arrival ?? null,
     travel_departure: guest.travel_departure ?? null,
     accommodation_name: guest.accommodation_name ?? null,
@@ -52,7 +69,9 @@ function publicGuest(guest: Record<string, unknown>) {
     table_name: guest.table_name ?? null,
     room_nights: typeof guest.room_nights === "number" ? guest.room_nights : null,
     wishes: guest.wishes ?? null,
+    marriage_advice: guest.marriage_advice ?? null,
     mobile: guest.mobile ?? null,
+    has_submitted: Boolean(guest.rsvp_submitted_at),
   };
 }
 
@@ -72,8 +91,8 @@ async function roomBlockState(settings: Record<string, unknown>, householdId: nu
   // guests were told the last room had gone while rooms sat empty.
   const live = requested.docs
     .map((doc) => doc.data())
-    .filter((guest) => !Number(guest.archived ?? 0))
-    .filter((guest) => String(guest.rsvp_status ?? "").toLowerCase() !== "declined");
+    .filter((guest) => !isEnabledFlag(guest.archived))
+    .filter((guest) => canonicalRsvpStatus(guest.rsvp_status) !== "Declined");
   const households = new Set(live.map((guest) => Number(guest.household_id)));
   const mine = households.has(householdId);
   const taken = households.size;
@@ -100,11 +119,10 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     weddingRef.get(),
   ]);
   const guests = guestSnapshot.docs.map((doc) => doc.data())
-    // Treat a guest as an adult unless they are explicitly marked otherwise,
-    // and as active unless explicitly archived, so that a missing field can
-    // never hide someone from their own invitation.
-    .filter((guest) => !/^(child|infant|baby|kid)$/i.test(String(guest.age_group ?? "Adult").trim()))
-    .filter((guest) => !Number(guest.archived ?? 0))
+    // Every named person on the household invitation is returned, including
+    // children. Age changes which dinner question applies; it must never make
+    // an invited person disappear from their own household.
+    .filter((guest) => !isEnabledFlag(guest.archived))
     .sort((a, b) => Number(a.id) - Number(b.id));
   // The seating plan lives in its own collection; guests only ever learn the
   // name of their own table, and only once it has been assigned.
@@ -115,7 +133,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     tableDocs.forEach((doc) => { if (doc.exists) tableNames.set(Number(doc.data()?.id), String(doc.data()?.name ?? "")); });
   }
   guests.forEach((guest) => { guest.table_name = tableNames.get(Number(guest.table_id)) ?? null; });
-  const afterPartyInvited = guests.some((guest) => Boolean(guest.after_party_invited));
+  const afterPartyInvited = guests.some((guest) => isEnabledFlag(guest.after_party_invited));
   const events = eventSnapshot.docs.map((doc) => doc.data())
     // The private after-party must not exist at all for guests who are not
     // invited to it — it is never sent to the browser, not merely hidden.
@@ -136,15 +154,23 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     },
     afterPartyInvited,
     roomBlock,
-  });
+  }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
+  if (!/^[abcdefghjkmnpqrstuvwxyz23456789]{12}$/i.test(token)) {
+    return Response.json({ error: "This invitation link is no longer available." }, { status: 404 });
+  }
   const householdDoc = await householdForToken(token);
   if (!householdDoc) return Response.json({ error: "This invitation link is no longer available." }, { status: 404 });
   const household = householdDoc.data();
-  const payload = await request.json() as { guests?: unknown; mobile?: unknown; action?: unknown };
+  let payload: { guests?: unknown; mobile?: unknown; action?: unknown; submissionId?: unknown };
+  try {
+    payload = await request.json() as typeof payload;
+  } catch {
+    return Response.json({ error: "This RSVP request could not be read. Please try again." }, { status: 400 });
+  }
   // Recorded when the table panel is actually shown to a guest, so the couple
   // can see who still does not know where they are sitting.
   if (payload.action === "tableSeen") {
@@ -152,8 +178,18 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return Response.json({ ok: true });
   }
   const mobile = clean(payload.mobile, 60);
+  const submissionId = clean(payload.submissionId, 80);
+  if (submissionId && !/^[a-z0-9_-]{8,80}$/i.test(submissionId)) {
+    return Response.json({ error: "This RSVP request could not be verified. Please try again." }, { status: 400 });
+  }
+  if (submissionId && household.last_rsvp_submission_id === submissionId) {
+    return Response.json({ ok: true, duplicate: true });
+  }
   const responses = Array.isArray(payload.guests) ? payload.guests.slice(0, 30) as Array<Record<string, unknown>> : [];
-  if (!/^\+[0-9]{8,15}$/.test(mobile)) return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
+  const anyConfirmedResponse = responses.some((response) => canonicalRsvpStatus(response.rsvpStatus) === "Confirmed");
+  if (anyConfirmedResponse && !isValidInternationalMobile(mobile)) {
+    return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
+  }
   const settingsBefore = (await weddingRef.get()).data() ?? {};
   if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
     return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
@@ -169,8 +205,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
   const allowedSnapshot = await weddingRef.collection("guests").where("household_id", "in", [Number(household.id), String(household.id)]).get();
   const allowedDocs = allowedSnapshot.docs
-    .filter((doc) => !/^(child|infant|baby|kid)$/i.test(String(doc.data().age_group ?? "Adult").trim()))
-    .filter((doc) => !Number(doc.data().archived ?? 0));
+    .filter((doc) => !isEnabledFlag(doc.data().archived));
   const allowedById = new Map<number, { doc: FirebaseFirestore.QueryDocumentSnapshot; permission: InvitePermission }>(allowedDocs.map((doc) => [Number(doc.data().id), { doc, permission: doc.data() as InvitePermission }]));
   const responseIds = new Set(responses.map((guest) => Number(guest.id)));
   if (!responses.length || responses.length !== allowedDocs.length || responseIds.size !== allowedDocs.length || responses.some((guest) => !allowedById.has(Number(guest.id)))) {
@@ -178,38 +213,62 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
   const batch = weddingRef.firestore.batch();
   let anyAttending = false;
+  const firstResponseId = Math.min(...allowedDocs.map((doc) => Number(doc.data().id)));
+  const confirmedIds = responses
+    .filter((response) => canonicalRsvpStatus(response.rsvpStatus) === "Confirmed")
+    .map((response) => Number(response.id));
+  const firstConfirmedId = confirmedIds.length ? Math.min(...confirmedIds) : null;
   for (const response of responses) {
     const allowed = allowedById.get(Number(response.id))!;
     const permission = allowed.permission;
-    const status = response.rsvpStatus === "Confirmed" ? "Confirmed" : response.rsvpStatus === "Declined" ? "Declined" : "Pending";
+    const status = canonicalRsvpStatus(response.rsvpStatus);
+    const child = isChildAgeGroup(permission.age_group) || isEnabledFlag(permission.child_meal);
+    const ceremonyInvited = isEnabledFlag(permission.ceremony_invited);
+    const receptionInvited = isEnabledFlag(permission.reception_invited);
+    const afterPartyInvitedForGuest = isEnabledFlag(permission.after_party_invited);
     const meal = response.mealSelection === "Lamb" || response.mealSelection === "Salmon" ? response.mealSelection : null;
-    if (status === "Confirmed" && permission.reception_invited && !meal) return Response.json({ error: "Please choose lamb or salmon for every attending guest." }, { status: 400 });
+    if (status === "Confirmed" && receptionInvited && !child && !meal) return Response.json({ error: "Please choose lamb or salmon for every attending guest." }, { status: 400 });
     anyAttending ||= status === "Confirmed";
-    batch.set(allowed.doc.ref, {
+    const guestUpdate: Record<string, unknown> = {
       rsvp_status: status,
-      ceremony_attending: permission.ceremony_invited ? Number(status === "Confirmed" && response.ceremonyAttending !== false) : null,
-      reception_attending: permission.reception_invited ? Number(status === "Confirmed" && response.receptionAttending !== false) : null,
-      after_party_attending: permission.after_party_invited && (response.afterPartyAttending === "Yes" || response.afterPartyAttending === "No") ? response.afterPartyAttending : "Pending",
-      meal_selection: meal,
+      ceremony_attending: ceremonyInvited ? Number(status === "Confirmed" && response.ceremonyAttending !== false) : null,
+      reception_attending: receptionInvited ? Number(status === "Confirmed" && response.receptionAttending !== false) : null,
+      after_party_attending: afterPartyInvitedForGuest && (response.afterPartyAttending === "Yes" || response.afterPartyAttending === "No") ? response.afterPartyAttending : "Pending",
+      meal_selection: child ? null : meal,
       dietary_requirements: clean(response.dietaryRequirements, 800) || null,
       allergies: clean(response.allergies, 800) || null,
       accessibility: clean(response.accessibility, 800) || null,
-      transport_required: response.transportRequired ? 1 : 0,
+      transport_required: status === "Confirmed" && response.transportRequired ? 1 : 0,
       accommodation_required: response.accommodationRequired ? 1 : 0,
       travel_arrival: clean(response.travelArrival, 20) || null,
       travel_departure: clean(response.travelDeparture, 20) || null,
       accommodation_name: clean(response.accommodationName, 240) || null,
       bed_preference: response.bedPreference === "King" || response.bedPreference === "Twin" ? response.bedPreference : null,
       room_nights: [1, 2, 3].includes(Number(response.roomNights)) ? Number(response.roomNights) : null,
-      // Marriage advice is stored but never returned by GET — it is for the couple alone.
-      marriage_advice: clean(response.advice, 1500) || null,
-      wishes: clean(response.wishes, 1500) || null,
-      mobile,
+      // Both messages reopen only through this same household token. The
+      // Manager continues to distinguish the shareable wish from private advice.
+      marriage_advice: Number(response.id) === firstConfirmedId ? clean(response.advice, 1500) || null : null,
+      wishes: Number(response.id) === firstResponseId ? clean(response.wishes, 1500) || null : null,
       rsvp_submitted_at: serverTimestamp(), updated_at: serverTimestamp(),
-    }, { merge: true });
+    };
+    // A decline does not require a number. Never overwrite a number already
+    // held for the household with an empty placeholder such as "+60".
+    if (mobile) guestUpdate.mobile = mobile;
+    batch.set(allowed.doc.ref, guestUpdate, { merge: true });
   }
-  batch.set(householdDoc.ref, { mobile, max_guests: allowedDocs.length, last_activity_at: serverTimestamp(), updated_at: serverTimestamp() }, { merge: true });
-  const activity = weddingRef.collection("activityLogs").doc();
+  const householdUpdate: Record<string, unknown> = {
+    max_guests: allowedDocs.length,
+    last_activity_at: serverTimestamp(),
+    updated_at: serverTimestamp(),
+    ...(submissionId ? { last_rsvp_submission_id: submissionId } : {}),
+  };
+  if (mobile) householdUpdate.mobile = mobile;
+  batch.set(householdDoc.ref, householdUpdate, { merge: true });
+  // A deterministic document id makes a retried request idempotent even if a
+  // network interruption hides the first successful response from the guest.
+  const activity = submissionId
+    ? weddingRef.collection("activityLogs").doc(`rsvp-${household.id}-${submissionId}`)
+    : weddingRef.collection("activityLogs").doc();
   batch.set(activity, { admin_name: "Guest RSVP", action: "RSVP updated", record_type: "household", record_id: String(household.id), detail: `${household.name} ${anyAttending ? "submitted attendance details" : "declined the invitation"}`, created_at: serverTimestamp() });
   await batch.commit();
   const formId = process.env.FORMSPREE_FORM_ID || settingsBefore.formspree_form_id;

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { GoogleAuthProvider, User, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, User, onIdTokenChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
 import { firebaseAuth, firebaseClientConfigurationError } from "../../lib/firebase-client";
 import { ManagerApp } from "./ManagerApp";
 
@@ -18,10 +18,17 @@ export function ManagerGate() {
       setLoading(false);
       return;
     }
-    return onAuthStateChanged(firebaseAuth, async (nextUser) => {
-      setUser(nextUser);
-      setToken(nextUser ? await nextUser.getIdToken() : "");
-      setLoading(false);
+    return onIdTokenChanged(firebaseAuth, async (nextUser) => {
+      try {
+        setUser(nextUser);
+        setToken(nextUser ? await nextUser.getIdToken() : "");
+      } catch {
+        setUser(null);
+        setToken("");
+        setError("Your manager session needs a fresh sign-in.");
+      } finally {
+        setLoading(false);
+      }
     });
   }, []);
 
