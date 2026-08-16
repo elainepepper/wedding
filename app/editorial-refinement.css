@@ -843,3 +843,342 @@
     border-radius: 10px !important;
   }
 }
+
+/* ========================================================================== */
+/* MOONLIT CODA - the after-party belongs to the same painted invitation.     */
+/* ========================================================================== */
+
+/* The reply opens on one calm axis. The title, invitation copy and choices no
+   longer pull against one another on a phone. */
+@media (max-width: 819px) {
+  .wedding-shell.wizard #rsvp .form-card > .step-label {
+    width: fit-content;
+    margin: 0 auto 0.9rem !important;
+    text-align: center !important;
+  }
+
+  .wedding-shell.wizard #rsvp .form-card > h2 {
+    max-width: 8.5ch;
+    margin-inline: auto !important;
+    text-align: center !important;
+  }
+
+  .wedding-shell.wizard #rsvp .form-card > .section-intro,
+  .wedding-shell.wizard #rsvp .form-card > .rsvp-deadline-note {
+    margin-inline: auto !important;
+    text-align: center !important;
+  }
+}
+
+/* The invitation-page doorway is unboxed and deliberately spare: no modal,
+   no lock-screen language, no giant white arch competing with the painting. */
+.wedding-shell.wizard #afterparty .scene-content {
+  width: min(90vw, 34rem);
+  text-align: center;
+}
+
+.wedding-shell.wizard #afterparty .afterparty-arch {
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(2rem, 7vw, 4rem) 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  text-align: center;
+}
+
+.wedding-shell.wizard #afterparty .step-label {
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  text-align: center;
+}
+
+.wedding-shell.wizard #afterparty h2 {
+  max-width: 8ch;
+  margin: 0 auto;
+  color: #3f3034;
+  font-family: "Hilberta Austine", "Pinyon Script", cursive;
+  font-size: clamp(3.65rem, 15vw, 6.4rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.wedding-shell.wizard #afterparty .section-intro {
+  max-width: 25ch;
+  margin: 1.7rem auto 0 !important;
+  color: rgba(63, 48, 52, 0.8) !important;
+  line-height: 1.7;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard #afterparty .afterparty-enter {
+  display: inline-flex;
+  min-height: 44px;
+  margin-top: 2.35rem;
+  padding: 0.65rem 0;
+  gap: 0.65rem;
+  border-bottom: 1px solid rgba(122, 37, 73, 0.24);
+  color: #7a2549;
+  background: transparent;
+  font: 600 0.68rem/1.4 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: none;
+}
+
+.wedding-shell.wizard #afterparty .afterparty-enter::before,
+.wedding-shell.wizard #afterparty .afterparty-enter::after {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wedding-shell.wizard #afterparty .afterparty-enter {
+    transition:
+      border-color 260ms ease,
+      gap 260ms ease,
+      color 260ms ease;
+  }
+
+  .wedding-shell.wizard #afterparty .afterparty-enter:hover {
+    gap: 0.95rem;
+    border-bottom-color: rgba(122, 37, 73, 0.58);
+    color: #681d3c;
+  }
+}
+
+/* The destination is a two-beat coda rather than nine dark, empty screens.
+   It begins in the wedding's watercolour world and settles into soft dusk. */
+.after-party-coda {
+  min-height: 100svh;
+  color: #3f3034;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 248, 246, 0.16),
+      rgba(229, 199, 209, 0.35)
+    ),
+    url("/wedding/story/bg/dream-3.webp") center top / cover fixed no-repeat;
+  font-family: var(--font-body, "Cormorant Garamond", Georgia, serif);
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.after-party-coda::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 50% 26%,
+      rgba(255, 252, 249, 0.8),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 248, 246, 0.02),
+      rgba(178, 131, 158, 0.13)
+    );
+}
+
+.after-party-coda__back {
+  position: fixed;
+  top: max(1.25rem, env(safe-area-inset-top));
+  left: max(1.25rem, env(safe-area-inset-left));
+  z-index: 4;
+  display: inline-flex;
+  gap: 0.45rem;
+  color: #7a2549;
+  font: 600 0.62rem/1 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.after-party-coda__hero,
+.after-party-coda__details,
+.after-party-coda--state {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: max(5.5rem, calc(env(safe-area-inset-top) + 4rem)) 1.5rem
+    max(4.5rem, calc(env(safe-area-inset-bottom) + 3rem));
+}
+
+.after-party-coda__hero {
+  isolation: isolate;
+}
+
+.after-party-coda__hero-copy,
+.after-party-coda__details-copy,
+.after-party-coda__state-copy {
+  width: min(100%, 32rem);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.after-party-coda__eyebrow {
+  margin: 0 0 1.5rem;
+  color: #7a2549;
+  font: 600 0.66rem/1.45 var(--font-sans);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.after-party-coda__title {
+  margin: 0;
+  color: #3f3034;
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-size: clamp(3rem, 14vw, 5.8rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.025em;
+}
+
+.after-party-coda__title span,
+.after-party-coda__title em {
+  display: block;
+}
+
+.after-party-coda__title em {
+  margin-top: 0.15em;
+  color: #7a2549;
+  font-family: "Hilberta Austine", "Pinyon Script", cursive;
+  font-size: 1.18em;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.after-party-coda__flourish {
+  display: block;
+  width: fit-content;
+  margin: 1.55rem auto 1.35rem;
+  color: rgba(122, 37, 73, 0.58);
+  font-size: 1.05rem;
+}
+
+.after-party-coda__intro,
+.after-party-coda__state-copy > p:not(.after-party-coda__eyebrow) {
+  max-width: 27ch;
+  margin: 0 auto;
+  color: rgba(63, 48, 52, 0.82);
+  font-size: clamp(1.08rem, 4.6vw, 1.35rem);
+  line-height: 1.62;
+}
+
+.after-party-coda__details-link,
+.after-party-coda__return {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 2.4rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(122, 37, 73, 0.28);
+  color: #7a2549;
+  font: 600 0.66rem/1.35 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.after-party-coda__ribbon {
+  position: absolute;
+  right: -3.5rem;
+  bottom: -2rem;
+  z-index: -1;
+  width: min(58vw, 24rem);
+  opacity: 0.17;
+  transform: rotate(-9deg);
+  pointer-events: none;
+}
+
+.after-party-coda__details {
+  background: linear-gradient(
+    180deg,
+    rgba(238, 216, 225, 0.22),
+    rgba(250, 239, 239, 0.58)
+  );
+}
+
+.after-party-coda__details h2,
+.after-party-coda__state-copy h1 {
+  margin: 0;
+  color: #3f3034;
+  font-family: "Hilberta Austine", "Pinyon Script", cursive;
+  font-size: clamp(3.4rem, 14vw, 5.7rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.after-party-coda__details dl {
+  margin: 2.5rem 0 0;
+  text-align: left;
+}
+
+.after-party-coda__details dl > div {
+  display: grid;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
+  gap: 1.15rem;
+  align-items: baseline;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(122, 37, 73, 0.16);
+}
+
+.after-party-coda__details dl > div:last-child {
+  border-bottom: 1px solid rgba(122, 37, 73, 0.16);
+}
+
+.after-party-coda__details dt {
+  color: #7a2549;
+  font: 600 0.61rem/1.4 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.after-party-coda__details dd {
+  margin: 0;
+  color: rgba(63, 48, 52, 0.92);
+  font-size: clamp(1.05rem, 4.4vw, 1.25rem);
+  line-height: 1.42;
+}
+
+.after-party-coda__privacy {
+  max-width: 28ch;
+  margin: 2rem auto 0;
+  color: rgba(63, 48, 52, 0.68);
+  font-size: 0.98rem;
+  font-style: italic;
+  line-height: 1.62;
+}
+
+@media (max-width: 620px) {
+  .after-party-coda {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(255, 248, 246, 0.12),
+        rgba(229, 199, 209, 0.34)
+      ),
+      url("/wedding/story/bg/dream-3-tall.webp");
+    background-attachment: scroll;
+  }
+
+  .after-party-coda__details dl > div {
+    grid-template-columns: 4.8rem minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .after-party-coda {
+    scroll-behavior: auto;
+  }
+}
