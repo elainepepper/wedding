@@ -2380,8 +2380,7 @@ export function WeddingExperience({
               ))}
             </p>
             <p className="help-note venue-note">
-              The Grand Salon is on Level 1 — take the lift or escalator up from
-              the lobby.
+              Take the lift or escalator up from the lobby.
             </p>
             <div className="arrival-grid">
               <article>
@@ -2424,7 +2423,7 @@ export function WeddingExperience({
             >
               <iframe
                 title="Map to Grand Hyatt Kuala Lumpur"
-                src="https://maps.google.com/maps?q=Grand%20Hyatt%20Kuala%20Lumpur&t=m&z=16&output=embed&iwloc=near"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=101.7068%2C3.1499%2C101.7168%2C3.1581&layer=mapnik&marker=3.1538%2C101.7118"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
@@ -2548,7 +2547,7 @@ export function WeddingExperience({
             {personalised ? (
               <>
                 <label className="full-field">
-                  <span>For our guest book</span>
+                  <span className="visually-hidden">A private note for us</span>
                   <textarea
                     value={rsvp.wishes}
                     onChange={(event) => update("wishes", event.target.value)}
@@ -2558,7 +2557,7 @@ export function WeddingExperience({
                   />
                 </label>
                 <p className="help-note">
-                  We may share a few of these messages with our guests.
+                  Just for us. Your note will stay private.
                 </p>
                 {error && activeSection === "wishes" ? (
                   <p className="form-error" role="alert">
