@@ -52,6 +52,15 @@ test("includes the complete manager and locked-down Firestore rules", async () =
   await exists("firestore.indexes.json");
 });
 
+test("keeps the full-screen invitation menu keyboard-contained", async () => {
+  const menu = await read("app/SiteMenu.tsx");
+  assert.match(menu, /aria-controls="invitation-site-menu"/);
+  assert.match(menu, /aria-label="Invitation sections"/);
+  assert.match(menu, /tabIndex=\{open \? 0 : -1\}/);
+  assert.match(menu, /querySelector<HTMLElement>\("a, button"\)/);
+  assert.match(menu, /document\.activeElement === last/);
+});
+
 test("does not leak secrets into the repository", async () => {
   const env = await read(".env.example");
   // The service-account JSON and Cloudinary secret must never be filled in here.
