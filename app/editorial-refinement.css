@@ -1254,6 +1254,122 @@
   ) !important;
 }
 
+/* ========================================================================== */
+/* REMAINING IPHONE ANNOTATIONS                                               */
+/* ========================================================================== */
+
+/* The remaining purple-circled chapter titles join Elaine and Haykal in the
+   invitation script. Each title has its own measured size so the letter joins
+   stay open and the questions remain easy to read on a narrow phone. */
+.wedding-shell.wizard #rsvp .form-card > h2,
+.wedding-shell.wizard #travel .form-card > h2,
+.wedding-shell.wizard #recommendations .scene-content > h2 {
+  width: 100%;
+  margin-inline: auto !important;
+  padding-bottom: 0.12em;
+  overflow: visible;
+  font-family: "Pinyon Script", var(--font-header), cursive !important;
+  font-feature-settings: "calt" 1, "dlig" 1;
+  font-weight: 400 !important;
+  line-height: 1.06 !important;
+  letter-spacing: normal !important;
+  text-align: center !important;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 16px rgba(255, 250, 248, 0.88);
+  text-wrap: balance;
+}
+
+.wedding-shell.wizard #rsvp .form-card > h2 {
+  max-width: 19rem;
+  font-size: clamp(4.15rem, 17.5vw, 6rem) !important;
+}
+
+.wedding-shell.wizard #travel .form-card > h2 {
+  max-width: 23rem;
+  font-size: clamp(3.75rem, 15.5vw, 5.8rem) !important;
+}
+
+.wedding-shell.wizard #recommendations .scene-content > h2 {
+  max-width: 24rem;
+  font-size: clamp(4rem, 16.5vw, 6rem) !important;
+}
+
+/* Guest names are labels rather than prose: slightly larger, stronger and
+   italic, while retaining the highly legible editorial face. */
+.wedding-shell.wizard #rsvp .party-rsvp-list legend,
+.wedding-shell.wizard #meal .guest-meal-list legend {
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif !important;
+  font-size: clamp(1.2rem, 5vw, 1.45rem) !important;
+  font-style: italic !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+}
+
+/* A real grid-wide label centres honestly over both the country selector and
+   the number field in Safari, without relying on display: contents. */
+.wedding-shell.wizard #rsvp .phone-grid {
+  grid-template-columns: minmax(7rem, auto) minmax(0, 11rem) !important;
+}
+
+.wedding-shell.wizard #rsvp .phone-grid-label {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  margin: 0 0 0.25rem !important;
+  font: 400 clamp(1rem, 4vw, 1.15rem) / 1.4 var(--font-body);
+  text-align: center !important;
+}
+
+.wedding-shell.wizard #rsvp .phone-grid > .phone-code {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.wedding-shell.wizard #rsvp .phone-grid > label:last-child {
+  display: block !important;
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+}
+
+.wedding-shell.wizard #rsvp .phone-grid > label:last-child > input {
+  width: 100%;
+}
+
+/* The travel offer is one centred invitation rather than a left-leaning
+   information card; the answer controls remain directly beneath it. */
+.wedding-shell.wizard #travel .travel-details,
+.wedding-shell.wizard #travel .travel-details .room-offer,
+.wedding-shell.wizard #travel .travel-details .room-offer > :is(strong, span),
+.wedding-shell.wizard #travel .travel-details fieldset,
+.wedding-shell.wizard #travel .travel-details legend {
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.wedding-shell.wizard #travel .travel-details .room-offer {
+  max-width: 28rem;
+}
+
+/* The city kicker begins on the same left axis as the guide below it. The
+   accordions retain their softness but lose twenty per cent of their fill. */
+.wedding-shell.wizard #recommendations .step-label {
+  width: 100%;
+  text-align: left !important;
+}
+
+.wedding-shell.wizard #recommendations .guide-group {
+  background: rgba(255, 252, 249, 0.37) !important;
+}
+
+/* Give the venue's calligraphic name the scale it has on the paper invitation,
+   with extra room below for the Salon descender. */
+.wedding-shell.wizard #venue .venue-card > h2 {
+  padding-bottom: 0.16em;
+  font-size: clamp(4.75rem, 20vw, 7rem) !important;
+  line-height: 1.02 !important;
+}
+
 .wedding-shell.wizard .scene::after {
   border-color: transparent !important;
 }
