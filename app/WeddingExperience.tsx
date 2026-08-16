@@ -28,7 +28,6 @@ function ScriptName({ name }: { name: string }) {
     </>
   );
 }
-
 function DressNote({ text }: { text: string }) {
   const ladiesMarker = "Ladies:";
   const ladiesIndex = text.indexOf(ladiesMarker);
@@ -2675,11 +2674,10 @@ export function WeddingExperience({
         >
           <div className="scene-content reveal">
             <div className="afterparty-arch">
-              <p className="step-label">Only for a chosen few</p>
-              <h2>A secret chapter</h2>
+              <p className="step-label">After the last dance</p>
+              <h2>The night continues</h2>
               <p className="section-intro">
-                When the last dance is done, a few of you are invited to carry
-                the night a little further.
+                There is a little more to the evening waiting for you.
               </p>
               <a
                 className="afterparty-enter"
@@ -2689,7 +2687,7 @@ export function WeddingExperience({
                     : `/after-party?token=${encodeURIComponent(token)}`
                 }
               >
-                Open your invitation
+                See the after-party details <span aria-hidden="true">&rarr;</span>
               </a>
             </div>
           </div>
