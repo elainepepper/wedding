@@ -27,7 +27,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleapis.com https://*.gstatic.com https://maps.google.com",
       "media-src 'self' blob: https://res.cloudinary.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "frame-src https://www.google.com https://maps.google.com https://*.firebaseapp.com https://accounts.google.com",
+      "frame-src https://www.google.com https://maps.google.com https://www.openstreetmap.org https://*.firebaseapp.com https://accounts.google.com",
       "connect-src 'self' https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://formspree.io https://api.cloudinary.com",
       "upgrade-insecure-requests",
     ].join("; "),
