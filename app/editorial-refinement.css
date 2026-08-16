@@ -1404,3 +1404,30 @@
     rgba(250, 244, 239, 0.09)
   ) !important;
 }
+
+/* ========================================================================== */
+/* NO-ARCH ENTRY TEST                                                         */
+/* ========================================================================== */
+
+/* Keep the same moving painting and invitation type, but remove the arched
+   mask, wall margin and frame shadow so the opening reads as a full-bleed
+   cinematic title card. This is deliberately isolated for easy comparison. */
+.portal {
+  padding: 0;
+  background: #eadfe6;
+}
+
+.portal .portal-arch {
+  width: 100vw;
+  height: 100svh;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal.is-crossing .portal-arch {
+    width: 100vw;
+    height: 100svh;
+    border-radius: 0;
+  }
+}
