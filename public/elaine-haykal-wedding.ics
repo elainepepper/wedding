@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Elaine & Haykal//Wedding//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:elaine-haykal-2026@haykalelaine.com
+DTSTAMP:20260817T000000Z
+DTSTART:20261107T100000Z
+DTEND:20261107T160000Z
+SUMMARY:Elaine & Haykal — Wedding Reception
+DESCRIPTION:Arrival and canapés from 6:00 PM\; the celebration begins at 7:00 PM.
+LOCATION:The Grand Salon\, Grand Hyatt Kuala Lumpur\, 12 Jalan Pinang\, 50450 Kuala Lumpur
+END:VEVENT
+END:VCALENDAR

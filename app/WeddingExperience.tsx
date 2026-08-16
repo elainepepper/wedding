@@ -485,39 +485,6 @@ const eveningMoments = [
   { time: "7:00 PM", title: "The celebration begins" },
 ] as const;
 
-const WEDDING_START_UTC = "20261107T100000Z"; // 6:00pm in Kuala Lumpur
-const WEDDING_END_UTC = "20261107T160000Z"; // midnight in Kuala Lumpur
-
-function downloadCalendarInvite() {
-  const ics = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Elaine & Haykal//Wedding//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    "UID:elaine-haykal-2026@haykalelaine.com",
-    `DTSTAMP:${new Date()
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}/, "")}`,
-    `DTSTART:${WEDDING_START_UTC}`,
-    `DTEND:${WEDDING_END_UTC}`,
-    "SUMMARY:Elaine & Haykal — Wedding Reception",
-    "DESCRIPTION:Arrival and canapés from 6:00 PM\\; the celebration begins at 7:00 PM.",
-    "LOCATION:The Grand Salon\\, Grand Hyatt Kuala Lumpur\\, 12 Jalan Pinang\\, 50450 Kuala Lumpur",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(
-    new Blob([ics], { type: "text/calendar;charset=utf-8" }),
-  );
-  link.download = "elaine-haykal-wedding.ics";
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
 // A gateway timeout or a maintenance page is not JSON. Reading it as JSON
 // used to throw, and the browser's raw parser message was shown to the
 // guest. Turn any unreadable reply into words a guest can act on.
@@ -2769,14 +2736,14 @@ export function WeddingExperience({
               <>
                 <Countdown />
                 <div className="confirmation-actions">
-                  <button
+                  <a
                     className="calendar-button"
-                    type="button"
-                    onClick={downloadCalendarInvite}
+                    href="/elaine-haykal-wedding.ics"
+                    download="elaine-haykal-wedding.ics"
                     data-ripple
                   >
                     Add to calendar <span aria-hidden="true">↓</span>
-                  </button>
+                  </a>
                 </div>
               </>
             ) : null}

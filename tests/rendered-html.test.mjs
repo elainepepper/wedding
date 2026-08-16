@@ -6,9 +6,10 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const exists = (path) => access(new URL(`../${path}`, import.meta.url));
 
 test("renders the finished wedding invitation content", async () => {
-  const [experience, layout] = await Promise.all([
+  const [experience, layout, calendar] = await Promise.all([
     read("app/WeddingExperience.tsx"),
     read("app/layout.tsx"),
+    read("public/elaine-haykal-wedding.ics"),
   ]);
   assert.match(experience, /Elaine &amp; Haykal/);
   assert.match(experience, /7 November 2026/);
@@ -16,6 +17,9 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(experience, /Skip our story and go to the RSVP/);
   assert.match(experience, /Village Park/);
   assert.match(experience, /Super Kitchen Chilli Pan Mee/);
+  assert.match(experience, /href="\/elaine-haykal-wedding\.ics"/);
+  assert.match(calendar, /DTSTART:20261107T100000Z/);
+  assert.match(calendar, /The Grand Salon\\, Grand Hyatt Kuala Lumpur/);
   assert.match(layout, /og-wedding\.png/);
   // No leftover build-scaffolding markers.
   assert.doesNotMatch(`${experience}${layout}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
