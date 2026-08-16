@@ -1193,3 +1193,98 @@
     scroll-behavior: auto;
   }
 }
+
+/* ========================================================================== */
+/* ANNOTATED IPHONE TYPOGRAPHY + TRANSPARENCY PASS                            */
+/* ========================================================================== */
+
+/* These are the three display phrases circled in purple. They now use the
+   same copperplate script as Elaine and Haykal, with enough size and leading
+   for the joins and descenders to remain clear on a phone. */
+.wedding-shell.wizard #dress .dress-card > h2,
+.wedding-shell.wizard #meal .form-card > h2,
+.wedding-shell.wizard #wishes .wishes-card > h2 {
+  font-family: "Pinyon Script", var(--font-header), cursive !important;
+  font-feature-settings: "calt" 1, "dlig" 1;
+  font-weight: 400 !important;
+  line-height: 1.08 !important;
+  letter-spacing: normal !important;
+  overflow: visible;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 16px rgba(255, 250, 248, 0.82);
+  text-wrap: balance;
+}
+
+.wedding-shell.wizard #dress .dress-card > h2 {
+  font-size: clamp(3.75rem, 16vw, 5.9rem) !important;
+}
+
+.wedding-shell.wizard #meal .form-card > h2,
+.wedding-shell.wizard #wishes .wishes-card > h2 {
+  padding-bottom: 0.12em;
+  font-size: clamp(3.45rem, 14.5vw, 5.7rem) !important;
+}
+
+/* Each guest name owns the full line, rather than floating against the left
+   edge of an otherwise centred answer group. */
+.wedding-shell.wizard #rsvp .party-rsvp-list legend,
+.wedding-shell.wizard #meal .guest-meal-list legend {
+  width: 100%;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+  text-align: center !important;
+}
+
+/* The cake was a separate decorative pseudo-element, not part of the painted
+   scene, so it can leave without disturbing the rest of the composition. */
+.wedding-shell.wizard #rsvp::before {
+  display: none !important;
+  background-image: none !important;
+}
+
+/* Every chapter's reading wash is now half-strength and closes before the
+   element's edge, so there is no rectangular boundary to catch the eye. */
+.wedding-shell.wizard .scene > .scene-content::before {
+  border-radius: 50% !important;
+  background: radial-gradient(
+    ellipse 60% 55% at 50% 50%,
+    rgba(255, 251, 249, 0.43) 0 38%,
+    rgba(255, 251, 249, 0.275) 60%,
+    transparent 82%
+  ) !important;
+}
+
+.wedding-shell.wizard .scene::after {
+  border-color: transparent !important;
+}
+
+/* The remaining dress and wishes card fills leave entirely; the soft wash
+   above is the only light behind them. */
+.wedding-shell.wizard :is(#dress .dress-card, #wishes .wishes-card) {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Meal choices retain the tick and typography as the selected signal while
+   the pale rectangular fill drops by about seventy per cent. */
+.wedding-shell.wizard #meal .guest-meal-list fieldset,
+.wedding-shell.wizard #meal .choice-card,
+.wedding-shell.wizard #meal .choice-card.is-selected {
+  background-color: rgba(255, 253, 250, 0.045) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+}
+
+/* The fixed chapter rail should fade into the page rather than cut it off. */
+.wedding-shell.wizard .wizard-nav {
+  background: linear-gradient(
+    to bottom,
+    rgba(250, 244, 239, 0),
+    rgba(250, 244, 239, 0.09)
+  ) !important;
+}
