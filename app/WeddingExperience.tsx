@@ -1169,24 +1169,44 @@ export function WeddingExperience({
     hiddenScenes,
   ]);
   const stepIndex = Math.min(step, wizardSteps.length - 1);
-  // If part of this page is still below the fold, carry the guest there
-  // rather than turning the page out from under them.
-  const advance = () => {
-    const shell = document.querySelector<HTMLElement>(".wedding-shell");
-    if (shell) {
-      const questions = Array.from(
-        shell.querySelectorAll<HTMLElement>(
-          "[data-scene]:not([hidden]) fieldset, [data-scene]:not([hidden]) label",
-        ),
-      );
-      const below = questions.find((element) => {
-        const box = element.getBoundingClientRect();
-        return box.top > window.innerHeight * 0.72;
+  const pendingTravelQuestion =
+    rsvp.flyingIn === null
+      ? "journey"
+      : rsvp.flyingIn === true && !roomBlockFull && rsvp.roomAtHyatt === null
+        ? "room"
+        : rsvp.roomAtHyatt === true && !rsvp.bedPreference
+          ? "bed"
+          : rsvp.roomAtHyatt === true && !rsvp.nights
+            ? "nights"
+            : rsvp.roomAtHyatt === true && !rsvp.arrivalDate
+              ? "arrival"
+              : null;
+
+  const revealTravelQuestion = (question: string) => {
+    // The answer reveals the next question below the fold. Wait for React to
+    // paint it, then bring that question into view so the form never appears
+    // to stop responding on a phone.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(
+            `[data-travel-question="${question}"]`,
+          )
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
-      if (below) {
-        below.scrollIntoView({ behavior: "smooth", block: "center" });
-        return;
-      }
+    });
+  };
+
+  // Next is deterministic: a complete page turns once; an incomplete Travel
+  // page carries the guest to the exact answer still needed.
+  const advance = () => {
+    if (
+      wizardSteps[stepIndex].id === "travel" &&
+      !travelComplete &&
+      pendingTravelQuestion
+    ) {
+      revealTravelQuestion(pendingTravelQuestion);
+      return;
     }
     setStep((value) => Math.min(wizardSteps.length - 1, value + 1));
   };
@@ -2113,7 +2133,7 @@ export function WeddingExperience({
           <div className="scene-content form-card form-card--glass reveal">
             <p className="step-label">Travel</p>
             <h2>Are you travelling to Kuala Lumpur?</h2>
-            <fieldset>
+            <fieldset data-travel-question="journey">
               {/* the heading above already asks; the legend repeats it only
                   for assistive technology */}
               <legend className="visually-hidden">
@@ -2123,7 +2143,10 @@ export function WeddingExperience({
                 <button
                   type="button"
                   className={rsvp.flyingIn === true ? "is-selected" : ""}
-                  onClick={() => update("flyingIn", true)}
+                  onClick={() => {
+                    update("flyingIn", true);
+                    revealTravelQuestion("room");
+                  }}
                 >
                   Yes
                 </button>
@@ -2174,13 +2197,16 @@ export function WeddingExperience({
                     Hyatt Kuala Lumpur, where the reception will be held.
                   </span>
                 </p>
-                <fieldset>
+                <fieldset data-travel-question="room">
                   <legend>Would you like to stay at Grand Hyatt Kuala Lumpur?</legend>
                   <div className="segmented-control">
                     <button
                       type="button"
                       className={rsvp.roomAtHyatt === true ? "is-selected" : ""}
-                      onClick={() => update("roomAtHyatt", true)}
+                      onClick={() => {
+                        update("roomAtHyatt", true);
+                        revealTravelQuestion("bed");
+                      }}
                     >
                       Yes, please
                     </button>
@@ -2201,7 +2227,7 @@ export function WeddingExperience({
                 </fieldset>
                 {rsvp.roomAtHyatt === true ? (
                   <div className="slide-open">
-                    <fieldset>
+                    <fieldset data-travel-question="bed">
                       <legend>We would like</legend>
                       <div className="segmented-control">
                         <button
@@ -2209,7 +2235,10 @@ export function WeddingExperience({
                           className={
                             rsvp.bedPreference === "King" ? "is-selected" : ""
                           }
-                          onClick={() => update("bedPreference", "King")}
+                          onClick={() => {
+                            update("bedPreference", "King");
+                            revealTravelQuestion("nights");
+                          }}
                         >
                           One king
                         </button>
@@ -2218,13 +2247,16 @@ export function WeddingExperience({
                           className={
                             rsvp.bedPreference === "Twin" ? "is-selected" : ""
                           }
-                          onClick={() => update("bedPreference", "Twin")}
+                          onClick={() => {
+                            update("bedPreference", "Twin");
+                            revealTravelQuestion("nights");
+                          }}
                         >
                           Two singles
                         </button>
                       </div>
                     </fieldset>
-                    <fieldset>
+                    <fieldset data-travel-question="nights">
                       <legend>Staying for</legend>
                       <div className="segmented-control">
                         {[1, 2, 3].map((count) => (
@@ -2234,14 +2266,20 @@ export function WeddingExperience({
                             className={
                               rsvp.nights === count ? "is-selected" : ""
                             }
-                            onClick={() => update("nights", count)}
+                            onClick={() => {
+                              update("nights", count);
+                              revealTravelQuestion("arrival");
+                            }}
                           >
                             {count} {count === 1 ? "night" : "nights"}
                           </button>
                         ))}
                       </div>
                     </fieldset>
-                    <label className="full-field">
+                    <label
+                      className="full-field"
+                      data-travel-question="arrival"
+                    >
                       <span>We arrive on</span>
                       <input
                         type="date"
@@ -2303,9 +2341,17 @@ export function WeddingExperience({
               hint={
                 rsvp.flyingIn === null
                   ? "Answer the question above to continue."
-                  : rsvp.roomAtHyatt === null
-                    ? "Let us know about a room to continue."
-                    : "A few details above are still to be filled in."
+                  : rsvp.flyingIn === true &&
+                      !roomBlockFull &&
+                      rsvp.roomAtHyatt === null
+                    ? "Choose whether you would like a room at Grand Hyatt."
+                    : rsvp.roomAtHyatt === true && !rsvp.bedPreference
+                      ? "Choose one king bed or two singles."
+                      : rsvp.roomAtHyatt === true && !rsvp.nights
+                        ? "Choose how many nights you will be staying."
+                        : rsvp.roomAtHyatt === true && !rsvp.arrivalDate
+                          ? "Add your arrival date to continue."
+                          : "One answer is still needed above."
               }
             />
           </div>
@@ -2697,7 +2743,10 @@ export function WeddingExperience({
             <button
               type="button"
               className="wizard-next"
-              disabled={!wizardSteps[stepIndex].ready}
+              disabled={
+                !wizardSteps[stepIndex].ready &&
+                wizardSteps[stepIndex].id !== "travel"
+              }
               onClick={advance}
             >
               {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"} <span aria-hidden="true">&rarr;</span>
