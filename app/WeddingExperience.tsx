@@ -687,7 +687,9 @@ export function WeddingExperience({
   // Anyone arriving without their own invitation link meets the photograph
   // first. They may step past it and look around, but the RSVP stays closed.
   const [filmReady, setFilmReady] = useState(false);
-  const [openGuide, setOpenGuide] = useState("");
+  const [replyPhase, setReplyPhase] = useState<"attendance" | "contact">(
+    "attendance",
+  );
   const [rsvp, setRsvp] = useState<RsvpState>(() =>
     previewMode
       ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" }
@@ -1064,10 +1066,12 @@ export function WeddingExperience({
   const someoneAttending = guestResponses.some(
     (guest) => guest.rsvpStatus === "Confirmed",
   );
-  const rsvpComplete =
+  const attendanceComplete =
     personalised &&
     guestResponses.length > 0 &&
-    guestResponses.every((guest) => guest.rsvpStatus !== "Pending") &&
+    guestResponses.every((guest) => guest.rsvpStatus !== "Pending");
+  const rsvpComplete =
+    attendanceComplete &&
     // a number is only asked of guests who are coming
     (!someoneAttending || validPhone());
   const anyYes =
@@ -1192,6 +1196,10 @@ export function WeddingExperience({
     hiddenScenes,
   ]);
   const stepIndex = Math.min(step, wizardSteps.length - 1);
+  const currentStepId = wizardSteps[stepIndex]?.id ?? "invitation";
+  const usesFixedWizardNav = ["reply", "meal", "travel"].includes(
+    currentStepId,
+  );
   const pendingTravelQuestion =
     rsvp.flyingIn === null
       ? "journey"
@@ -1204,6 +1212,18 @@ export function WeddingExperience({
             : rsvp.roomAtHyatt === true && !rsvp.arrivalDate
               ? "arrival"
               : null;
+  const travelQuestionTitle =
+    pendingTravelQuestion === "journey"
+      ? "Are you travelling to Kuala Lumpur?"
+      : pendingTravelQuestion === "room"
+        ? "Would you like to stay at Grand Hyatt?"
+        : pendingTravelQuestion === "bed"
+          ? "Which room would you prefer?"
+          : pendingTravelQuestion === "nights"
+            ? "How long will you stay?"
+            : pendingTravelQuestion === "arrival"
+              ? "When will you arrive?"
+              : "Is there anything we can arrange for you?";
 
   const revealTravelQuestion = (question: string) => {
     // The answer reveals the next question below the fold. Wait for React to
@@ -1882,71 +1902,82 @@ export function WeddingExperience({
           />
           <div className="scene-content form-card reveal">
             <p className="step-label">Your reply</p>
-            <h2>Will you join us?</h2>
             {personalised ? (
               <>
-                <p className="section-intro">
-                  We would be so happy to celebrate with everyone named on this
-                  invitation.
-                </p>
-                {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
-                  <p className="rsvp-deadline-note">
-                    Please reply by{" "}
-                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}.
-                    You can return to this link if your plans change.
-                  </p>
-                ) : null}
-                <div className="party-rsvp-list">
-                  {guestResponses.map((guest) => (
-                    <fieldset key={guest.id}>
-                      {guestResponses.length > 1 ? (
-                        <legend>{guest.name}</legend>
-                      ) : (
-                        // The heading directly above already asks the question;
-                        // repeating it visually was the triple-heading pattern.
-                        <legend className="visually-hidden">
-                          Will you be joining us?
-                        </legend>
-                      )}
-                      <div className="segmented-control">
-                        <button
-                          type="button"
-                          className={
-                            guest.rsvpStatus === "Confirmed"
-                              ? "is-selected"
-                              : ""
-                          }
-                          onClick={() =>
-                            updateGuest(guest.id, {
-                              rsvpStatus: "Confirmed",
-                              receptionAttending: true,
-                            })
-                          }
-                        >
-                          Will attend
-                        </button>
-                        <button
-                          type="button"
-                          className={
-                            guest.rsvpStatus === "Declined" ? "is-selected" : ""
-                          }
-                          onClick={() =>
-                            updateGuest(guest.id, {
-                              rsvpStatus: "Declined",
-                              receptionAttending: false,
-                              ceremonyAttending: false,
-                              mealSelection: "",
-                            })
-                          }
-                        >
-                          Unable to attend
-                        </button>
-                      </div>
-                    </fieldset>
-                  ))}
-                </div>
-                {someoneAttending ? (
+                {replyPhase === "attendance" ? (
                   <>
+                    <h2>Will you join us?</h2>
+                    <p className="section-intro">
+                      We would be so happy to celebrate with everyone named on
+                      this invitation.
+                    </p>
+                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
+                      <p className="rsvp-deadline-note">
+                        Please reply by{" "}
+                        {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}
+                        . You can return to this link if your plans change.
+                      </p>
+                    ) : null}
+                    <div className="party-rsvp-list">
+                      {guestResponses.map((guest) => (
+                        <fieldset key={guest.id}>
+                          <legend>{guest.name}</legend>
+                          <div className="segmented-control">
+                            <button
+                              type="button"
+                              className={
+                                guest.rsvpStatus === "Confirmed"
+                                  ? "is-selected"
+                                  : ""
+                              }
+                              onClick={() =>
+                                updateGuest(guest.id, {
+                                  rsvpStatus: "Confirmed",
+                                  receptionAttending: true,
+                                })
+                              }
+                            >
+                              Will attend
+                            </button>
+                            <button
+                              type="button"
+                              className={
+                                guest.rsvpStatus === "Declined"
+                                  ? "is-selected"
+                                  : ""
+                              }
+                              onClick={() =>
+                                updateGuest(guest.id, {
+                                  rsvpStatus: "Declined",
+                                  receptionAttending: false,
+                                  ceremonyAttending: false,
+                                  mealSelection: "",
+                                })
+                              }
+                            >
+                              Unable to attend
+                            </button>
+                          </div>
+                        </fieldset>
+                      ))}
+                    </div>
+                    {attendanceComplete && someoneAttending ? (
+                      <button
+                        type="button"
+                        className="chapter-continue reply-continue"
+                        onClick={() => setReplyPhase("contact")}
+                      >
+                        Continue <span aria-hidden="true">&rarr;</span>
+                      </button>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="reply-contact slide-open">
+                    <h2>Where may we reach you?</h2>
+                    <p className="section-intro">
+                      We&rsquo;ll send your household&rsquo;s table number to
+                      this mobile on WhatsApp.
+                    </p>
                     <div className="field-grid phone-grid">
                       <p className="phone-grid-label">Mobile number</p>
                       <label className="phone-code">
@@ -1980,14 +2011,19 @@ export function WeddingExperience({
                           autoComplete="tel-national"
                           placeholder="12 345 6789"
                           maxLength={24}
+                          autoFocus
                         />
                       </label>
                     </div>
-                    <p className="field-hint">
-                      We&rsquo;ll share your table number with you on WhatsApp.
-                    </p>
-                  </>
-                ) : null}
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setReplyPhase("attendance")}
+                    >
+                      Change attendance
+                    </button>
+                  </div>
+                )}
                 {guestResponses.length === 0 ? (
                   <p className="form-error" role="alert">
                     We are unable to find the names attached to this invitation,
@@ -2018,9 +2054,6 @@ export function WeddingExperience({
                 {error}
               </p>
             ) : null}
-            {personalised && guestResponses.length > 0 ? (
-              <ScrollOn ready={rsvpComplete} />
-            ) : null}
           </div>
         </section>
       ) : null}
@@ -2049,7 +2082,13 @@ export function WeddingExperience({
               <DressNote text={content.dressNote} />
             </p>
             <p className="dress-restriction">{content.dressRestriction}</p>
-            <ScrollOn />
+            <button
+              type="button"
+              className="chapter-continue"
+              onClick={advance}
+            >
+              Continue <span aria-hidden="true">&rarr;</span>
+            </button>
           </div>
         </section>
       ) : null}
@@ -2120,7 +2159,6 @@ export function WeddingExperience({
                 {error}
               </p>
             ) : null}
-            <ScrollOn ready={mealComplete} />
           </div>
         </section>
       ) : null}
@@ -2144,36 +2182,71 @@ export function WeddingExperience({
           />
           <div className="scene-content form-card form-card--glass reveal">
             <p className="step-label">Travel</p>
-            <h2>Are you travelling to Kuala Lumpur?</h2>
-            <fieldset data-travel-question="journey">
-              {/* the heading above already asks; the legend repeats it only
-                  for assistive technology */}
-              <legend className="visually-hidden">
-                Are you travelling to Kuala Lumpur?
-              </legend>
-              <div className="segmented-control">
+            <h2>{travelQuestionTitle}</h2>
+            {rsvp.flyingIn !== null && pendingTravelQuestion !== "journey" ? (
+              <div className="answer-trail" aria-label="Your travel answers">
                 <button
                   type="button"
-                  className={rsvp.flyingIn === true ? "is-selected" : ""}
                   onClick={() => {
-                    update("flyingIn", true);
-                    revealTravelQuestion("room");
-                  }}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={rsvp.flyingIn === false ? "is-selected" : ""}
-                  onClick={() => {
-                    update("flyingIn", false);
+                    update("flyingIn", null);
                     update("roomAtHyatt", null);
+                    update("bedPreference", null);
+                    update("nights", null);
+                    update("arrivalDate", "");
                   }}
                 >
-                  No
+                  <span>Travelling</span>
+                  <strong>{rsvp.flyingIn ? "Yes" : "No"}</strong>
+                  <small>Change</small>
                 </button>
+                {rsvp.flyingIn && rsvp.roomAtHyatt !== null ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("roomAtHyatt", null);
+                      update("bedPreference", null);
+                      update("nights", null);
+                      update("arrivalDate", "");
+                    }}
+                  >
+                    <span>Grand Hyatt</span>
+                    <strong>{rsvp.roomAtHyatt ? "Yes" : "No"}</strong>
+                    <small>Change</small>
+                  </button>
+                ) : null}
               </div>
-            </fieldset>
+            ) : null}
+            {pendingTravelQuestion === "journey" ? (
+              <fieldset data-travel-question="journey">
+                {/* the heading above already asks; the legend repeats it only
+                  for assistive technology */}
+                <legend className="visually-hidden">
+                  Are you travelling to Kuala Lumpur?
+                </legend>
+                <div className="segmented-control">
+                  <button
+                    type="button"
+                    className={rsvp.flyingIn === true ? "is-selected" : ""}
+                    onClick={() => {
+                      update("flyingIn", true);
+                      revealTravelQuestion("room");
+                    }}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={rsvp.flyingIn === false ? "is-selected" : ""}
+                    onClick={() => {
+                      update("flyingIn", false);
+                      update("roomAtHyatt", null);
+                    }}
+                  >
+                    No
+                  </button>
+                </div>
+              </fieldset>
+            ) : null}
             {rsvp.flyingIn && roomBlockFull ? (
               <div className="slide-open travel-details">
                 <p className="room-offer room-offer--full">
@@ -2202,111 +2275,131 @@ export function WeddingExperience({
               </div>
             ) : rsvp.flyingIn ? (
               <div className="slide-open travel-details">
-                <p className="room-offer">
-                  <strong>Grand Room — RM850++ per night</strong>
-                  <span>
-                    We&rsquo;ve arranged a preferred rate at Grand Hyatt Kuala
-                    Lumpur.
-                  </span>
-                </p>
-                <fieldset data-travel-question="room">
-                  <legend>
-                    Would you like to stay at Grand Hyatt Kuala Lumpur?
-                  </legend>
-                  <div className="segmented-control">
-                    <button
-                      type="button"
-                      className={rsvp.roomAtHyatt === true ? "is-selected" : ""}
-                      onClick={() => {
-                        update("roomAtHyatt", true);
-                        revealTravelQuestion("bed");
-                      }}
-                    >
-                      Yes, please
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        rsvp.roomAtHyatt === false ? "is-selected" : ""
-                      }
-                      onClick={() => {
-                        update("roomAtHyatt", false);
-                        update("bedPreference", null);
-                        update("nights", null);
-                      }}
-                    >
-                      No, thank you
-                    </button>
-                  </div>
-                </fieldset>
-                {rsvp.roomAtHyatt === true ? (
+                {pendingTravelQuestion === "room" ? (
+                  <p className="room-offer">
+                    <strong>Grand Room — RM850++ per night</strong>
+                    <span>
+                      We&rsquo;ve arranged a preferred rate at Grand Hyatt Kuala
+                      Lumpur.
+                    </span>
+                  </p>
+                ) : null}
+                {pendingTravelQuestion === "room" ? (
+                  <fieldset data-travel-question="room">
+                    <legend className="visually-hidden">
+                      Would you like to stay at Grand Hyatt Kuala Lumpur?
+                    </legend>
+                    <div className="segmented-control">
+                      <button
+                        type="button"
+                        className={
+                          rsvp.roomAtHyatt === true ? "is-selected" : ""
+                        }
+                        onClick={() => {
+                          update("roomAtHyatt", true);
+                          revealTravelQuestion("bed");
+                        }}
+                      >
+                        Yes, please
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          rsvp.roomAtHyatt === false ? "is-selected" : ""
+                        }
+                        onClick={() => {
+                          update("roomAtHyatt", false);
+                          update("bedPreference", null);
+                          update("nights", null);
+                        }}
+                      >
+                        No, thank you
+                      </button>
+                    </div>
+                  </fieldset>
+                ) : null}
+                {rsvp.roomAtHyatt === true && pendingTravelQuestion ? (
                   <div className="slide-open">
-                    <fieldset data-travel-question="bed">
-                      <legend>We would like</legend>
-                      <div className="segmented-control">
-                        <button
-                          type="button"
-                          className={
-                            rsvp.bedPreference === "King" ? "is-selected" : ""
-                          }
-                          onClick={() => {
-                            update("bedPreference", "King");
-                            revealTravelQuestion("nights");
-                          }}
-                        >
-                          One king
-                        </button>
-                        <button
-                          type="button"
-                          className={
-                            rsvp.bedPreference === "Twin" ? "is-selected" : ""
-                          }
-                          onClick={() => {
-                            update("bedPreference", "Twin");
-                            revealTravelQuestion("nights");
-                          }}
-                        >
-                          Two singles
-                        </button>
-                      </div>
-                    </fieldset>
-                    <fieldset data-travel-question="nights">
-                      <legend>Staying for</legend>
-                      <div className="segmented-control">
-                        {[1, 2, 3].map((count) => (
+                    {pendingTravelQuestion === "bed" ? (
+                      <fieldset data-travel-question="bed">
+                        <legend className="visually-hidden">
+                          Which room would you prefer?
+                        </legend>
+                        <div className="segmented-control">
                           <button
-                            key={count}
                             type="button"
                             className={
-                              rsvp.nights === count ? "is-selected" : ""
+                              rsvp.bedPreference === "King" ? "is-selected" : ""
                             }
                             onClick={() => {
-                              update("nights", count);
-                              revealTravelQuestion("arrival");
+                              update("bedPreference", "King");
+                              revealTravelQuestion("nights");
                             }}
                           >
-                            {count} {count === 1 ? "night" : "nights"}
+                            One king
                           </button>
-                        ))}
-                      </div>
-                    </fieldset>
-                    <label
-                      className="full-field"
-                      data-travel-question="arrival"
-                    >
-                      <span>We arrive on</span>
-                      <input
-                        type="date"
-                        value={rsvp.arrivalDate}
-                        onChange={(event) =>
-                          update("arrivalDate", event.target.value)
-                        }
-                      />
-                    </label>
-                    <p className="help-note">
-                      We will pass this to the hotel and be in touch. Nothing is
-                      charged here.
-                    </p>
+                          <button
+                            type="button"
+                            className={
+                              rsvp.bedPreference === "Twin" ? "is-selected" : ""
+                            }
+                            onClick={() => {
+                              update("bedPreference", "Twin");
+                              revealTravelQuestion("nights");
+                            }}
+                          >
+                            Two singles
+                          </button>
+                        </div>
+                      </fieldset>
+                    ) : null}
+                    {pendingTravelQuestion === "nights" ? (
+                      <fieldset data-travel-question="nights">
+                        <legend className="visually-hidden">
+                          How long will you stay?
+                        </legend>
+                        <div className="segmented-control">
+                          {[1, 2, 3].map((count) => (
+                            <button
+                              key={count}
+                              type="button"
+                              className={
+                                rsvp.nights === count ? "is-selected" : ""
+                              }
+                              onClick={() => {
+                                update("nights", count);
+                                revealTravelQuestion("arrival");
+                              }}
+                            >
+                              {count} {count === 1 ? "night" : "nights"}
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+                    ) : null}
+                    {pendingTravelQuestion === "arrival" ? (
+                      <label
+                        className="full-field"
+                        data-travel-question="arrival"
+                      >
+                        <span className="visually-hidden">
+                          When will you arrive?
+                        </span>
+                        <input
+                          type="date"
+                          value={rsvp.arrivalDate}
+                          onChange={(event) =>
+                            update("arrivalDate", event.target.value)
+                          }
+                        />
+                      </label>
+                    ) : null}
+                    {pendingTravelQuestion === "arrival" ? (
+                      <p className="help-note">
+                        We will pass this to the hotel and be in touch. Nothing
+                        is charged here.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
                 {rsvp.roomAtHyatt === false ? (
@@ -2334,40 +2427,24 @@ export function WeddingExperience({
                 ) : null}
               </div>
             ) : null}
-            <label className="full-field">
-              <span>Is there anything we can arrange for you?</span>
-              <input
-                value={rsvp.accessibilityNote}
-                onChange={(event) =>
-                  update("accessibilityNote", event.target.value)
-                }
-                placeholder="Step-free access, seating close to the door…"
-                maxLength={800}
-              />
-            </label>
+            {travelComplete ? (
+              <label className="full-field accessibility-field">
+                <span>Is there anything we can arrange for you?</span>
+                <input
+                  value={rsvp.accessibilityNote}
+                  onChange={(event) =>
+                    update("accessibilityNote", event.target.value)
+                  }
+                  placeholder="Step-free access, seating close to the door…"
+                  maxLength={800}
+                />
+              </label>
+            ) : null}
             {error && activeSection === "travel" ? (
               <p className="form-error" role="alert">
                 {error}
               </p>
             ) : null}
-            <ScrollOn
-              ready={travelComplete}
-              hint={
-                rsvp.flyingIn === null
-                  ? "Answer the question above to continue."
-                  : rsvp.flyingIn === true &&
-                      !roomBlockFull &&
-                      rsvp.roomAtHyatt === null
-                    ? "Choose whether you would like a room at Grand Hyatt."
-                    : rsvp.roomAtHyatt === true && !rsvp.bedPreference
-                      ? "Choose one king bed or two singles."
-                      : rsvp.roomAtHyatt === true && !rsvp.nights
-                        ? "Choose how many nights you will be staying."
-                        : rsvp.roomAtHyatt === true && !rsvp.arrivalDate
-                          ? "Add your arrival date to continue."
-                          : "One answer is still needed above."
-              }
-            />
           </div>
         </section>
       ) : null}
@@ -2436,12 +2513,18 @@ export function WeddingExperience({
             >
               <iframe
                 title="Google Map showing Grand Hyatt Kuala Lumpur"
-                src="https://www.google.com/maps?q=Grand%20Hyatt%20Kuala%20Lumpur%2C%2012%20Jalan%20Pinang%2C%2050450%20Kuala%20Lumpur&output=embed"
+                src="https://www.google.com/maps?q=12%20Jalan%20Pinang%2C%2050450%20Kuala%20Lumpur&z=16&output=embed"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
-            <ScrollOn />
+            <button
+              type="button"
+              className="chapter-continue"
+              onClick={advance}
+            >
+              Continue <span aria-hidden="true">&rarr;</span>
+            </button>
           </div>
         </section>
       ) : null}
@@ -2463,22 +2546,16 @@ export function WeddingExperience({
             <p className="section-intro">
               A few favourites for your time in town.
             </p>
-            <div className="guide">
+            <div className="guide editorial-guide">
               {guideCategories.map((category) => {
-                const open = openGuide === category.id;
                 return (
                   <div
-                    className={`guide-group${open ? " is-open" : ""}`}
+                    className="guide-group editorial-guide__section is-open"
                     key={category.id}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setOpenGuide(open ? "" : category.id)}
-                      aria-expanded={open}
-                    >
+                    <h3 className="editorial-guide__heading">
                       <span>{category.title}</span>
-                      <i aria-hidden="true">{open ? "−" : "+"}</i>
-                    </button>
+                    </h3>
                     {"apps" in category ? (
                       <ul>
                         {category.apps.map((app) => (
@@ -2530,7 +2607,13 @@ export function WeddingExperience({
                 );
               })}
             </div>
-            <ScrollOn />
+            <button
+              type="button"
+              className="chapter-continue"
+              onClick={advance}
+            >
+              Continue <span aria-hidden="true">&rarr;</span>
+            </button>
           </div>
         </section>
       ) : null}
@@ -2730,7 +2813,7 @@ export function WeddingExperience({
         </p>
       ) : null}
       {submitted ? renderCustomPages("confirmation") : null}
-      {personalised && stepIndex > 0 && !submitted ? (
+      {personalised && stepIndex > 0 && usesFixedWizardNav && !submitted ? (
         <div className="wizard-nav" aria-label="Continue">
           {stepIndex > 0 ? (
             <button
