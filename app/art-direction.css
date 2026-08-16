@@ -807,6 +807,19 @@
   text-align: left;
 }
 
+.wedding-shell.wizard #venue .map-button::before,
+.wedding-shell.wizard #venue .map-button::after {
+  display: none !important;
+}
+
+.wedding-shell.wizard #venue .map-button:focus,
+.wedding-shell.wizard #venue .map-button:focus-visible {
+  border: 0 !important;
+  border-bottom: 1px solid rgba(118, 55, 76, 0.25) !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
 .wedding-shell.wizard #travel .answer-trail span,
 .wedding-shell.wizard #travel .answer-trail strong {
   font: 500 0.92rem/1.3 var(--wedding-serif);
