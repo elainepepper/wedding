@@ -1925,6 +1925,7 @@ export function WeddingExperience({
               {someoneAttending ? (
                 <>
                   <div className="field-grid phone-grid">
+                    <p className="phone-grid-label">Mobile number</p>
                     <label className="phone-code">
                       <span className="visually-hidden">Country code</span>
                       <select
@@ -1944,7 +1945,7 @@ export function WeddingExperience({
                       </select>
                     </label>
                     <label>
-                      <span>Mobile number</span>
+                      <span className="visually-hidden">Mobile number</span>
                       <input
                         required
                         value={rsvp.phoneNumber}
@@ -2421,8 +2422,8 @@ export function WeddingExperience({
               aria-label="Map showing Grand Hyatt Kuala Lumpur"
             >
               <iframe
-                title="Map to Grand Hyatt Kuala Lumpur"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=101.7068%2C3.1499%2C101.7168%2C3.1581&layer=mapnik&marker=3.1538%2C101.7118"
+                title="Google Map showing Grand Hyatt Kuala Lumpur"
+                src="https://www.google.com/maps?q=Grand%20Hyatt%20Kuala%20Lumpur%2C%2012%20Jalan%20Pinang%2C%2050450%20Kuala%20Lumpur&output=embed"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
@@ -2447,7 +2448,7 @@ export function WeddingExperience({
             <p className="step-label">Kuala Lumpur</p>
             <h2>A few places we love</h2>
             <p className="section-intro">
-              For a little exploring between celebrations.
+              When you are in town.
             </p>
             <div className="guide">
               {guideCategories.map((category) => {
