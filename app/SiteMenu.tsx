@@ -12,13 +12,21 @@ export type MenuLink = { label: string; href?: string; onSelect?: () => void };
 
 export function SiteMenu({ links }: { links: MenuLink[] }) {
   const [open, setOpen] = useState(false);
+  const linkKey = links.map((link) => link.label).join("|");
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Submission adds the confirmation destination. Close any menu that was
+  // open while the request completed so it can never masquerade as an
+  // intermediate confirmation screen.
+  useEffect(() => setOpen(false), [linkKey]);
 
   return (
     <>
@@ -34,7 +42,9 @@ export function SiteMenu({ links }: { links: MenuLink[] }) {
       <nav
         className={`site-menu-overlay${open ? " is-open" : ""}`}
         aria-hidden={!open}
-        onClick={(event) => { if (event.target === event.currentTarget) setOpen(false); }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) setOpen(false);
+        }}
       >
         {links.map((link, index) => {
           const style = { "--i": index } as CSSProperties;
@@ -44,7 +54,10 @@ export function SiteMenu({ links }: { links: MenuLink[] }) {
                 type="button"
                 key={link.label}
                 style={style}
-                onClick={() => { link.onSelect?.(); setOpen(false); }}
+                onClick={() => {
+                  link.onSelect?.();
+                  setOpen(false);
+                }}
               >
                 {link.label}
               </button>
@@ -52,11 +65,21 @@ export function SiteMenu({ links }: { links: MenuLink[] }) {
           }
           const href = link.href ?? "#";
           return href.startsWith("/") ? (
-            <Link key={link.label} href={href} style={style} onClick={() => setOpen(false)}>
+            <Link
+              key={link.label}
+              href={href}
+              style={style}
+              onClick={() => setOpen(false)}
+            >
               {link.label}
             </Link>
           ) : (
-            <a key={link.label} href={href} style={style} onClick={() => setOpen(false)}>
+            <a
+              key={link.label}
+              href={href}
+              style={style}
+              onClick={() => setOpen(false)}
+            >
               {link.label}
             </a>
           );

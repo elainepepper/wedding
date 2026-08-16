@@ -17,6 +17,8 @@ import { musicElement } from "./music";
 import { PhotoRail } from "./PhotoRail";
 import { DreamBackdrop } from "./DreamBackdrop";
 import { removeBrokenImage } from "./image-fallback";
+import { CinematicMotion } from "./CinematicMotion";
+import BubbleCursor from "./BubbleCursor";
 
 // Splits off the first letter so it can carry a swash capital of its own —
 // the flourish belongs on the initial only, never the whole name.
@@ -37,6 +39,18 @@ function DressNote({ text }: { text: string }) {
     <>
       <span>{text.slice(0, ladiesIndex).trim()}</span>
       <span>{text.slice(ladiesIndex).trim()}</span>
+    </>
+  );
+}
+
+function HotelName({ name }: { name: string }) {
+  const managedBy = " Managed By Banyan Tree";
+  if (!name.endsWith(managedBy)) return <>{name}</>;
+  return (
+    <>
+      {name.slice(0, -managedBy.length)}
+      <br />
+      <span>Managed by Banyan Tree</span>
     </>
   );
 }
@@ -173,27 +187,6 @@ const scrollToSection = (id: string) =>
   document
     .getElementById(id)
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
-// The interaction is taught once, on the invitation card. After that the
-// cue is the silent falling thread alone — the site trusts the guest to
-// scroll, and only speaks when something genuinely needs an answer.
-const ScrollOn = ({
-  ready = true,
-  hint,
-  label = "",
-}: {
-  ready?: boolean;
-  hint?: string;
-  label?: string;
-}) =>
-  ready ? (
-    <p className="scroll-on">
-      <i aria-hidden="true" /> {label}
-    </p>
-  ) : hint ? (
-    <p className="gate-hint" role="status">
-      {hint}
-    </p>
-  ) : null;
 const sceneLabels: Record<string, string> = {
   invitation: "The invitation",
   table: "Your table",
@@ -264,18 +257,6 @@ function splitMobile(mobile: string | null) {
   return known
     ? { countryCode: known, phoneNumber: compact.slice(known.length) }
     : { countryCode: "+60", phoneNumber: compact.replace(/^\+/, "") };
-}
-
-function Sparkles() {
-  return (
-    <div className="sparkles" aria-hidden="true">
-      <span className="sparkle sparkle--one">✦</span>
-      <span className="sparkle sparkle--two">✧</span>
-      <span className="sparkle sparkle--three">✦</span>
-      <span className="sparkle sparkle--four">✧</span>
-      <span className="orbit" />
-    </div>
-  );
 }
 
 function RibbonDivider() {
@@ -662,11 +643,60 @@ function ChoiceButton({
       className={`choice-card${selected ? " is-selected" : ""}`}
       aria-pressed={selected}
       onClick={onClick}
+      data-ripple
     >
-      <span className="choice-mark">{selected ? "✓" : ""}</span>
       <strong>{title}</strong>
       {detail ? <small>{detail}</small> : null}
+      <span className="choice-mark">{selected ? "✓ Selected" : "Select"}</span>
     </button>
+  );
+}
+
+function EveningRecap({ guests }: { guests: GuestResponse[] }) {
+  const attending = guests.filter(
+    (guest) =>
+      guest.rsvpStatus === "Confirmed" &&
+      (guest.mealSelection ||
+        guest.dietaryRequirements.trim() ||
+        guest.allergies.trim()),
+  );
+  if (!attending.length) return null;
+
+  return (
+    <section className="evening-recap" aria-labelledby="evening-recap-title">
+      <p className="step-label" id="evening-recap-title">
+        Your evening
+      </p>
+      <div className="evening-recap__guests">
+        {attending.map((guest) => {
+          const dietary = [guest.dietaryRequirements, guest.allergies]
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <article key={guest.id}>
+              <h3>{guest.name}</h3>
+              {guest.mealSelection ? (
+                <p>
+                  <span>Main course</span>
+                  <strong>
+                    {guest.mealSelection === "Salmon"
+                      ? "Seared Alaskan salmon"
+                      : "Almond dukkha-crusted lamb"}
+                  </strong>
+                </p>
+              ) : null}
+              {dietary ? (
+                <p>
+                  <span>Dietary notes</span>
+                  <strong>{dietary}</strong>
+                </p>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -678,11 +708,20 @@ export function WeddingExperience({
   previewMode?: boolean;
 }) {
   // the token arrives in the address, or is remembered from earlier in the visit
-  const [token, setToken] = useState(invitationToken ?? "");
+  const [token, setToken] = useState(
+    previewMode ? "" : (invitationToken ?? ""),
+  );
   useEffect(() => {
+    // Review routes must stay isolated from a guest token remembered earlier
+    // in the same browser tab. Otherwise an expired token can lock the safe
+    // sample journey and make visual QA impossible.
+    if (previewMode) {
+      setToken("");
+      return;
+    }
     const resolved = readToken(invitationToken); // always runs, always remembers
     if (resolved) setToken(resolved);
-  }, [invitationToken]);
+  }, [invitationToken, previewMode]);
   const personalised = Boolean(token) || previewMode;
   // Anyone arriving without their own invitation link meets the photograph
   // first. They may step past it and look around, but the RSVP stays closed.
@@ -692,7 +731,7 @@ export function WeddingExperience({
   );
   const [rsvp, setRsvp] = useState<RsvpState>(() =>
     previewMode
-      ? { ...initialRsvp, guestName: "dear guest", phoneNumber: "12345678" }
+      ? { ...initialRsvp, guestName: "Your name", phoneNumber: "12345678" }
       : initialRsvp,
   );
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
@@ -732,6 +771,7 @@ export function WeddingExperience({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [music, setMusic] = useState<MusicSettings>({
     musicUrl: null,
     musicTitle: null,
@@ -949,108 +989,6 @@ export function WeddingExperience({
     };
   }, [token]);
 
-  useEffect(() => {
-    let frame = 0;
-    let lastTime = performance.now();
-    let pointerX = 0;
-    let pointerY = 0;
-    let targetX = 0;
-    let targetY = 0;
-    const sceneProgress = new WeakMap<HTMLElement, number>();
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const smoothstep = (edge0: number, edge1: number, value: number) => {
-      const x = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
-      return x * x * (3 - 2 * x);
-    };
-    const render = (time = performance.now()) => {
-      frame = 0;
-      const elapsed = Math.max(1, Math.min(50, time - lastTime));
-      lastTime = time;
-      const scrollAlpha = reduceMotion.matches
-        ? 1
-        : 1 - Math.pow(1 - siteDesign.motionDamping, elapsed / 16.667);
-      const pointerAlpha = reduceMotion.matches
-        ? 1
-        : 1 - Math.pow(0.93, elapsed / 16.667);
-      const viewport = window.innerHeight || 1;
-      let sceneIsMoving = false;
-      document
-        .querySelectorAll<HTMLElement>("[data-scene]")
-        .forEach((scene) => {
-          const rect = scene.getBoundingClientRect();
-          const scrollRange = Math.max(1, rect.height - viewport);
-          const target =
-            rect.height > viewport * 1.05
-              ? Math.max(0, Math.min(1, -rect.top / scrollRange))
-              : Math.max(
-                  0,
-                  Math.min(1, (viewport - rect.top) / (viewport + rect.height)),
-                );
-          const previous = sceneProgress.get(scene) ?? target;
-          const progress = previous + (target - previous) * scrollAlpha;
-          sceneProgress.set(scene, progress);
-          scene.style.setProperty("--scene-progress", progress.toFixed(4));
-          if (scene.id === "welcome") {
-            scene.style.setProperty(
-              "--welcome-intro",
-              (1 - smoothstep(0.1, 0.3, progress)).toFixed(4),
-            );
-            scene.style.setProperty(
-              "--welcome-names",
-              (
-                smoothstep(0.2, 0.38, progress) *
-                (1 - smoothstep(0.53, 0.7, progress))
-              ).toFixed(4),
-            );
-            scene.style.setProperty(
-              "--welcome-date",
-              smoothstep(0.6, 0.8, progress).toFixed(4),
-            );
-            scene.style.setProperty(
-              "--welcome-portal",
-              smoothstep(0.16, 0.88, progress).toFixed(4),
-            );
-          }
-          if (Math.abs(target - progress) > 0.001) sceneIsMoving = true;
-        });
-      pointerX += (targetX - pointerX) * pointerAlpha;
-      pointerY += (targetY - pointerY) * pointerAlpha;
-      document.documentElement.style.setProperty(
-        "--pointer-x",
-        pointerX.toFixed(3),
-      );
-      document.documentElement.style.setProperty(
-        "--pointer-y",
-        pointerY.toFixed(3),
-      );
-      if (
-        sceneIsMoving ||
-        Math.abs(targetX - pointerX) > 0.002 ||
-        Math.abs(targetY - pointerY) > 0.002
-      )
-        frame = requestAnimationFrame(render);
-    };
-    const requestRender = () => {
-      if (!frame) frame = requestAnimationFrame(render);
-    };
-    const pointer = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      targetX = (event.clientX / window.innerWidth - 0.5) * 2;
-      targetY = (event.clientY / window.innerHeight - 0.5) * 2;
-      requestRender();
-    };
-    window.addEventListener("scroll", requestRender, { passive: true });
-    window.addEventListener("resize", requestRender);
-    window.addEventListener("pointermove", pointer, { passive: true });
-    requestRender();
-    return () => {
-      window.removeEventListener("scroll", requestRender);
-      window.removeEventListener("resize", requestRender);
-      window.removeEventListener("pointermove", pointer);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [rsvp.attendance, submitted, inviteLoading, siteDesign.motionDamping]);
-
   const hiddenScenes = useMemo(
     () => new Set(siteDesign.hiddenScenes),
     [siteDesign.hiddenScenes],
@@ -1104,15 +1042,8 @@ export function WeddingExperience({
       (rsvp.flyingIn === true && roomComplete));
   const flyingIn = travelComplete && rsvp.flyingIn === true;
   const journeyDone = travelComplete || allDeclined;
-  const attendingCount = guestResponses.filter(
-    (guest) => guest.rsvpStatus === "Confirmed",
-  ).length;
-
-  // THE WIZARD — the journey as a handful of full-screen pages rather than
-  // one long scroll. Each step shows one or two sections; Continue is enabled
-  // by the same gates that used to unlock scrolling. All state, validation
-  // and the backend remain untouched.
-  const [step, setStep] = useState(0);
+  // The same answer gates still protect the RSVP, but eligible chapters now
+  // stay together in one continuous invitation scroll.
   const wizardSteps = useMemo(() => {
     const steps: Array<{
       id: string;
@@ -1195,8 +1126,11 @@ export function WeddingExperience({
     journeyDone,
     hiddenScenes,
   ]);
-  const stepIndex = Math.min(step, wizardSteps.length - 1);
-  const currentStepId = wizardSteps[stepIndex]?.id ?? "invitation";
+  const activeWizardIndex = Math.max(
+    0,
+    wizardSteps.findIndex((entry) => entry.sections.includes(activeSection)),
+  );
+  const currentStepId = wizardSteps[activeWizardIndex]?.id ?? "invitation";
   const usesFixedWizardNav = ["reply", "meal", "travel"].includes(
     currentStepId,
   );
@@ -1216,7 +1150,7 @@ export function WeddingExperience({
     pendingTravelQuestion === "journey"
       ? "Are you travelling to Kuala Lumpur?"
       : pendingTravelQuestion === "room"
-        ? "Would you like to stay at Grand Hyatt?"
+        ? "Would you like to stay at Grand Hyatt Kuala Lumpur?"
         : pendingTravelQuestion === "bed"
           ? "Which room would you prefer?"
           : pendingTravelQuestion === "nights"
@@ -1226,9 +1160,10 @@ export function WeddingExperience({
               : "Is there anything we can arrange for you?";
 
   const revealTravelQuestion = (question: string) => {
-    // The answer reveals the next question below the fold. Wait for React to
-    // paint it, then bring that question into view so the form never appears
-    // to stop responding on a phone.
+    // This is reserved for an explicit press of the fixed Next control. The
+    // answer buttons themselves reveal the following question in place; auto
+    // scrolling after every answer fought iOS Safari's native date picker and
+    // made the page appear to jump.
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         document
@@ -1242,92 +1177,38 @@ export function WeddingExperience({
   // page carries the guest to the exact answer still needed.
   const advance = () => {
     if (
-      wizardSteps[stepIndex].id === "travel" &&
+      wizardSteps[activeWizardIndex].id === "travel" &&
       !travelComplete &&
       pendingTravelQuestion
     ) {
       revealTravelQuestion(pendingTravelQuestion);
       return;
     }
-    setStep((value) => Math.min(wizardSteps.length - 1, value + 1));
+    const next = wizardSteps[activeWizardIndex + 1];
+    const target = next?.sections.find((id) => document.getElementById(id));
+    if (target) scrollToSection(target);
   };
 
   const goToSection = (id: string) => {
-    // Steps now exist in the list only when their pages can render, so the
-    // list itself is the authority. (The old check asked the document, but
-    // with strict isolation other steps' pages are never in the document.)
-    const index = wizardSteps.findIndex((entry) => entry.sections.includes(id));
-    if (index < 0) return;
-    setStep(index);
+    window.requestAnimationFrame(() => scrollToSection(id));
   };
   useEffect(() => {
-    if (submitted) setStep(wizardSteps.length - 1);
-  }, [submitted, wizardSteps.length]);
-  // A last resort: if the current step somehow has nothing on it, step BACK
-  // one page rather than to the very beginning. This used to reset the whole
-  // journey to the invitation — a guest mid-form who tripped it lost their
-  // place entirely. The step they were on is never reset by an answer or a
-  // validation message; only a page with literally nothing to show retreats,
-  // and only by one step at a time.
-  useEffect(() => {
-    if (inviteLoading || !personalised) return;
-    const present = wizardSteps[stepIndex].sections.some((section) =>
-      document.getElementById(section),
-    );
-    if (!present && stepIndex !== 0) {
-      setStep((value) => Math.max(0, value - 1));
-    }
-  }, [stepIndex, wizardSteps, inviteLoading, personalised]);
-
-  useEffect(() => {
-    const active = new Set(wizardSteps[stepIndex].sections);
-    const extras = new Set<string>();
-    active.forEach((id) =>
-      (customAfter.get(id) ?? []).forEach((page) => extras.add(page.id)),
-    );
-    // An answer can reveal or hide part of the page — a room offer, say. That
-    // changes the page's height, and the browser shifts the scroll to
-    // compensate, which reads as a jump. Hold the position across the change.
-    const held = window.scrollY;
-    document.querySelectorAll<HTMLElement>("[data-scene]").forEach((el) => {
-      el.hidden = !(active.has(el.id) || extras.has(el.id));
+    if (!submitted) return;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        document
+          .getElementById("confirmation")
+          ?.scrollIntoView({ behavior: "auto", block: "start" });
+      });
     });
-    if (
-      shownStep.current === stepIndex &&
-      Math.abs(window.scrollY - held) > 1
-    ) {
-      window.scrollTo({ top: held, behavior: "instant" as ScrollBehavior });
-    }
-  }, [stepIndex, wizardSteps, customAfter, submitted]);
-
-  // Turning to a new page: only here does the view move. Keeping this apart
-  // from the effect above is what stops the page jumping to the top each time
-  // a guest taps an answer.
-  const shownStep = useRef(-1);
-  useEffect(() => {
-    if (shownStep.current === stepIndex) return;
-    const first = shownStep.current === -1;
-    shownStep.current = stepIndex;
-    const shell = document.querySelector<HTMLElement>(".wedding-shell");
-    // The page leaves before the next one arrives, so the viewport never
-    // shows a bare frame between steps.
-    const arrive = () => {
-      window.scrollTo(0, 0);
-      if (shell) {
-        shell.classList.remove("is-leaving", "step-enter");
-        void shell.offsetWidth; // restart the animation
-        shell.classList.add("step-enter");
-      }
-      window.dispatchEvent(new Event("scroll")); // wake the reveal tracker
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
     };
-    if (first || !shell) {
-      arrive();
-      return;
-    }
-    shell.classList.add("is-leaving");
-    const timer = window.setTimeout(arrive, 240);
-    return () => window.clearTimeout(timer);
-  }, [stepIndex]);
+  }, [submitted]);
+  // Eligible chapters stay mounted in normal document flow. Answers reveal
+  // what follows without removing or repositioning the invitation above.
   const seatedGuests = guestResponses.filter(
     (guest) => guest.rsvpStatus === "Confirmed" && guest.tableName,
   );
@@ -1344,14 +1225,18 @@ export function WeddingExperience({
     if (tablesAssigned) ids.splice(1, 0, "table");
     if (anyYes) ids.push("dress", "meal");
     if (mealComplete) ids.push("travel");
-    if (travelComplete) ids.push("venue");
     if (flyingIn) ids.push("recommendations");
+    if (travelComplete) ids.push("venue");
     if (journeyDone) ids.push("wishes");
     if (submitted) ids.push("confirmation");
     // The secret chapter stays sealed until the couple assigns a table —
     // it arrives with the follow-up link that carries the seat allocation.
-    if (inviteData?.afterPartyInvited && tablesAssigned) ids.push("afterparty");
-    if (journeyDone) ids.push("gallery");
+    if (
+      submitted &&
+      (previewMode || (inviteData?.afterPartyInvited && tablesAssigned))
+    )
+      ids.push("afterparty");
+    if (submitted && journeyDone) ids.push("gallery");
     // Editor-hidden chapters drop out; editor-added pages slide in after their anchor.
     return ids.flatMap((id) => [
       ...(hiddenScenes.has(id) ? [] : [id]),
@@ -1423,18 +1308,16 @@ export function WeddingExperience({
     } as CSSProperties;
   };
 
-  // STRICT VIEW ISOLATION — a page's markup exists only while the wizard is
-  // on the step that shows it. Nothing from another step is in the document,
-  // so no amount of scrolling can ever reach it. (The hidden-attribute pass
-  // and its CSS remain as a second line of defence.)
-  const stepHas = (id: string) => wizardSteps[stepIndex].sections.includes(id);
+  // A chapter becomes part of the scroll as soon as its factual prerequisites
+  // are met; it is never absolutely positioned or treated as a separate page.
+  const stepHas = (id: string) => sectionIds.includes(id);
 
   const renderCustomPages = (anchor: string) =>
     (stepHas(anchor) ? (customAfter.get(anchor) ?? []) : []).map((page) => (
       <section
         key={page.id}
         id={page.id}
-        className="scene scene--custom"
+        className={`scene scene--custom custom-after-${anchor}`}
         data-scene
         aria-label={page.title}
       >
@@ -1471,12 +1354,12 @@ export function WeddingExperience({
     const onFocus = (event: FocusEvent) => {
       const target = event.target as HTMLElement | null;
       // Only fields that raise the keyboard, and only when the keyboard would
-      // actually cover them. Scrolling on every focus — a country-code menu,
-      // say — made the page jump for no reason.
+      // actually cover them. A native date picker manages its own viewport on
+      // iOS; scrolling it here as well makes the calendar feel unresponsive.
       if (
         !target ||
         !target.matches(
-          "input:not([type='checkbox']):not([type='radio']), textarea",
+          "input:not([type='checkbox']):not([type='radio']):not([type='date']), textarea",
         )
       )
         return;
@@ -1512,8 +1395,12 @@ export function WeddingExperience({
 
   const submitRsvp = async () => {
     if (previewMode) {
-      setSubmitted(true);
-      window.setTimeout(() => goToSection("confirmation"), 80);
+      setSubmitting(true);
+      setError("");
+      window.setTimeout(() => {
+        setSubmitting(false);
+        setSubmitted(true);
+      }, 900);
       return;
     }
     if (!token) {
@@ -1643,7 +1530,6 @@ export function WeddingExperience({
       if (!response.ok)
         throw new Error(result.error || "Unable to save your RSVP.");
       setSubmitted(true);
-      window.setTimeout(() => goToSection("confirmation"), 80);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -1686,6 +1572,16 @@ export function WeddingExperience({
     .join(" ");
   const selectedFont =
     fontPairs.find((pair) => pair.id === siteDesign.fontPair) ?? fontPairs[0];
+  const storedConfirmationCopy =
+    inviteData?.settings?.confirmation_message?.trim() || "";
+  const confirmationCopy =
+    !storedConfirmationCopy ||
+    storedConfirmationCopy.includes("hardly wait to celebrate, feast and dance")
+      ? "Your place at our table is saved. We can’t wait to celebrate with you."
+      : storedConfirmationCopy;
+  const deadlineLabel =
+    rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ||
+    "15 September 2026";
   const typography = {
     "--font-header": selectedFont.headerFamily,
     "--font-body": selectedFont.bodyFamily,
@@ -1693,26 +1589,26 @@ export function WeddingExperience({
 
   return (
     <main
-      className={`wedding-shell wedding-shell--storybook wizard ${designClasses}`}
+      className={`wedding-shell wedding-shell--storybook invitation-scroll ${designClasses}${submitted ? " invitation-scroll--confirmed" : ""}`}
       style={typography}
     >
       <DreamBackdrop />
 
       <EtherealLoader ready={filmReady} />
-      {personalised && stepIndex > 0 ? (
+      {personalised ? (
         <SiteMenu
           links={[
             {
-              label: "Your invitation",
+              label: "Invitation",
               onSelect: () => goToSection("invitation"),
             },
             // these move between steps rather than jumping to anchors, which cannot
             // reach a section the wizard is currently holding hidden
-            { label: "RSVP", onSelect: () => goToSection("rsvp") },
+            { label: "Your reply", onSelect: () => goToSection("rsvp") },
             ...(submitted
               ? [
                   {
-                    label: "Confirmation page",
+                    label: "Thank you",
                     onSelect: () => goToSection("confirmation"),
                   },
                 ]
@@ -1724,6 +1620,8 @@ export function WeddingExperience({
         />
       ) : null}
       <Dreamscape onReady={() => setFilmReady(true)} />
+      <CinematicMotion confirmed={submitted} />
+      <BubbleCursor zIndex={18} />
       <a className="skip-experience" href="#rsvp">
         Skip our story and go to the RSVP
       </a>
@@ -1756,6 +1654,8 @@ export function WeddingExperience({
           style={textStyle("invitation")}
           className="scene scene--invitation"
           data-scene
+          data-cinematic="invitation"
+          data-ripple-zone
         >
           <img
             className="scene-art scene-art--floral"
@@ -1785,9 +1685,13 @@ export function WeddingExperience({
             <p className="eyebrow">{content.familyLine}</p>
             <h2>
               <span className="ink">
-                <ScriptName name={content.brideName} />{" "}
+                <span className="script-full-name">
+                  <ScriptName name={content.brideName} />
+                </span>
                 <span className="amp">&amp;</span>{" "}
-                <ScriptName name={content.groomName} />
+                <span className="script-full-name">
+                  <ScriptName name={content.groomName} />
+                </span>
               </span>
             </h2>
             <p className="invitation-line">{content.invitationLine}</p>
@@ -1806,7 +1710,6 @@ export function WeddingExperience({
                 <span>Grand Hyatt Kuala Lumpur</span>
               </p>
             </div>
-            <ScrollOn label="Continue below" />
           </div>
         </section>
       ) : null}
@@ -1834,7 +1737,6 @@ export function WeddingExperience({
                 </article>
               ))}
             </div>
-            <ScrollOn />
           </div>
         </section>
       ) : null}
@@ -1848,6 +1750,7 @@ export function WeddingExperience({
           style={textStyle("schedule")}
           className="scene scene--schedule"
           data-scene
+          data-cinematic="programme"
         >
           <img
             className="scene-art scene-art--schedule"
@@ -1873,13 +1776,6 @@ export function WeddingExperience({
                 </li>
               ))}
             </ol>
-            {stepIndex === 0 ? (
-              <button type="button" className="rsvp-trigger" onClick={advance}>
-                RSVP
-              </button>
-            ) : (
-              <ScrollOn />
-            )}
           </div>
         </section>
       ) : null}
@@ -1888,11 +1784,16 @@ export function WeddingExperience({
       {stepHas("rsvp") ? (
         <section
           id="rsvp"
-          data-sky="dream-2"
+          data-sky="dream-1"
           style={textStyle("rsvp")}
           className="scene scene--paper"
           data-scene
+          data-cinematic="reply"
         >
+          <div
+            className="chapter-veil chapter-veil--reply"
+            aria-hidden="true"
+          />
           <img
             className="scene-art scene-art--dinner"
             src="/wedding/dinner-table.webp"
@@ -1906,18 +1807,19 @@ export function WeddingExperience({
               <>
                 {replyPhase === "attendance" ? (
                   <>
-                    <h2>Will you join us?</h2>
+                    <h2 className="script-heading">
+                      Will you
+                      <br />
+                      join us?
+                    </h2>
                     <p className="section-intro">
-                      We would be so happy to celebrate with everyone named on
+                      We&rsquo;re delighted to celebrate with everyone named on
                       this invitation.
                     </p>
-                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
-                      <p className="rsvp-deadline-note">
-                        Please reply by{" "}
-                        {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}
-                        . You can return to this link if your plans change.
-                      </p>
-                    ) : null}
+                    <p className="rsvp-deadline-note">
+                      Kindly reply by {deadlineLabel}. You may update your
+                      response through this link at any time before then.
+                    </p>
                     <div className="party-rsvp-list">
                       {guestResponses.map((guest) => (
                         <fieldset key={guest.id}>
@@ -1925,6 +1827,8 @@ export function WeddingExperience({
                           <div className="segmented-control">
                             <button
                               type="button"
+                              aria-pressed={guest.rsvpStatus === "Confirmed"}
+                              data-ripple
                               className={
                                 guest.rsvpStatus === "Confirmed"
                                   ? "is-selected"
@@ -1941,6 +1845,8 @@ export function WeddingExperience({
                             </button>
                             <button
                               type="button"
+                              aria-pressed={guest.rsvpStatus === "Declined"}
+                              data-ripple
                               className={
                                 guest.rsvpStatus === "Declined"
                                   ? "is-selected"
@@ -1965,7 +1871,14 @@ export function WeddingExperience({
                       <button
                         type="button"
                         className="chapter-continue reply-continue"
-                        onClick={() => setReplyPhase("contact")}
+                        onClick={() => {
+                          setReplyPhase("contact");
+                          window.requestAnimationFrame(() =>
+                            window.requestAnimationFrame(() =>
+                              scrollToSection("rsvp"),
+                            ),
+                          );
+                        }}
                       >
                         Continue <span aria-hidden="true">&rarr;</span>
                       </button>
@@ -1973,13 +1886,11 @@ export function WeddingExperience({
                   </>
                 ) : (
                   <div className="reply-contact slide-open">
-                    <h2>Where may we reach you?</h2>
+                    <h2>Mobile number</h2>
                     <p className="section-intro">
-                      We&rsquo;ll send your household&rsquo;s table number to
-                      this mobile on WhatsApp.
+                      We&rsquo;ll send your table number here via WhatsApp.
                     </p>
                     <div className="field-grid phone-grid">
-                      <p className="phone-grid-label">Mobile number</p>
                       <label className="phone-code">
                         <span className="visually-hidden">Country code</span>
                         <select
@@ -2018,7 +1929,14 @@ export function WeddingExperience({
                     <button
                       type="button"
                       className="text-button"
-                      onClick={() => setReplyPhase("attendance")}
+                      onClick={() => {
+                        setReplyPhase("attendance");
+                        window.requestAnimationFrame(() =>
+                          window.requestAnimationFrame(() =>
+                            scrollToSection("rsvp"),
+                          ),
+                        );
+                      }}
                     >
                       Change attendance
                     </button>
@@ -2066,7 +1984,12 @@ export function WeddingExperience({
           style={textStyle("dress")}
           className="scene scene--blush"
           data-scene
+          data-cinematic="dress"
         >
+          <div
+            className="chapter-veil chapter-veil--dress"
+            aria-hidden="true"
+          />
           <img
             className="scene-art scene-art--wide-frame"
             src="/wedding/frame-wide.webp"
@@ -2082,13 +2005,6 @@ export function WeddingExperience({
               <DressNote text={content.dressNote} />
             </p>
             <p className="dress-restriction">{content.dressRestriction}</p>
-            <button
-              type="button"
-              className="chapter-continue"
-              onClick={advance}
-            >
-              Continue <span aria-hidden="true">&rarr;</span>
-            </button>
           </div>
         </section>
       ) : null}
@@ -2101,6 +2017,7 @@ export function WeddingExperience({
           style={textStyle("meal")}
           className="scene scene--paper scene--meal"
           data-scene
+          data-cinematic="meal"
         >
           <img
             className="scene-art scene-art--feast"
@@ -2117,7 +2034,7 @@ export function WeddingExperience({
                 .filter((guest) => guest.rsvpStatus === "Confirmed")
                 .map((guest) => (
                   <fieldset key={guest.id}>
-                    {attendingCount > 1 ? <legend>{guest.name}</legend> : null}
+                    <legend>{guest.name}</legend>
                     <div className="choice-grid choice-grid--two meal-choices">
                       <ChoiceButton
                         selected={guest.mealSelection === "Salmon"}
@@ -2167,10 +2084,11 @@ export function WeddingExperience({
       {stepHas("travel") && mealComplete && !hiddenScenes.has("travel") ? (
         <section
           id="travel"
-          data-sky="dream-2"
+          data-sky="dream-1"
           style={textStyle("travel")}
           className="scene scene--pearl"
           data-scene
+          data-cinematic="travel"
         >
           <img
             className="scene-art scene-art--pearl"
@@ -2182,7 +2100,23 @@ export function WeddingExperience({
           />
           <div className="scene-content form-card form-card--glass reveal">
             <p className="step-label">Travel</p>
-            <h2>{travelQuestionTitle}</h2>
+            <h2
+              className={
+                pendingTravelQuestion === "journey"
+                  ? "script-heading"
+                  : undefined
+              }
+            >
+              {pendingTravelQuestion === "journey" ? (
+                <>
+                  Are you travelling
+                  <br />
+                  to Kuala Lumpur?
+                </>
+              ) : (
+                travelQuestionTitle
+              )}
+            </h2>
             {rsvp.flyingIn !== null && pendingTravelQuestion !== "journey" ? (
               <div className="answer-trail" aria-label="Your travel answers">
                 <button
@@ -2226,16 +2160,19 @@ export function WeddingExperience({
                 <div className="segmented-control">
                   <button
                     type="button"
+                    aria-pressed={rsvp.flyingIn === true}
+                    data-ripple
                     className={rsvp.flyingIn === true ? "is-selected" : ""}
                     onClick={() => {
                       update("flyingIn", true);
-                      revealTravelQuestion("room");
                     }}
                   >
                     Yes
                   </button>
                   <button
                     type="button"
+                    aria-pressed={rsvp.flyingIn === false}
+                    data-ripple
                     className={rsvp.flyingIn === false ? "is-selected" : ""}
                     onClick={() => {
                       update("flyingIn", false);
@@ -2265,7 +2202,9 @@ export function WeddingExperience({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        <strong>{hotel.name}</strong>
+                        <strong>
+                          <HotelName name={hotel.name} />
+                        </strong>
                         <span>{hotel.note}</span>
                         <i>{hotel.walk} away ↗</i>
                       </a>
@@ -2276,13 +2215,14 @@ export function WeddingExperience({
             ) : rsvp.flyingIn ? (
               <div className="slide-open travel-details">
                 {pendingTravelQuestion === "room" ? (
-                  <p className="room-offer">
-                    <strong>Grand Room — RM850++ per night</strong>
+                  <div className="room-offer">
+                    <strong>Grand Room</strong>
+                    <b>RM850++ per night</b>
                     <span>
-                      We&rsquo;ve arranged a preferred rate at Grand Hyatt Kuala
-                      Lumpur.
+                      A preferred rate is available for our guests at Grand
+                      Hyatt Kuala Lumpur, where the reception will be held.
                     </span>
-                  </p>
+                  </div>
                 ) : null}
                 {pendingTravelQuestion === "room" ? (
                   <fieldset data-travel-question="room">
@@ -2292,18 +2232,21 @@ export function WeddingExperience({
                     <div className="segmented-control">
                       <button
                         type="button"
+                        aria-pressed={rsvp.roomAtHyatt === true}
+                        data-ripple
                         className={
                           rsvp.roomAtHyatt === true ? "is-selected" : ""
                         }
                         onClick={() => {
                           update("roomAtHyatt", true);
-                          revealTravelQuestion("bed");
                         }}
                       >
                         Yes, please
                       </button>
                       <button
                         type="button"
+                        aria-pressed={rsvp.roomAtHyatt === false}
+                        data-ripple
                         className={
                           rsvp.roomAtHyatt === false ? "is-selected" : ""
                         }
@@ -2328,24 +2271,26 @@ export function WeddingExperience({
                         <div className="segmented-control">
                           <button
                             type="button"
+                            aria-pressed={rsvp.bedPreference === "King"}
+                            data-ripple
                             className={
                               rsvp.bedPreference === "King" ? "is-selected" : ""
                             }
                             onClick={() => {
                               update("bedPreference", "King");
-                              revealTravelQuestion("nights");
                             }}
                           >
                             One king
                           </button>
                           <button
                             type="button"
+                            aria-pressed={rsvp.bedPreference === "Twin"}
+                            data-ripple
                             className={
                               rsvp.bedPreference === "Twin" ? "is-selected" : ""
                             }
                             onClick={() => {
                               update("bedPreference", "Twin");
-                              revealTravelQuestion("nights");
                             }}
                           >
                             Two singles
@@ -2363,12 +2308,13 @@ export function WeddingExperience({
                             <button
                               key={count}
                               type="button"
+                              aria-pressed={rsvp.nights === count}
+                              data-ripple
                               className={
                                 rsvp.nights === count ? "is-selected" : ""
                               }
                               onClick={() => {
                                 update("nights", count);
-                                revealTravelQuestion("arrival");
                               }}
                             >
                               {count} {count === 1 ? "night" : "nights"}
@@ -2415,7 +2361,9 @@ export function WeddingExperience({
                             target="_blank"
                             rel="noreferrer"
                           >
-                            <strong>{hotel.name}</strong>
+                            <strong>
+                              <HotelName name={hotel.name} />
+                            </strong>
                             <span>{hotel.note}</span>
 
                             <i>{hotel.walk} away ↗</i>
@@ -2451,85 +2399,6 @@ export function WeddingExperience({
 
       {renderCustomPages("travel")}
 
-      {stepHas("venue") && travelComplete && !hiddenScenes.has("venue") ? (
-        <section
-          id="venue"
-          data-sky="dream-3"
-          style={textStyle("venue")}
-          className="scene scene--venue"
-          data-scene
-        >
-          <div className="scene-content venue-card reveal">
-            <p className="step-label">Getting there</p>
-            <h2>{content.venueName}</h2>
-            <p className="venue-address">
-              {content.venueAddress.split("\n").map((line, index) => (
-                <span key={line}>
-                  {index ? <br /> : null}
-                  {line}
-                </span>
-              ))}
-            </p>
-            <p className="help-note venue-note">
-              Take the lift or escalator up from the lobby.
-            </p>
-            <div className="arrival-grid">
-              <article>
-                <h3>MRT</h3>
-                <p>
-                  Take the Putrajaya Line to Conlay. Leave via Entrance A, then
-                  follow Jalan Kia Peng towards the Convention Centre; the hotel
-                  will be on your right.
-                </p>
-              </article>
-              <article>
-                <h3>Car</h3>
-                <p>
-                  Enter from Jalan Pinang. The doormen can direct you to guest
-                  parking in the hotel basement.
-                </p>
-              </article>
-              <article>
-                <h3>Grab</h3>
-                <p>
-                  Use Grand Hyatt Kuala Lumpur as your destination and choose
-                  the main lobby.
-                </p>
-              </article>
-            </div>
-            <a
-              className="primary-button map-button"
-              href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open directions <span aria-hidden="true">↗</span>
-            </a>
-            {/* The map closes the page: everyone reads the address and the
-                three ways of arriving first, then sees where it all is. */}
-            <div
-              className="venue-map"
-              aria-label="Map showing Grand Hyatt Kuala Lumpur"
-            >
-              <iframe
-                title="Google Map showing Grand Hyatt Kuala Lumpur"
-                src="https://www.google.com/maps?q=12%20Jalan%20Pinang%2C%2050450%20Kuala%20Lumpur&z=16&output=embed"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-            <button
-              type="button"
-              className="chapter-continue"
-              onClick={advance}
-            >
-              Continue <span aria-hidden="true">&rarr;</span>
-            </button>
-          </div>
-        </section>
-      ) : null}
-      {renderCustomPages("venue")}
-
       {stepHas("recommendations") &&
       flyingIn &&
       !hiddenScenes.has("recommendations") ? (
@@ -2537,26 +2406,38 @@ export function WeddingExperience({
           id="recommendations"
           data-sky="dream-2"
           style={textStyle("recommendations")}
-          className="scene scene--recommendations"
+          className={`scene scene--recommendations${openGuide ? ` guide-tone--${openGuide}` : ""}`}
           data-scene
+          data-cinematic="kl"
+          data-ripple-zone
         >
+          <div className="kl-arrival-wash" aria-hidden="true" />
           <div className="scene-content reveal">
             <p className="step-label">Kuala Lumpur</p>
             <h2>A few places we love</h2>
-            <p className="section-intro">
-              A few favourites for your time in town.
-            </p>
+            <p className="section-intro">When you are in town.</p>
             <div className="guide editorial-guide">
               {guideCategories.map((category) => {
+                const isOpen = openGuide === category.id;
                 return (
                   <div
-                    className="guide-group editorial-guide__section is-open"
+                    className={`guide-group editorial-guide__section${isOpen ? " is-open" : ""}`}
                     key={category.id}
                   >
-                    <h3 className="editorial-guide__heading">
+                    <button
+                      type="button"
+                      className="editorial-guide__heading"
+                      aria-expanded={isOpen}
+                      onClick={() =>
+                        setOpenGuide((current) =>
+                          current === category.id ? null : category.id,
+                        )
+                      }
+                    >
                       <span>{category.title}</span>
-                    </h3>
-                    {"apps" in category ? (
+                      <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
+                    </button>
+                    {isOpen && "apps" in category ? (
                       <ul>
                         {category.apps.map((app) => (
                           <li key={app.name}>
@@ -2584,7 +2465,7 @@ export function WeddingExperience({
                         ))}
                       </ul>
                     ) : null}
-                    {"places" in category ? (
+                    {isOpen && "places" in category ? (
                       <ul>
                         {category.places.map((place) => (
                           <li key={place.name}>
@@ -2607,17 +2488,107 @@ export function WeddingExperience({
                 );
               })}
             </div>
-            <button
-              type="button"
-              className="chapter-continue"
-              onClick={advance}
-            >
-              Continue <span aria-hidden="true">&rarr;</span>
-            </button>
           </div>
         </section>
       ) : null}
       {renderCustomPages("recommendations")}
+
+      {stepHas("venue") && travelComplete && !hiddenScenes.has("venue") ? (
+        <section
+          id="venue"
+          data-sky="dream-3"
+          style={textStyle("venue")}
+          className="scene scene--venue"
+          data-scene
+          data-cinematic="salon"
+          data-ripple-zone
+        >
+          <div className="scene-content venue-card reveal">
+            <div className="venue-arrival-stage">
+              <div className="venue-arrival-art" aria-hidden="true">
+                <img
+                  className="venue-arrival-art__facade"
+                  src="/wedding/story/grand-hyatt-facade.webp"
+                  alt=""
+                  loading="lazy"
+                  onError={removeBrokenImage}
+                />
+                <img
+                  className="venue-arrival-art__entrance"
+                  src="/wedding/story/grand-hyatt-entrance.webp"
+                  alt=""
+                  loading="lazy"
+                  onError={removeBrokenImage}
+                />
+              </div>
+              <div className="venue-arrival-anchor">
+                <p className="step-label">Getting there</p>
+                <h2 className="display-serif">{content.venueName}</h2>
+              </div>
+            </div>
+            <div className="venue-practical">
+              <p className="venue-address">
+                {content.venueAddress.split("\n").map((line, index) => (
+                  <span key={line}>
+                    {index ? <br /> : null}
+                    {line}
+                  </span>
+                ))}
+              </p>
+              <p className="help-note venue-note">
+                Take the lift or escalator up from the lobby.
+              </p>
+              <div className="arrival-grid">
+                <article>
+                  <h3>MRT</h3>
+                  <p>
+                    Take the Putrajaya Line to Conlay station. Leave via
+                    Entrance A and follow Jalan Kia Peng towards the Convention
+                    Centre. Grand Hyatt will be on your right.
+                  </p>
+                </article>
+                <article>
+                  <h3>Car</h3>
+                  <p>
+                    Make your way to the hotel entrance on Jalan Pinang, where
+                    the doormen will greet you. Guest parking is in the
+                    hotel&rsquo;s basement.
+                  </p>
+                </article>
+                <article>
+                  <h3>Grab</h3>
+                  <p>
+                    Set your destination to Grand Hyatt Kuala Lumpur and ask to
+                    be dropped at the main lobby.
+                  </p>
+                </article>
+              </div>
+              <a
+                className="primary-button map-button"
+                href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur"
+                target="_blank"
+                rel="noreferrer"
+                data-ripple
+              >
+                Open directions <span aria-hidden="true">↗</span>
+              </a>
+              <div
+                className="venue-map"
+                aria-label="Map showing Grand Hyatt Kuala Lumpur"
+              >
+                <iframe
+                  title="Google Map showing Grand Hyatt Kuala Lumpur"
+                  src="https://www.google.com/maps?q=12%20Jalan%20Pinang%2C%2050450%20Kuala%20Lumpur&z=16&output=embed"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+              <EveningRecap guests={guestResponses} />
+            </div>
+          </div>
+        </section>
+      ) : null}
+      {renderCustomPages("venue")}
 
       {stepHas("wishes") && journeyDone && !hiddenScenes.has("wishes") ? (
         <section
@@ -2626,6 +2597,7 @@ export function WeddingExperience({
           style={textStyle("wishes")}
           className="scene scene--wishes"
           data-scene
+          data-cinematic="wishes"
         >
           <img
             className="scene-art scene-art--wishes-lace"
@@ -2641,7 +2613,7 @@ export function WeddingExperience({
             {personalised ? (
               <>
                 <label className="full-field">
-                  <span className="visually-hidden">A private note for us</span>
+                  <span>Your message</span>
                   <textarea
                     value={rsvp.wishes}
                     onChange={(event) => update("wishes", event.target.value)}
@@ -2650,9 +2622,7 @@ export function WeddingExperience({
                     maxLength={1000}
                   />
                 </label>
-                <p className="help-note">
-                  Just for us. Your note will stay private.
-                </p>
+                <p className="help-note">Your note will stay private.</p>
                 {error && activeSection === "wishes" ? (
                   <p className="form-error" role="alert">
                     {error}
@@ -2663,14 +2633,13 @@ export function WeddingExperience({
                   type="button"
                   onClick={submitRsvp}
                   disabled={submitting || submitted}
+                  data-ripple
                 >
                   {submitting
-                    ? "Sending with love…"
+                    ? "Sending…"
                     : submitted
                       ? "RSVP sent"
-                      : previewMode
-                        ? "Preview confirmation"
-                        : "Send our RSVP"}
+                      : "Send RSVP"}
                   {!submitting && !submitted ? (
                     <span aria-hidden="true">♡</span>
                   ) : null}
@@ -2697,14 +2666,20 @@ export function WeddingExperience({
       {stepHas("confirmation") && submitted ? (
         <section
           id="confirmation"
-          data-sky="dream-3"
+          data-sky="dream-2"
           style={textStyle("confirmation")}
           className="scene scene--confirmation"
           data-scene
+          data-cinematic="confirmation"
         >
-          <Sparkles />
           <div className="scene-content confirmation-card reveal">
-            <p className="eyebrow">With all our hearts</p>
+            <div className="confirmation-pearls" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
             <div className="wax-seal" aria-hidden="true">
               E<span>&amp;</span>H
             </div>
@@ -2715,16 +2690,9 @@ export function WeddingExperience({
             </h2>
             <p>
               {rsvp.attendance === "yes"
-                ? inviteData?.settings?.confirmation_message ||
-                  "Your place at our table is saved. We can hardly wait to celebrate, feast and dance with you."
+                ? confirmationCopy
                 : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}
             </p>
-            {rsvp.wishes.trim() ? (
-              <blockquote className="shared-wish">
-                <p>&ldquo;{rsvp.wishes.trim()}&rdquo;</p>
-                <cite>your words, kept for the night</cite>
-              </blockquote>
-            ) : null}
             <RibbonDivider />
             <div className="confirmation-details">
               <span>7 November 2026</span>
@@ -2738,31 +2706,22 @@ export function WeddingExperience({
                     className="calendar-button"
                     type="button"
                     onClick={downloadCalendarInvite}
+                    data-ripple
                   >
                     Add to calendar <span aria-hidden="true">↓</span>
                   </button>
-                  <a
-                    className="calendar-button"
-                    href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Directions <span aria-hidden="true">↗</span>
-                  </a>
                 </div>
               </>
             ) : null}
           </div>
         </section>
       ) : null}
-      {(stepHas("afterparty") &&
-        inviteData?.afterPartyInvited &&
-        token &&
-        tablesAssigned) ||
-      previewMode ? (
+      {stepHas("afterparty") &&
+      ((inviteData?.afterPartyInvited && token && tablesAssigned) ||
+        previewMode) ? (
         <section
           id="afterparty"
-          data-sky="dream-3"
+          data-sky="dream-2"
           style={textStyle("afterparty")}
           className="scene scene--afterparty"
           data-scene
@@ -2797,10 +2756,14 @@ export function WeddingExperience({
           style={textStyle("gallery")}
           className="scene scene--paper"
           data-scene
+          data-cinematic="finale"
+          data-ripple-zone
         >
           <div className="scene-content reveal">
             <h2>Until then.</h2>
-            <PhotoRail />
+            <div className="photo-reveal-stage">
+              <PhotoRail />
+            </div>
             <p className="closing-line">See you in Kuala Lumpur.</p>
           </div>
         </section>
@@ -2813,13 +2776,22 @@ export function WeddingExperience({
         </p>
       ) : null}
       {submitted ? renderCustomPages("confirmation") : null}
-      {personalised && stepIndex > 0 && usesFixedWizardNav && !submitted ? (
+      {personalised &&
+      activeWizardIndex > 0 &&
+      usesFixedWizardNav &&
+      !submitted ? (
         <div className="wizard-nav" aria-label="Continue">
-          {stepIndex > 0 ? (
+          {activeWizardIndex > 0 ? (
             <button
               type="button"
               className="wizard-back"
-              onClick={() => setStep((value) => Math.max(0, value - 1))}
+              onClick={() => {
+                const previous = wizardSteps[activeWizardIndex - 1];
+                const target = previous?.sections.find((id) =>
+                  document.getElementById(id),
+                );
+                if (target) scrollToSection(target);
+              }}
             >
               <span aria-hidden="true">&larr;</span> Back
             </button>
@@ -2828,21 +2800,24 @@ export function WeddingExperience({
           )}
           <p className="wizard-position" aria-live="polite">
             <span>
-              {wizardStepLabels[wizardSteps[stepIndex].id] ?? "Your invitation"}
+              {wizardStepLabels[wizardSteps[activeWizardIndex].id] ??
+                "Your invitation"}
             </span>
             <small>
-              {String(stepIndex + 1).padStart(2, "0")} /{" "}
+              {String(activeWizardIndex + 1).padStart(2, "0")} /{" "}
               {String(wizardSteps.length - 1).padStart(2, "0")}
             </small>
           </p>
-          {wizardSteps[stepIndex].cta ? (
+          {wizardSteps[activeWizardIndex].cta ? (
             <button
               type="button"
               className="wizard-next"
-              disabled={!wizardSteps[stepIndex].ready}
+              disabled={!wizardSteps[activeWizardIndex].ready}
               onClick={advance}
             >
-              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"}{" "}
+              {wizardSteps[activeWizardIndex].cta === "Begin"
+                ? "Begin"
+                : "Next"}{" "}
               <span aria-hidden="true">&rarr;</span>
             </button>
           ) : (

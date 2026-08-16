@@ -1,241 +1,347 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 interface BubbleCursorProps {
   wrapperElement?: HTMLElement;
   zIndex?: number;
-  /** Bubble fill and outline. Change these two to recolour the whole effect. */
   fill?: string;
   stroke?: string;
+  environmentPointer?: boolean;
 }
 
-class Particle {
-  lifeSpan: number;
-  initialLifeSpan: number;
-  velocity: { x: number; y: number };
-  position: { x: number; y: number };
-  baseDimension: number;
-  fill: string;
-  stroke: string;
+class Bubble {
+  age = 0;
+  readonly duration = 650 + Math.random() * 130;
+  readonly radius = 4 + Math.random() * 4;
+  readonly drift = (Math.random() - 0.5) * 6;
 
-  constructor(x: number, y: number, fill: string, stroke: string) {
-    this.initialLifeSpan = Math.floor(Math.random() * 60 + 60);
-    this.lifeSpan = this.initialLifeSpan;
-    this.velocity = {
-      x: (Math.random() < 0.5 ? -1 : 1) * (Math.random() / 10),
-      y: -0.4 + Math.random() * -1,
-    };
-    this.position = { x, y };
-    this.baseDimension = 13;  // grows to about 60% of the 45px heart
-    this.fill = fill;
-    this.stroke = stroke;
-  }
+  constructor(
+    readonly x: number,
+    readonly y: number,
+    readonly fill: string,
+    readonly stroke: string,
+  ) {}
 
-  update(context: CanvasRenderingContext2D) {
-    this.position.x += this.velocity.x;
-    this.position.y += this.velocity.y;
-    this.velocity.x += ((Math.random() < 0.5 ? -1 : 1) * 2) / 75;
-    this.velocity.y -= Math.random() / 600;
-    this.lifeSpan--;
+  draw(context: CanvasRenderingContext2D, delta: number) {
+    this.age += delta;
+    const progress = Math.min(1, this.age / this.duration);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const x = this.x + this.drift * ease;
+    const y = this.y - 18 * ease;
+    const radius = this.radius * (0.72 + ease * 0.52);
 
-    const scale = 0.2 + (this.initialLifeSpan - this.lifeSpan) / this.initialLifeSpan;
-    // fade out as the bubble rises, so they dissolve instead of vanishing
-    const life = Math.max(0, this.lifeSpan / this.initialLifeSpan);
-
-    context.globalAlpha = Math.min(1, life * 1.4);
-    // Each bubble carries its own soft light, the way the reference trail
-    // glows, rather than being a flat outlined circle.
-    const glow = context.createRadialGradient(
-      this.position.x - (this.baseDimension / 2) * scale,
-      this.position.y - this.baseDimension / 2,
-      0,
-      this.position.x - (this.baseDimension / 2) * scale,
-      this.position.y - this.baseDimension / 2,
-      Math.max(1, this.baseDimension * scale)
-    );
-    glow.addColorStop(0, "rgba(255, 255, 255, .9)");
-    glow.addColorStop(0.5, this.fill);
-    glow.addColorStop(1, "rgba(178, 216, 240, 0)");
-    context.fillStyle = glow;
+    context.save();
+    context.globalAlpha = Math.sin(progress * Math.PI) * 0.7;
     context.strokeStyle = this.stroke;
-    context.lineWidth = 1;
-    context.shadowColor = "rgba(140, 190, 225, .5)";
-    context.shadowBlur = 8;
+    context.fillStyle = this.fill;
+    context.lineWidth = 0.8;
     context.beginPath();
-    context.arc(
-      this.position.x - (this.baseDimension / 2) * scale,
-      this.position.y - this.baseDimension / 2,
-      this.baseDimension * scale,
-      0,
-      2 * Math.PI
+    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.restore();
+    return progress < 1;
+  }
+}
+
+class WaterRipple {
+  age = 0;
+  readonly duration = 680;
+
+  constructor(
+    readonly x: number,
+    readonly y: number,
+    readonly stroke: string,
+  ) {}
+
+  draw(context: CanvasRenderingContext2D, delta: number) {
+    this.age += delta;
+    const progress = Math.min(1, this.age / this.duration);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const radiusX = 13 + ease * 46;
+    const radiusY = 8 + ease * 25;
+
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = Math.sin(progress * Math.PI) * 0.34;
+    context.strokeStyle = this.stroke;
+    context.lineWidth = 0.85;
+    context.shadowColor = "rgba(255, 244, 237, 0.4)";
+    context.shadowBlur = 10;
+    context.beginPath();
+    context.ellipse(this.x, this.y, radiusX, radiusY, -0.04, 0, Math.PI * 2);
+    context.stroke();
+
+    // One incomplete highlight prevents the effect reading as a touch ring.
+    context.globalAlpha = Math.sin(progress * Math.PI) * 0.28;
+    context.strokeStyle = "rgba(255, 252, 248, 0.72)";
+    context.lineWidth = 0.9;
+    context.shadowBlur = 5;
+    context.beginPath();
+    context.ellipse(
+      this.x - radiusX * 0.08,
+      this.y - radiusY * 0.08,
+      radiusX * 0.78,
+      radiusY * 0.72,
+      -0.04,
+      Math.PI * 1.08,
+      Math.PI * 1.56,
     );
     context.stroke();
-    context.fill();
-    context.closePath();
-    context.shadowBlur = 0;
-    context.globalAlpha = 1;
+    context.restore();
+    return progress < 1;
   }
 }
 
-const BubbleCursor: React.FC<BubbleCursorProps> = ({
+function drawGlassBubble(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  fill: string,
+  stroke: string,
+) {
+  context.save();
+  const glow = context.createRadialGradient(x - 5, y - 6, 1, x, y, 18);
+  glow.addColorStop(0, "rgba(255, 255, 255, 0.92)");
+  glow.addColorStop(0.22, "rgba(255, 255, 255, 0.2)");
+  glow.addColorStop(0.72, fill);
+  glow.addColorStop(1, "rgba(246, 220, 211, 0.025)");
+  context.fillStyle = glow;
+  context.strokeStyle = stroke;
+  context.lineWidth = 1;
+  context.shadowColor = "rgba(238, 197, 185, 0.22)";
+  context.shadowBlur = 10;
+  context.beginPath();
+  context.arc(x, y, 15, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.restore();
+}
+
+const BubbleCursor = ({
   wrapperElement,
   zIndex,
-  fill = "rgba(196, 226, 245, 0.42)",
-  stroke = "rgba(150, 200, 235, 0.75)",
-}) => {
+  fill = "rgba(255, 248, 242, 0.12)",
+  stroke = "rgba(237, 203, 190, 0.42)",
+  environmentPointer = false,
+}: BubbleCursorProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const cursorRef = useRef({ x: 0, y: 0 });
-  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let canvas: HTMLCanvasElement | null = null;
-    let context: CanvasRenderingContext2D | null = null;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    if (reducedMotion.matches) return;
 
     const element = wrapperElement || document.body;
-    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
 
-    const onWindowResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      if (!canvasRef.current) return;
-      if (wrapperElement) {
-        canvasRef.current.width = wrapperElement.clientWidth;
-        canvasRef.current.height = wrapperElement.clientHeight;
-      } else {
-        canvasRef.current.width = width;
-        canvasRef.current.height = height;
+    let width = 0;
+    let height = 0;
+    let ratio = 1;
+    let frame = 0;
+    let lastFrame = performance.now();
+    let lastBubbleTime = 0;
+    let lastBubbleX = 0;
+    let lastBubbleY = 0;
+    let lastAmbientRipple = 0;
+    let lastAmbientX = 0;
+    let lastAmbientY = 0;
+    let pointerVisible = false;
+    let dirty = false;
+    const pointer = { x: 0, y: 0 };
+    const worldTarget = { x: 0, y: 0 };
+    const worldCurrent = { x: 0, y: 0 };
+    const bubbles: Bubble[] = [];
+    const ripples: WaterRipple[] = [];
+
+    const resize = () => {
+      const rect = wrapperElement?.getBoundingClientRect();
+      width = rect?.width || window.innerWidth;
+      height = rect?.height || window.innerHeight;
+      ratio = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      dirty = true;
+      ensureLoop();
+    };
+
+    const render = (time: number) => {
+      frame = 0;
+      if (document.hidden) return;
+      const delta = Math.max(1, Math.min(40, time - lastFrame));
+      lastFrame = time;
+      context.clearRect(0, 0, width, height);
+
+      for (let index = bubbles.length - 1; index >= 0; index--) {
+        if (!bubbles[index].draw(context, delta)) bubbles.splice(index, 1);
+      }
+      for (let index = ripples.length - 1; index >= 0; index--) {
+        if (!ripples[index].draw(context, delta)) ripples.splice(index, 1);
+      }
+      if (finePointer && pointerVisible)
+        drawGlassBubble(context, pointer.x, pointer.y, fill, stroke);
+
+      if (environmentPointer) {
+        worldCurrent.x += (worldTarget.x - worldCurrent.x) * 0.12;
+        worldCurrent.y += (worldTarget.y - worldCurrent.y) * 0.12;
+        document.documentElement.style.setProperty(
+          "--pointer-x",
+          worldCurrent.x.toFixed(4),
+        );
+        document.documentElement.style.setProperty(
+          "--pointer-y",
+          worldCurrent.y.toFixed(4),
+        );
+      }
+
+      dirty = false;
+      if (
+        bubbles.length ||
+        ripples.length ||
+        (environmentPointer &&
+          (Math.abs(worldTarget.x - worldCurrent.x) > 0.002 ||
+            Math.abs(worldTarget.y - worldCurrent.y) > 0.002))
+      )
+        frame = requestAnimationFrame(render);
+    };
+
+    function ensureLoop() {
+      if (!frame) {
+        lastFrame = performance.now();
+        frame = requestAnimationFrame(render);
+      }
+    }
+
+    const localPoint = (event: PointerEvent) => {
+      if (!wrapperElement) return { x: event.clientX, y: event.clientY };
+      const box = wrapperElement.getBoundingClientRect();
+      return { x: event.clientX - box.left, y: event.clientY - box.top };
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!finePointer || event.pointerType === "touch") return;
+      const point = localPoint(event);
+      pointer.x = point.x;
+      pointer.y = point.y;
+      pointerVisible = true;
+      if (environmentPointer) {
+        worldTarget.x = Math.max(
+          -1,
+          Math.min(1, (event.clientX / window.innerWidth - 0.5) * 2),
+        );
+        worldTarget.y = Math.max(
+          -1,
+          Math.min(1, (event.clientY / window.innerHeight - 0.5) * 2),
+        );
+      }
+      const distance = Math.hypot(point.x - lastBubbleX, point.y - lastBubbleY);
+      if (distance > 18 && performance.now() - lastBubbleTime > 72) {
+        bubbles.push(new Bubble(point.x, point.y, fill, stroke));
+        if (bubbles.length > 26) bubbles.shift();
+        lastBubbleX = point.x;
+        lastBubbleY = point.y;
+        lastBubbleTime = performance.now();
+      }
+      const atmosphericZone = (event.target as Element | null)?.closest(
+        "[data-ripple-zone]",
+      );
+      const ambientDistance = Math.hypot(
+        point.x - lastAmbientX,
+        point.y - lastAmbientY,
+      );
+      if (
+        atmosphericZone &&
+        ambientDistance > 120 &&
+        performance.now() - lastAmbientRipple > 720
+      ) {
+        ripples.push(new WaterRipple(point.x, point.y, stroke));
+        lastAmbientX = point.x;
+        lastAmbientY = point.y;
+        lastAmbientRipple = performance.now();
+      }
+      dirty = true;
+      ensureLoop();
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (
+        !target?.closest(
+          "[data-ripple], [data-ripple-zone], .choice-card, .segmented-control button, .editorial-guide__heading",
+        )
+      )
+        return;
+      const point = localPoint(event);
+      ripples.push(new WaterRipple(point.x, point.y, stroke));
+      if (ripples.length > 4) ripples.shift();
+      ensureLoop();
+    };
+
+    const onPointerLeave = () => {
+      pointerVisible = false;
+      worldTarget.x = 0;
+      worldTarget.y = 0;
+      dirty = true;
+      ensureLoop();
+    };
+
+    const onVisibility = () => {
+      if (document.hidden && frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      } else if (
+        !document.hidden &&
+        (dirty || bubbles.length || ripples.length)
+      ) {
+        ensureLoop();
       }
     };
 
-    const addParticle = (x: number, y: number) => {
-      // a soft ceiling, so a long swirl of the finger cannot bog the page down
-      // a phone paints these on the CPU-shared GPU while it is also scrolling
-      // a full-screen painting, so it gets a smaller allowance
-      if (particlesRef.current.length > (finePointer ? 220 : 90)) return;
-      particlesRef.current.push(new Particle(x, y, fill, stroke));
-    };
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = zIndex ? String(zIndex) : "";
+    canvas.style.position = wrapperElement ? "absolute" : "fixed";
+    canvas.style.inset = "0";
+    if (finePointer) document.documentElement.classList.add("heart-cursor");
+    resize();
 
-    const onTouchMove = (event: TouchEvent) => {
-      for (let i = 0; i < event.touches.length; i++) {
-        addParticle(event.touches[i].clientX, event.touches[i].clientY);
-      }
-    };
-
-    const onMouseMove = (event: MouseEvent) => {
-      if (wrapperElement) {
-        const box = wrapperElement.getBoundingClientRect();
-        cursorRef.current.x = event.clientX - box.left;
-        cursorRef.current.y = event.clientY - box.top;
-      } else {
-        cursorRef.current.x = event.clientX;
-        cursorRef.current.y = event.clientY;
-      }
-      addParticle(cursorRef.current.x, cursorRef.current.y);
-    };
-
-    // a small solid white heart standing in for the pointer
-    const drawHeart = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(size / 24, size / 24);
-      ctx.beginPath();
-      ctx.moveTo(12, 21);
-      ctx.bezierCurveTo(7, 17.5, 4, 14.2, 4, 10.6);
-      ctx.bezierCurveTo(4, 7.8, 6.2, 6, 8.4, 6);
-      ctx.bezierCurveTo(9.9, 6, 11.2, 6.8, 12, 8);
-      ctx.bezierCurveTo(12.8, 6.8, 14.1, 6, 15.6, 6);
-      ctx.bezierCurveTo(17.8, 6, 20, 7.8, 20, 10.6);
-      ctx.bezierCurveTo(20, 14.2, 17, 17.5, 12, 21);
-      ctx.closePath();
-      // a warm halo behind the heart, so it reads over pale paintings and
-      // dark ones alike
-      const halo = ctx.createRadialGradient(12, 13, 1, 12, 13, 20);
-      halo.addColorStop(0, "rgba(255, 255, 255, 1)");
-      halo.addColorStop(0.55, "rgba(255, 246, 248, .96)");
-      halo.addColorStop(1, "rgba(255, 214, 226, .85)");
-      ctx.fillStyle = halo;
-      ctx.shadowColor = "rgba(190, 90, 120, .55)";
-      ctx.shadowBlur = 14;
-      ctx.fill();
-      ctx.restore();
-    };
-
-    const updateParticles = () => {
-      if (!canvas || !context) return;
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < particlesRef.current.length; i++) {
-        particlesRef.current[i].update(context);
-      }
-      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
-        if (particlesRef.current[i].lifeSpan < 0) particlesRef.current.splice(i, 1);
-      }
-      // touch screens have no resting pointer, so no heart is drawn there
-      if (finePointer && (cursorRef.current.x || cursorRef.current.y)) {
-        drawHeart(context, cursorRef.current.x, cursorRef.current.y - 3, 45);
-      }
-    };
-
-    const loop = () => {
-      updateParticles();
-      animationFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    const bindEvents = () => {
-      element.addEventListener("mousemove", onMouseMove);
-      element.addEventListener("touchmove", onTouchMove, { passive: true });
-      element.addEventListener("touchstart", onTouchMove, { passive: true });
-      window.addEventListener("resize", onWindowResize);
-    };
-
-    const init = () => {
-      if (prefersReducedMotion.matches) return;
-      canvas = canvasRef.current;
-      if (!canvas) return;
-      context = canvas.getContext("2d");
-      if (!context) return;
-
-      canvas.style.top = "0px";
-      canvas.style.left = "0px";
-      canvas.style.pointerEvents = "none";
-      canvas.style.zIndex = zIndex ? zIndex.toString() : "";
-
-      if (wrapperElement) {
-        canvas.style.position = "absolute";
-        wrapperElement.appendChild(canvas);
-        canvas.width = wrapperElement.clientWidth;
-        canvas.height = wrapperElement.clientHeight;
-      } else {
-        canvas.style.position = "fixed";
-        document.body.appendChild(canvas);
-        canvas.width = width;
-        canvas.height = height;
-      }
-
-      // the heart replaces the arrow on mouse devices
-      if (finePointer) document.documentElement.classList.add("heart-cursor");
-      bindEvents();
-      loop();
-    };
-
-    init();
+    element.addEventListener("pointermove", onPointerMove, { passive: true });
+    element.addEventListener("pointerdown", onPointerDown, { passive: true });
+    element.addEventListener("pointerleave", onPointerLeave);
+    window.addEventListener("resize", resize, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       document.documentElement.classList.remove("heart-cursor");
-      if (canvas) canvas.remove();
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      element.removeEventListener("mousemove", onMouseMove);
-      element.removeEventListener("touchmove", onTouchMove);
-      element.removeEventListener("touchstart", onTouchMove);
-      window.removeEventListener("resize", onWindowResize);
+      element.removeEventListener("pointermove", onPointerMove);
+      element.removeEventListener("pointerdown", onPointerDown);
+      element.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (frame) cancelAnimationFrame(frame);
     };
-  }, [wrapperElement, zIndex, fill, stroke]);
+  }, [wrapperElement, zIndex, fill, stroke, environmentPointer]);
 
-  return <canvas ref={canvasRef} aria-hidden="true" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="bubble-cursor-canvas"
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: 0,
+        height: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
 };
 
 export default BubbleCursor;

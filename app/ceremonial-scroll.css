@@ -1,0 +1,1683 @@
+/*
+ * MASTER MOBILE COMPOSITION
+ *
+ * This is the canonical guest-facing layer. The older style sheets still
+ * supply the painted world and manager-configurable typography, while this
+ * file defines one shared invitation column, one rhythm, and one set of form
+ * and editorial primitives for every chapter.
+ */
+
+:root {
+  --invitation-ink: #3f3033;
+  --invitation-wine: #8e4258;
+  --invitation-wine-soft: rgba(142, 66, 88, 0.32);
+  --invitation-hairline: rgba(112, 73, 82, 0.18);
+  --invitation-paper: rgba(255, 250, 247, 0.15);
+  --invitation-serif: "Cormorant Garamond", Georgia, serif;
+  --invitation-display: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  --invitation-script: "Hilberta Austine", "Pinyon Script", cursive;
+  --invitation-utility: "Inter", "Montserrat", system-ui, sans-serif;
+  --invitation-column: min(calc(100% - 48px), 560px);
+  --invitation-prose: min(calc(100% - 56px), 318px);
+  --invitation-display-width: min(calc(100% - 40px), 348px);
+  --chapter-space: clamp(72px, 10vh, 104px);
+}
+
+html {
+  scroll-padding-top: calc(72px + env(safe-area-inset-top));
+}
+
+body {
+  color: var(--invitation-ink);
+  background: #f4e6e6;
+}
+
+.invitation-scroll {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  overflow-x: clip;
+  color: var(--invitation-ink);
+  font-family: var(--invitation-serif);
+}
+
+.invitation-scroll #invitation {
+  order: 10;
+}
+.invitation-scroll #table {
+  order: 15;
+}
+.invitation-scroll #schedule {
+  order: 20;
+}
+.invitation-scroll #rsvp {
+  order: 30;
+}
+.invitation-scroll #dress {
+  order: 40;
+}
+.invitation-scroll #meal {
+  order: 50;
+}
+.invitation-scroll #travel {
+  order: 60;
+}
+.invitation-scroll #recommendations {
+  order: 70;
+}
+.invitation-scroll #venue {
+  order: 80;
+}
+.invitation-scroll #wishes {
+  order: 90;
+}
+.invitation-scroll #confirmation {
+  order: 100;
+}
+.invitation-scroll #afterparty {
+  order: 110;
+}
+.invitation-scroll #gallery {
+  order: 120;
+}
+.invitation-scroll .return-to-start {
+  order: 130;
+}
+.invitation-scroll .custom-after-invitation {
+  order: 12;
+}
+.invitation-scroll .custom-after-table {
+  order: 17;
+}
+.invitation-scroll .custom-after-schedule {
+  order: 22;
+}
+.invitation-scroll .custom-after-rsvp {
+  order: 32;
+}
+.invitation-scroll .custom-after-dress {
+  order: 42;
+}
+.invitation-scroll .custom-after-meal {
+  order: 52;
+}
+.invitation-scroll .custom-after-travel {
+  order: 62;
+}
+.invitation-scroll .custom-after-recommendations {
+  order: 72;
+}
+.invitation-scroll .custom-after-venue {
+  order: 82;
+}
+.invitation-scroll .custom-after-wishes {
+  order: 92;
+}
+.invitation-scroll .custom-after-confirmation {
+  order: 102;
+}
+
+.invitation-scroll .scene {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0;
+  padding: var(--chapter-space) 0;
+  overflow: clip;
+  scroll-margin-top: calc(68px + env(safe-area-inset-top));
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  isolation: isolate;
+}
+
+.invitation-scroll .scene::after {
+  content: none !important;
+}
+
+.invitation-scroll .scene::before,
+.invitation-scroll .scene > .scene-content::before {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+}
+
+.invitation-scroll .scene-content,
+.invitation-scroll .invitation-column {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 2;
+  width: var(--invitation-column) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: 560px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  color: inherit;
+  text-align: center !important;
+  transform: none !important;
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+.invitation-scroll
+  :where(
+    .form-card,
+    .wishes-card,
+    .venue-card,
+    .dress-card,
+    .schedule-card,
+    .invitation-card,
+    .confirmation-card,
+    .table-card,
+    .custom-page-card,
+    .form-card--glass
+  ) {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.invitation-scroll #invitation .invitation-card,
+.invitation-scroll #schedule .schedule-card,
+.invitation-scroll #rsvp .form-card,
+.invitation-scroll #dress .dress-card,
+.invitation-scroll #meal .form-card,
+.invitation-scroll #travel .form-card,
+.invitation-scroll #venue .venue-card,
+.invitation-scroll #wishes .wishes-card,
+.invitation-scroll #confirmation .confirmation-card {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.invitation-scroll .reveal,
+.invitation-scroll .is-visible .reveal,
+.invitation-scroll .scene-content > * {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.invitation-scroll :where(.step-label, .eyebrow) {
+  width: 100%;
+  margin: 0 0 28px !important;
+  color: var(--invitation-wine) !important;
+  font: 600 12px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.28em !important;
+  text-align: center !important;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .scene-content > h2,
+.invitation-scroll .scene-content > div > h2 {
+  width: var(--invitation-display-width);
+  max-width: 100%;
+  margin: 0 auto;
+  color: var(--invitation-ink) !important;
+  font: 400 clamp(46px, 13.2vw, 60px) / 0.98 var(--invitation-display) !important;
+  letter-spacing: -0.045em !important;
+  text-align: center !important;
+  text-wrap: balance;
+}
+
+.invitation-scroll h2.script-heading,
+.invitation-scroll #dress h2,
+.invitation-scroll #meal h2,
+.invitation-scroll #wishes h2 {
+  font-family: var(--invitation-script) !important;
+  font-size: clamp(54px, 15vw, 70px) !important;
+  font-weight: 400 !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+}
+
+.invitation-scroll
+  :where(
+    .form-card,
+    .wishes-card,
+    .venue-card,
+    .dress-card,
+    .schedule-card,
+    .invitation-card,
+    .confirmation-card,
+    .table-card,
+    .custom-page-card,
+    .form-card--glass
+  )::before,
+.invitation-scroll
+  :where(
+    .form-card,
+    .wishes-card,
+    .venue-card,
+    .dress-card,
+    .schedule-card,
+    .invitation-card,
+    .confirmation-card,
+    .table-card,
+    .custom-page-card,
+    .form-card--glass
+  )::after {
+  content: none !important;
+}
+
+.invitation-scroll .display-serif {
+  font-family: var(--invitation-display) !important;
+  font-size: clamp(48px, 13.5vw, 60px) !important;
+  line-height: 1.03 !important;
+}
+
+.invitation-scroll
+  :where(
+    .section-intro,
+    .rsvp-deadline-note,
+    .help-note,
+    .field-hint,
+    .venue-address,
+    .venue-note
+  ) {
+  width: var(--invitation-prose);
+  max-width: 100%;
+  margin-inline: auto !important;
+  color: rgba(63, 48, 51, 0.86) !important;
+  font: 400 clamp(16px, 4.45vw, 18px) / 1.62 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .section-intro {
+  margin-top: 34px !important;
+}
+
+.invitation-scroll .rsvp-deadline-note {
+  margin-top: 24px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.invitation-scroll :where(.help-note, .field-hint, .rsvp-deadline-note) {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .scroll-on {
+  margin: 72px auto 0 !important;
+  color: rgba(63, 48, 51, 0.46) !important;
+}
+
+.invitation-scroll .scene-art {
+  display: none !important;
+}
+
+/* Formal invitation: the reference chapter for the entire axis. */
+.invitation-scroll #invitation {
+  min-height: 0 !important;
+  padding-top: calc(112px + env(safe-area-inset-top));
+  padding-bottom: 48px;
+}
+
+.invitation-scroll #invitation .invitation-card {
+  width: min(calc(100% - 48px), 390px) !important;
+}
+
+.invitation-scroll #invitation .scene-content::before {
+  content: "" !important;
+  display: block !important;
+  inset: -7% -12% !important;
+  border-radius: 0 !important;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 250, 247, 0.72) 0%,
+    rgba(255, 250, 247, 0.42) 56%,
+    transparent 84%
+  ) !important;
+}
+
+.invitation-scroll #invitation .eyebrow {
+  max-width: 340px;
+  margin-inline: auto !important;
+  line-height: 1.55 !important;
+}
+
+.invitation-scroll #invitation h2 {
+  width: min(100%, 350px);
+  margin-top: 22px;
+  font-family: var(--invitation-script) !important;
+  font-size: clamp(62px, 18vw, 82px) !important;
+  font-weight: 400 !important;
+  line-height: 0.94 !important;
+  letter-spacing: 0 !important;
+}
+
+.invitation-scroll #invitation h2 .ink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  filter: none !important;
+}
+
+.invitation-scroll #invitation h2 .script-full-name,
+.invitation-scroll #invitation h2 .cap {
+  display: inline !important;
+  font: inherit !important;
+  letter-spacing: inherit !important;
+  transform: none !important;
+}
+
+.invitation-scroll #invitation h2 .amp {
+  display: block;
+  height: 0.58em;
+  font-size: 0.56em;
+  line-height: 0.75;
+}
+
+.invitation-scroll .invitation-line {
+  width: min(100%, 322px);
+  margin: 34px auto 0 !important;
+  font: italic 400 18px/1.58 var(--invitation-serif) !important;
+  color: rgba(63, 48, 51, 0.92) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .ribbon-divider {
+  width: min(210px, 66%);
+  margin: 38px auto 30px !important;
+  color: var(--invitation-wine);
+}
+
+.invitation-scroll .ribbon-divider span {
+  background: var(--invitation-wine-soft) !important;
+}
+
+.invitation-scroll .event-details {
+  display: grid !important;
+  gap: 28px !important;
+  width: min(100%, 320px);
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .event-details :where(strong, span) {
+  color: rgba(63, 48, 51, 0.92) !important;
+}
+
+.invitation-scroll .event-details p {
+  display: grid;
+  gap: 5px;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .event-details strong {
+  font: 500 17px/1.25 var(--invitation-serif) !important;
+  color: var(--invitation-wine) !important;
+}
+
+.invitation-scroll .event-details span {
+  font: 500 11px/1.35 var(--invitation-utility) !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Programme: a vertical ceremonial sequence, never a two-column timeline. */
+.invitation-scroll #schedule {
+  padding-top: 56px;
+  padding-bottom: 60px;
+}
+
+.invitation-scroll #schedule h2 {
+  font-size: clamp(50px, 14vw, 62px) !important;
+}
+
+.invitation-scroll .evening-timeline {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 46px !important;
+  width: min(100%, 310px);
+  margin: 52px auto 0 !important;
+  padding: 0 !important;
+  list-style: none;
+  text-align: center !important;
+}
+
+.invitation-scroll .evening-timeline::before,
+.invitation-scroll .evening-timeline li::before,
+.invitation-scroll .evening-timeline li::after {
+  content: none !important;
+}
+
+.invitation-scroll .evening-timeline li {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .timeline-time {
+  color: var(--invitation-wine) !important;
+  font: 500 20px/1.2 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .evening-timeline h3 {
+  margin: 0 !important;
+  color: var(--invitation-ink) !important;
+  font: 400 27px/1.18 var(--invitation-display) !important;
+  letter-spacing: -0.025em;
+  text-align: center !important;
+}
+
+.invitation-scroll .rsvp-trigger {
+  display: none !important;
+}
+
+/* RSVP and shared controls. */
+.invitation-scroll #rsvp,
+.invitation-scroll #meal,
+.invitation-scroll #travel,
+.invitation-scroll #wishes {
+  padding-top: 100px;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+.invitation-scroll #rsvp .script-heading {
+  width: min(100%, 330px);
+}
+
+.invitation-scroll .party-rsvp-list,
+.invitation-scroll .guest-meal-list {
+  display: grid;
+  gap: 54px;
+  width: min(100%, 330px);
+  margin: 52px auto 0 !important;
+}
+
+.invitation-scroll fieldset {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.invitation-scroll legend {
+  width: 100%;
+  margin: 0 auto 22px !important;
+  padding: 0 !important;
+  color: var(--invitation-ink) !important;
+  font: italic 600 22px/1.2 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .segmented-control {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 30px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .segmented-control button {
+  position: relative;
+  flex: 0 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 44px;
+  padding: 10px 2px !important;
+  color: rgba(63, 48, 51, 0.62) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 400 18px/1.25 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .segmented-control button::after {
+  content: "" !important;
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  left: 0;
+  height: 1px;
+  background: var(--invitation-wine);
+  opacity: 0;
+  transform: scaleX(0.25);
+}
+
+.invitation-scroll .segmented-control button.is-selected {
+  color: var(--invitation-wine) !important;
+  opacity: 1 !important;
+}
+
+.invitation-scroll .segmented-control button.is-selected::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.invitation-scroll .reply-continue,
+.invitation-scroll .chapter-continue,
+.invitation-scroll .text-button,
+.invitation-scroll .primary-button,
+.invitation-scroll .calendar-button,
+.invitation-scroll .map-button,
+.invitation-scroll .afterparty-enter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  width: auto !important;
+  margin-inline: auto !important;
+  padding: 10px 4px !important;
+  color: var(--invitation-wine) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--invitation-wine-soft) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 600 12px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .reply-continue {
+  margin-top: 44px !important;
+}
+
+.invitation-scroll .reply-contact {
+  width: 100%;
+  text-align: center;
+}
+
+.invitation-scroll .phone-grid {
+  display: grid !important;
+  grid-template-columns: 104px minmax(0, 1fr) !important;
+  align-items: end;
+  gap: 12px !important;
+  width: min(100%, 306px) !important;
+  margin: 44px auto 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .phone-grid label {
+  display: block;
+  width: 100%;
+  margin: 0 !important;
+}
+
+.invitation-scroll .phone-grid :where(select, input) {
+  display: block;
+  height: 52px;
+  min-height: 52px;
+  box-sizing: border-box;
+  line-height: 1.2 !important;
+}
+
+.invitation-scroll .phone-code select {
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+}
+
+.invitation-scroll
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  width: 100% !important;
+  min-height: 48px;
+  padding: 10px 4px !important;
+  color: var(--invitation-ink) !important;
+  background: rgba(255, 250, 247, 0.12) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--invitation-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 400 18px/1.35 var(--invitation-utility) !important;
+}
+
+.invitation-scroll :where(input, select, textarea):focus-visible {
+  outline: 0 !important;
+  border-bottom-color: var(--invitation-wine) !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .text-button {
+  margin-top: 34px !important;
+  letter-spacing: 0.12em;
+}
+
+/* Dress code. */
+.invitation-scroll #dress {
+  min-height: 0 !important;
+  padding-block: 80px;
+}
+
+.invitation-scroll #dress h2 {
+  margin-bottom: 34px;
+}
+
+.invitation-scroll .dress-note {
+  display: grid;
+  gap: 8px;
+  width: var(--invitation-prose);
+  margin: 0 auto !important;
+  color: var(--invitation-ink) !important;
+  font: 400 17px/1.62 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .dress-restriction {
+  width: min(calc(100% - 56px), 316px);
+  margin: 38px auto 0 !important;
+  color: rgba(63, 48, 51, 0.82) !important;
+  font: italic 500 15px/1.58 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+/* Meal choices are editorial entries, not ordering cards. */
+.invitation-scroll #meal h2 {
+  width: min(100%, 345px);
+}
+
+.invitation-scroll .guest-meal-list {
+  gap: 76px;
+}
+
+.invitation-scroll .choice-grid--two,
+.invitation-scroll .meal-choices {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  width: min(100%, 320px);
+  margin: 0 auto !important;
+}
+
+.invitation-scroll .choice-card {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+  gap: 12px !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 34px 4px !important;
+  color: var(--invitation-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid var(--invitation-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+  opacity: 1 !important;
+}
+
+.invitation-scroll .choice-card:last-child {
+  border-bottom: 1px solid var(--invitation-hairline) !important;
+}
+
+.invitation-scroll .choice-card strong {
+  color: var(--invitation-wine) !important;
+  font: italic 500 27px/1.06 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .choice-card small {
+  width: min(100%, 292px);
+  color: rgba(63, 48, 51, 0.76) !important;
+  font: 400 15px/1.48 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .choice-mark {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  margin-top: 4px;
+  color: rgba(63, 48, 51, 0.42) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font: 600 10px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .choice-card.is-selected .choice-mark {
+  color: var(--invitation-wine) !important;
+}
+
+.invitation-scroll .field-grid--single {
+  width: min(100%, 310px);
+  margin: 54px auto 0 !important;
+}
+
+.invitation-scroll .field-grid--single label > span,
+.invitation-scroll .accessibility-field > span,
+.invitation-scroll #wishes label > span {
+  display: block;
+  margin: 0 auto 16px;
+  color: var(--invitation-ink) !important;
+  font: 400 17px/1.4 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+/* Travel and accommodation. */
+.invitation-scroll #travel h2 {
+  width: min(100%, 314px);
+  font-size: clamp(34px, 9.6vw, 42px) !important;
+  line-height: 1.06 !important;
+}
+
+.invitation-scroll #travel h2.script-heading {
+  width: min(100%, 345px);
+  font-size: clamp(44px, 12.2vw, 52px) !important;
+  line-height: 1.14 !important;
+}
+
+.invitation-scroll .answer-trail {
+  display: flex !important;
+  justify-content: center;
+  gap: 18px;
+  width: min(100%, 310px);
+  margin: 34px auto !important;
+}
+
+.invitation-scroll .answer-trail button {
+  padding: 8px 2px !important;
+  color: rgba(63, 48, 51, 0.58) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font-family: var(--invitation-utility) !important;
+  text-align: center;
+}
+
+.invitation-scroll .answer-trail span,
+.invitation-scroll .answer-trail strong,
+.invitation-scroll .answer-trail small {
+  display: block;
+}
+
+.invitation-scroll .travel-details {
+  width: 100%;
+  margin: 38px auto 0 !important;
+}
+
+.invitation-scroll #travel [data-travel-question="arrival"] {
+  position: relative;
+  z-index: 4;
+  display: block;
+  width: min(100%, 300px) !important;
+  margin: 0 auto !important;
+  pointer-events: auto;
+}
+
+.invitation-scroll #travel input[type="date"] {
+  position: relative;
+  z-index: 5;
+  display: block;
+  width: 100% !important;
+  min-height: 54px;
+  padding: 11px 8px !important;
+  color-scheme: light;
+  -webkit-appearance: auto;
+  appearance: auto;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.invitation-scroll
+  #travel
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  min-width: 24px;
+  min-height: 24px;
+  margin: -8px -4px -8px 0;
+  padding: 8px;
+  cursor: pointer;
+  opacity: 0.72;
+}
+
+.invitation-scroll .room-offer,
+.invitation-scroll .room-offer--full {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 316px);
+  margin: 0 auto 34px !important;
+  padding: 0 !important;
+  color: var(--invitation-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .room-offer strong {
+  font: 500 28px/1.1 var(--invitation-display) !important;
+}
+
+.invitation-scroll .room-offer b {
+  color: var(--invitation-wine);
+  font: 500 17px/1.3 var(--invitation-serif);
+}
+
+.invitation-scroll .room-offer span {
+  font: 400 16px/1.55 var(--invitation-serif) !important;
+}
+
+.invitation-scroll .hotel-list {
+  display: grid !important;
+  gap: 0 !important;
+  width: min(100%, 320px);
+  margin: 44px auto 0 !important;
+  padding: 0 !important;
+  list-style: none;
+}
+
+.invitation-scroll .hotel-list li,
+.invitation-scroll .hotel-list a {
+  width: 100%;
+}
+
+.invitation-scroll .hotel-list a {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 32px 4px !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid var(--invitation-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+  text-decoration: none;
+}
+
+.invitation-scroll .hotel-list li:last-child a {
+  border-bottom: 1px solid var(--invitation-hairline) !important;
+}
+
+.invitation-scroll .hotel-list strong {
+  color: var(--invitation-ink) !important;
+  font: 500 23px/1.12 var(--invitation-display) !important;
+}
+
+.invitation-scroll .hotel-list strong span {
+  font: 400 18px/1.2 var(--invitation-serif) !important;
+}
+
+.invitation-scroll .hotel-list > li > a > span {
+  color: rgba(63, 48, 51, 0.76) !important;
+  font: 400 15px/1.48 var(--invitation-serif) !important;
+}
+
+.invitation-scroll .hotel-list i {
+  color: var(--invitation-wine) !important;
+  font: 600 10px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .accessibility-field {
+  display: block;
+  width: min(100%, 310px) !important;
+  margin: 58px auto 0 !important;
+}
+
+/* Kuala Lumpur: a quiet index with hairlines and editorial entries. */
+.invitation-scroll #recommendations {
+  padding-top: 100px;
+  padding-bottom: 80px;
+}
+
+.invitation-scroll #recommendations h2 {
+  width: min(100%, 350px);
+}
+
+.invitation-scroll .guide {
+  display: grid !important;
+  gap: 0 !important;
+  width: min(100%, 334px);
+  margin: 56px auto 0 !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .guide-group {
+  width: 100%;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid var(--invitation-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.invitation-scroll .guide-group:last-child {
+  border-bottom: 1px solid var(--invitation-hairline) !important;
+}
+
+.invitation-scroll .editorial-guide__heading,
+.invitation-scroll .guide-group > button {
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  margin: 0 !important;
+  padding: 18px 6px 18px 24px !important;
+  color: var(--invitation-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font: 600 11px/1.3 var(--invitation-utility) !important;
+  letter-spacing: 0.16em;
+  text-align: center !important;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .editorial-guide__heading span {
+  text-align: center;
+}
+
+.invitation-scroll .editorial-guide__heading i {
+  color: var(--invitation-wine);
+  font: 300 22px/1 var(--invitation-utility);
+}
+
+.invitation-scroll .editorial-guide__heading:focus-visible {
+  outline: 0 !important;
+  color: var(--invitation-wine) !important;
+  box-shadow: inset 0 -1px var(--invitation-wine) !important;
+}
+
+.invitation-scroll .guide-group ul {
+  display: grid !important;
+  gap: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 8px 24px !important;
+  opacity: 1 !important;
+  list-style: none;
+}
+
+.invitation-scroll .guide-group li,
+.invitation-scroll .guide-group li a,
+.invitation-scroll .guide-app {
+  width: 100%;
+}
+
+.invitation-scroll .guide-group li a,
+.invitation-scroll .guide-app {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 28px 4px !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid rgba(112, 73, 82, 0.12) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+  text-decoration: none;
+}
+
+.invitation-scroll .guide-group li strong,
+.invitation-scroll .guide-app strong {
+  color: var(--invitation-ink) !important;
+  font: 500 23px/1.16 var(--invitation-display) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .guide-group li span,
+.invitation-scroll .guide-app > span {
+  color: rgba(63, 48, 51, 0.78) !important;
+  font: 400 15px/1.48 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .guide-group li em,
+.invitation-scroll .app-links a {
+  color: var(--invitation-wine) !important;
+  font: 600 10px/1.25 var(--invitation-utility) !important;
+  font-style: normal !important;
+  letter-spacing: 0.15em;
+  text-align: center !important;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .app-links {
+  display: flex !important;
+  justify-content: center;
+  gap: 18px;
+}
+
+/* Venue and transport: every mode returns to the same central spine. */
+.invitation-scroll #venue {
+  padding-top: 100px;
+  padding-bottom: 84px;
+}
+
+.invitation-scroll #venue h2 {
+  width: min(100%, 330px);
+}
+
+.invitation-scroll .venue-address {
+  margin-top: 36px !important;
+  font-size: 18px !important;
+}
+
+.invitation-scroll .venue-note {
+  margin-top: 28px !important;
+  color: rgba(63, 48, 51, 0.62) !important;
+}
+
+.invitation-scroll .arrival-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  width: min(100%, 318px);
+  margin: 62px auto 0 !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .arrival-grid article {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 18px;
+  width: 100%;
+  margin: 0 !important;
+  padding: 44px 0 !important;
+  color: var(--invitation-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid var(--invitation-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .arrival-grid article:last-child {
+  border-bottom: 1px solid var(--invitation-hairline) !important;
+}
+
+.invitation-scroll .arrival-grid h3 {
+  margin: 0 !important;
+  color: var(--invitation-wine) !important;
+  font: 600 12px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.24em;
+  text-align: center !important;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .arrival-grid p {
+  width: min(100%, 310px);
+  margin: 0 auto !important;
+  color: var(--invitation-ink) !important;
+  font: 400 17px/1.62 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .map-button {
+  margin-top: 48px !important;
+}
+
+.invitation-scroll .venue-map {
+  width: min(100%, 340px) !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1.08;
+  max-height: none !important;
+  margin: 52px auto 0 !important;
+  overflow: hidden !important;
+  background: rgba(255, 250, 247, 0.18) !important;
+  border: 1px solid var(--invitation-hairline) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .venue-map::after {
+  content: none !important;
+}
+
+.invitation-scroll .venue-map iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  filter: saturate(0.76) sepia(0.08) brightness(1.04) !important;
+  transform: none !important;
+}
+
+/* Wishes and final action. */
+.invitation-scroll #wishes h2 {
+  width: min(100%, 344px);
+}
+
+.invitation-scroll #wishes .full-field {
+  display: block;
+  width: min(100%, 330px) !important;
+  margin: 48px auto 0 !important;
+}
+
+.invitation-scroll #wishes textarea {
+  min-height: 168px !important;
+  padding: 16px !important;
+  color: var(--invitation-ink) !important;
+  background: rgba(255, 250, 247, 0.16) !important;
+  border: 1px solid var(--invitation-hairline) !important;
+  line-height: 1.52 !important;
+  text-align: left !important;
+  resize: vertical;
+}
+
+.invitation-scroll #wishes .help-note {
+  margin-top: 14px !important;
+  color: rgba(63, 48, 51, 0.58) !important;
+  font-size: 14px !important;
+}
+
+.invitation-scroll #wishes .primary-button {
+  margin-top: 54px !important;
+  color: var(--invitation-wine) !important;
+  font-size: 12px !important;
+}
+
+.invitation-scroll .privacy-note {
+  display: block;
+  width: min(100%, 310px);
+  margin: 24px auto 0 !important;
+  color: rgba(63, 48, 51, 0.58) !important;
+  font: 400 12px/1.5 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+/* Confirmation: printed keepsake, not dashboard. */
+.invitation-scroll #confirmation {
+  min-height: 100dvh !important;
+  scroll-margin-top: 0;
+  padding-top: calc(120px + env(safe-area-inset-top));
+  padding-bottom: 132px;
+}
+
+.invitation-scroll #confirmation::after {
+  content: "" !important;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 108% 72% at 50% 46%,
+    rgba(255, 250, 247, 0.62) 0%,
+    rgba(255, 250, 247, 0.38) 58%,
+    transparent 88%
+  );
+}
+
+.invitation-scroll .confirmation-card {
+  width: min(calc(100% - 48px), 390px) !important;
+}
+
+.invitation-scroll .confirmation-card .wax-seal {
+  width: 68px !important;
+  height: 68px !important;
+  margin: 0 auto 38px !important;
+  color: var(--invitation-wine) !important;
+  background: transparent !important;
+  border: 1px solid var(--invitation-wine-soft) !important;
+  box-shadow: none !important;
+  font: 400 22px/1 var(--invitation-serif) !important;
+}
+
+.invitation-scroll .confirmation-card h2 {
+  width: min(100%, 346px);
+  font-size: clamp(47px, 13.3vw, 60px) !important;
+  line-height: 1 !important;
+}
+
+.invitation-scroll .confirmation-card > p {
+  width: var(--invitation-prose);
+  margin: 34px auto 0 !important;
+  color: var(--invitation-ink) !important;
+  font: 400 17px/1.58 var(--invitation-serif) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .confirmation-details {
+  display: grid !important;
+  gap: 10px;
+  width: min(100%, 330px);
+  margin: 0 auto !important;
+  color: var(--invitation-ink) !important;
+  font: 600 10px/1.45 var(--invitation-utility) !important;
+  letter-spacing: 0.12em;
+  text-align: center !important;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .confirmation-details span + span::before {
+  content: none !important;
+}
+
+.invitation-scroll .countdown {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 22px !important;
+  width: min(100%, 306px);
+  margin: 52px auto 0 !important;
+}
+
+.invitation-scroll .countdown > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-align: center;
+}
+
+.invitation-scroll .countdown strong {
+  color: var(--invitation-wine) !important;
+  font: 400 34px/1 var(--invitation-display) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.invitation-scroll .countdown span {
+  color: rgba(63, 48, 51, 0.55) !important;
+  font: 600 9px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .confirmation-actions {
+  display: flex !important;
+  justify-content: center;
+  width: 100%;
+  margin: 48px auto 0 !important;
+}
+
+/* The permission-gated after-party stays in the same visual language. */
+.invitation-scroll #afterparty {
+  padding-block: 132px;
+}
+
+.invitation-scroll .afterparty-arch {
+  width: min(100%, 340px) !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll #afterparty .afterparty-arch {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll #afterparty .afterparty-enter::before,
+.invitation-scroll #afterparty .afterparty-enter::after {
+  content: none !important;
+}
+
+.invitation-scroll #afterparty h2 {
+  font-family: var(--invitation-display) !important;
+}
+
+/* Closing credits: one photograph, then a long quiet exit. */
+.invitation-scroll #gallery {
+  min-height: 0 !important;
+  padding-top: 132px;
+  padding-bottom: 96px;
+}
+
+.invitation-scroll #gallery .scene-content {
+  width: 100% !important;
+  max-width: 620px !important;
+}
+
+.invitation-scroll #gallery h2 {
+  width: var(--invitation-display-width);
+  margin-inline: auto;
+  font-family: var(--invitation-display) !important;
+  font-size: clamp(52px, 14.5vw, 64px) !important;
+}
+
+.invitation-scroll .photo-rail {
+  display: block !important;
+  width: min(calc(100% - 40px), 520px) !important;
+  height: auto !important;
+  aspect-ratio: 4 / 5;
+  margin: 58px auto 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+
+.invitation-scroll .photo-rail img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  clip-path: none !important;
+}
+
+.invitation-scroll .closing-line {
+  width: var(--invitation-prose);
+  margin: 148px auto 0 !important;
+  color: var(--invitation-ink) !important;
+  font: italic 400 26px/1.25 var(--invitation-display) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .return-to-start {
+  position: relative !important;
+  z-index: 3;
+  width: 100%;
+  margin: 0 !important;
+  padding: 96px 24px calc(120px + env(safe-area-inset-bottom));
+  text-align: center !important;
+}
+
+.invitation-scroll .return-to-start button {
+  min-height: 44px;
+  padding: 10px 2px !important;
+  color: var(--invitation-wine) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font: 600 10px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Quiet, safe-area-aware utility controls. */
+.invitation-scroll .site-menu-button,
+.invitation-scroll .sound-control {
+  position: fixed !important;
+  top: calc(8px + env(safe-area-inset-top)) !important;
+  z-index: 110 !important;
+  display: grid !important;
+  place-items: center;
+  width: 52px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--invitation-wine) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 600 10px/1 var(--invitation-utility) !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .sound-control {
+  left: 14px !important;
+}
+
+.invitation-scroll .site-menu-button {
+  right: 14px !important;
+}
+
+.invitation-scroll .site-menu-button::before,
+.invitation-scroll .site-menu-button::after,
+.invitation-scroll .sound-control::before,
+.invitation-scroll .sound-control::after {
+  content: none !important;
+}
+
+.invitation-scroll .sound-control span {
+  color: inherit !important;
+  font: 600 12px/1 var(--invitation-utility) !important;
+}
+
+.invitation-scroll .site-menu-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: calc(80px + env(safe-area-inset-top)) 24px
+    calc(60px + env(safe-area-inset-bottom));
+  background: rgba(245, 229, 230, 0.97) !important;
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 160ms !important;
+}
+
+.invitation-scroll .site-menu-overlay.is-open {
+  opacity: 1 !important;
+  visibility: visible;
+  pointer-events: auto !important;
+  transition-delay: 0s !important;
+}
+
+.invitation-scroll .site-menu-overlay a,
+.invitation-scroll .site-menu-overlay > button {
+  min-height: 44px;
+  padding: 8px 4px !important;
+  color: var(--invitation-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font: 400 30px/1.1 var(--invitation-display) !important;
+  text-align: center !important;
+  text-decoration: none;
+}
+
+.invitation-scroll .wizard-nav {
+  position: fixed !important;
+  top: auto !important;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 90 !important;
+  display: grid !important;
+  grid-template-columns: minmax(72px, 1fr) minmax(96px, auto) minmax(72px, 1fr);
+  grid-template-areas: "back position next";
+  align-items: center;
+  width: 100% !important;
+  height: auto !important;
+  min-height: calc(78px + env(safe-area-inset-bottom));
+  padding: 10px 18px calc(10px + env(safe-area-inset-bottom)) !important;
+  background: linear-gradient(
+    to top,
+    rgba(250, 242, 239, 0.98) 70%,
+    rgba(250, 242, 239, 0.88) 84%,
+    transparent
+  ) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.invitation-scroll .wizard-nav button {
+  min-height: 44px;
+  padding: 8px 0 !important;
+  color: var(--invitation-wine) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font: 600 10px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .wizard-back {
+  grid-area: back;
+  justify-self: start;
+}
+
+.invitation-scroll .wizard-next {
+  grid-area: next;
+  justify-self: end;
+}
+
+.invitation-scroll .wizard-next:disabled {
+  opacity: 0.3;
+}
+
+.invitation-scroll .wizard-position {
+  grid-area: position;
+  display: grid;
+  gap: 3px;
+  margin: 0 !important;
+  color: rgba(63, 48, 51, 0.72) !important;
+  text-align: center !important;
+}
+
+.invitation-scroll .wizard-position span {
+  max-width: 112px;
+  overflow: hidden;
+  font: italic 400 14px/1.1 var(--invitation-serif) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invitation-scroll .wizard-position small {
+  font: 500 9px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.16em;
+}
+
+/* Entrance: the illustration is the environment, never a floating poster. */
+.portal {
+  width: 100%;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: #d8c7d8 !important;
+}
+
+.portal .portal-arch {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+
+.portal .portal-film {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.portal .portal-words {
+  width: min(calc(100% - 48px), 420px) !important;
+  text-align: center !important;
+}
+
+.portal .portal-words h1 {
+  font-family: var(--invitation-script) !important;
+  font-size: clamp(60px, 18vw, 88px) !important;
+  line-height: 0.94 !important;
+}
+
+@media (min-width: 621px) {
+  :root {
+    --invitation-column: min(calc(100% - 96px), 650px);
+    --invitation-prose: min(calc(100% - 96px), 430px);
+    --invitation-display-width: min(calc(100% - 72px), 560px);
+  }
+
+  .invitation-scroll .scene {
+    padding-block: clamp(140px, 18vh, 210px);
+  }
+
+  .invitation-scroll .party-rsvp-list,
+  .invitation-scroll .guest-meal-list,
+  .invitation-scroll .guide,
+  .invitation-scroll .arrival-grid,
+  .invitation-scroll .hotel-list {
+    width: min(100%, 460px);
+  }
+}
+
+@media (max-width: 374px) {
+  :root {
+    --invitation-column: min(calc(100% - 40px), 560px);
+    --invitation-prose: min(calc(100% - 48px), 310px);
+    --invitation-display-width: min(calc(100% - 32px), 340px);
+  }
+
+  .invitation-scroll .segmented-control {
+    gap: 20px !important;
+  }
+
+  .invitation-scroll .phone-grid {
+    grid-template-columns: 98px minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  .invitation-scroll .editable-decoration-overlay {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-scroll *,
+  .portal * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

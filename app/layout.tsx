@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import "./globals.css";
 import "./editorial-refinement.css";
 import "./art-direction.css";
+import "./ceremonial-scroll.css";
+import "./motion-system.css";
 
 /**
  * There was no viewport declaration at all, which meant env(safe-area-inset-*)
@@ -59,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

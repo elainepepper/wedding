@@ -1,0 +1,19 @@
+Review this Haykal & Elaine Part 3.1 visual pack as a senior cinematic web art director.
+
+Start with part3-1-before-after-contact-sheet.png, then inspect part3-1-critical-50-75-contact-sheet.png. Pay particular attention to the 50–75% frames for Enter, Grand Salon and confirmation, because those are where the spatial illusion can fail.
+
+Judge each sequence against these questions:
+
+1. ENTER: Does it feel like moving through architecture, or fading between pages? Does the wordmark survive long enough? Is the destination visible before the old world disappears?
+2. TRAVEL → KL: Does the environment appear to take the guest somewhere, or is this still ordinary section scrolling? Does the midpoint avoid reading as a coloured overlay?
+3. GRAND SALON: Does the title feel anchored while architecture moves around it? Does this read as arrival rather than another heading reveal?
+4. CONFIRMATION: Does the veil conceal a world change without becoming the subject? Does the thank-you arrive late enough? Are the pearls candlelight-like rather than particle-like?
+5. FINAL PHOTO: Does foreground artwork reveal a photograph already waiting behind it, or does the photo still look like a component scrolling into view?
+
+Also flag any frame where text becomes unstable, foreground art looks like a sliding PNG, the scene becomes busier than the static design, or the effect gives away its implementation.
+
+Return:
+- score out of 10 for each WOW moment
+- the three highest-priority art-direction fixes, if any
+- explicit deploy / do-not-deploy recommendation
+- no new feature ideas and no static-layout redesign suggestions

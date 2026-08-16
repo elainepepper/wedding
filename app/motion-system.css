@@ -1,0 +1,926 @@
+/*
+ * PART 3 — CINEMATIC MOTION SYSTEM
+ *
+ * Existing MP4 paintings remain the living base. This layer adds only camera
+ * depth, a restrained veil language and five deliberately paced reveals.
+ */
+
+:root {
+  --motion-ease: cubic-bezier(0.22, 0.72, 0.22, 1);
+  --motion-ease-soft: cubic-bezier(0.3, 0.68, 0.28, 1);
+  --motion-micro: 220ms;
+  --motion-response: 380ms;
+  --motion-scene: 1200ms;
+  --motion-cinematic: 1750ms;
+  --motion-x: 0;
+  --motion-y: 0;
+  --z-atmosphere: 0;
+  --z-environment: 1;
+  --z-content: 2;
+  --z-foreground: 3;
+  --z-transition: 14;
+  --z-cursor: 18;
+}
+
+.cinematic-overlays {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-transition);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cinematic-veil {
+  position: absolute;
+  inset: -12%;
+  opacity: 0;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 8%,
+      rgba(255, 250, 249, 0.24) 38%,
+      rgba(250, 234, 236, 0.13) 66%,
+      transparent 92%
+    ),
+    url("/wedding/story/double-drapery-swag.webp") left -15vw center / 146% 124%
+      no-repeat;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0 18%,
+    rgba(0, 0, 0, 0.48) 38%,
+    rgba(0, 0, 0, 0.28) 52%,
+    rgba(0, 0, 0, 0.56) 70%,
+    #000 94%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0 18%,
+    rgba(0, 0, 0, 0.48) 38%,
+    rgba(0, 0, 0, 0.28) 52%,
+    rgba(0, 0, 0, 0.56) 70%,
+    #000 94%
+  );
+  transform: translate3d(-28%, 2%, 0) scale(1.06);
+  transition:
+    opacity 380ms var(--motion-ease-soft),
+    transform var(--motion-cinematic) var(--motion-ease);
+  will-change: transform, opacity;
+}
+
+.invitation-scroll.is-confirmation-transition .cinematic-veil {
+  opacity: 0.54;
+  transform: translate3d(-1%, 0, 0) scale(1.035);
+}
+
+.invitation-scroll.is-confirmation-revealed .cinematic-veil {
+  opacity: 0;
+  transform: translate3d(30%, -2%, 0) scale(1.08);
+}
+
+/* The fixed paintings move least. The extra transform is desktop-only below. */
+.invitation-scroll .dream-skies {
+  transform: translate3d(
+      calc(var(--motion-x) * 1.5px),
+      calc(var(--motion-y) * 1px - var(--kl-journey, 0) * 5px),
+      0
+    )
+    scale(calc(1 + var(--kl-journey, 0) * 0.03));
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.chapter-veil,
+.kl-arrival-wash,
+.venue-arrival-art,
+.photo-reveal__foreground,
+.confirmation-pearls {
+  pointer-events: none;
+}
+
+/* Old scene-reveal CSS kept unseen chapters at blur(9px). Sections unlocked
+   after answering were therefore readable only after another scroll event. */
+.invitation-scroll .reveal,
+.invitation-scroll .scene-content {
+  filter: none !important;
+}
+
+.chapter-veil {
+  position: absolute;
+  inset: -12% -18%;
+  z-index: var(--z-foreground);
+  opacity: calc((1 - var(--cinematic-enter, 1)) * 0.34);
+  background: url("/wedding/story/double-drapery-swag.webp") center / cover
+    no-repeat;
+  transform: translate3d(
+      calc((var(--cinematic-enter, 1) - 1) * 10%),
+      calc((1 - var(--cinematic-enter, 1)) * -5%),
+      0
+    )
+    scale(1.08);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+.chapter-veil--dress {
+  transform: translate3d(
+      calc((1 - var(--cinematic-enter, 1)) * 8%),
+      calc((1 - var(--cinematic-enter, 1)) * -4%),
+      0
+    )
+    scale(1.08);
+}
+
+/* Quiet chapters: the type remains planted while existing artwork carries depth. */
+.invitation-scroll #invitation .scene-art--floral,
+.invitation-scroll #dress .scene-art--wide-frame,
+.invitation-scroll #meal .scene-art--feast {
+  transform: translate3d(
+    0,
+    calc((0.5 - var(--cinematic-progress, 0.5)) * 18px),
+    0
+  );
+  will-change: transform;
+}
+
+.invitation-scroll #invitation .floating-bloom--left {
+  transform: translate3d(
+    calc(var(--motion-x) * -7px),
+    calc(var(--motion-y) * -4px),
+    0
+  ) !important;
+}
+
+.invitation-scroll #invitation .floating-bloom--right {
+  transform: translate3d(
+    calc(var(--motion-x) * 8px),
+    calc(var(--motion-y) * 5px),
+    0
+  ) !important;
+}
+
+/* Programme → reply: a short atmospheric hand-off, never a pinned form scene. */
+.invitation-scroll #schedule .scene-art--schedule {
+  transform: translate3d(
+      0,
+      calc((var(--cinematic-progress, 0.5) - 0.5) * -16px),
+      0
+    )
+    scale(calc(1 + var(--cinematic-progress, 0) * 0.012));
+}
+
+.invitation-scroll #rsvp.is-cinematically-visible .form-card,
+.invitation-scroll #dress.is-cinematically-visible .dress-card {
+  animation: invitation-mask-in 950ms var(--motion-ease) both !important;
+}
+
+@keyframes invitation-mask-in {
+  from {
+    clip-path: inset(0 0 14% 0);
+    opacity: 0.5;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+/* RSVP feedback is immediate and persistent; motion is only confirmation. */
+.invitation-scroll :where(.segmented-control button, .choice-card) {
+  transition:
+    color var(--motion-response) var(--motion-ease-soft),
+    border-color var(--motion-response) var(--motion-ease-soft),
+    opacity var(--motion-response) var(--motion-ease-soft),
+    background-color var(--motion-response) var(--motion-ease-soft) !important;
+}
+
+.invitation-scroll :where(.segmented-control button, .choice-card).is-selected {
+  text-shadow: 0 0 18px rgba(167, 85, 111, 0.12);
+}
+
+.invitation-scroll .slide-open {
+  animation: response-settle 420ms var(--motion-ease) both !important;
+}
+
+@keyframes response-settle {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 10% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* WOW 2 — movement toward Kuala Lumpur. */
+.invitation-scroll #travel .scene-content {
+  opacity: calc(1 - var(--cinematic-exit, 0) * 0.18);
+  transform: translate3d(0, calc(var(--cinematic-exit, 0) * -8px), 0);
+  will-change: transform, opacity;
+}
+
+.invitation-scroll #travel .scene-art--pearl {
+  display: block !important;
+  opacity: calc(0.16 + var(--cinematic-exit, 0) * 0.12) !important;
+  transform: translate3d(0, calc(var(--cinematic-exit, 0) * -14px), 0)
+    scale(calc(1 + var(--cinematic-exit, 0) * 0.026));
+  transform-origin: 50% 46%;
+  will-change: transform, opacity;
+}
+
+.kl-arrival-wash {
+  position: absolute;
+  inset: -18%;
+  z-index: var(--z-environment);
+  opacity: calc(var(--kl-journey, 0) * 0.12);
+  background: radial-gradient(
+    circle at 50% 44%,
+    rgba(255, 247, 240, 0.18),
+    transparent 56%
+  );
+  transform: translate3d(
+      calc(var(--motion-x) * 2px),
+      calc((1 - var(--kl-journey, 0)) * 16px),
+      0
+    )
+    scale(calc(0.99 + var(--kl-journey, 0) * 0.025));
+  transform-origin: 50% 48%;
+  will-change: transform, opacity;
+}
+
+.invitation-scroll #recommendations .scene-content {
+  z-index: var(--z-content);
+}
+
+.invitation-scroll #recommendations .step-label,
+.invitation-scroll #recommendations h2,
+.invitation-scroll #recommendations .section-intro {
+  opacity: var(--kl-title, 0) !important;
+  clip-path: inset(calc((1 - var(--kl-title, 0)) * 12%) 0 0 0);
+  transform: none !important;
+  will-change: clip-path, opacity;
+}
+
+.invitation-scroll #recommendations .section-intro {
+  opacity: max(0, calc((var(--kl-title, 0) - 0.28) * 1.38)) !important;
+}
+
+.invitation-scroll #recommendations.guide-tone--eat .kl-arrival-wash {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(255, 236, 224, 0.2),
+    transparent 58%
+  );
+}
+
+.invitation-scroll #recommendations.guide-tone--see .kl-arrival-wash {
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(250, 247, 255, 0.18),
+    transparent 60%
+  );
+}
+
+.invitation-scroll #recommendations.guide-tone--spa .kl-arrival-wash {
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(238, 241, 239, 0.16),
+    transparent 62%
+  );
+}
+
+.invitation-scroll .editorial-guide__section > ul {
+  animation: editorial-expand 400ms var(--motion-ease) both !important;
+  transform-origin: 50% 0;
+}
+
+@keyframes editorial-expand {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 16% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* WOW 3 — architecture arrives before the practical directions. */
+.venue-arrival-art {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-environment);
+  width: 100%;
+  height: 100dvh;
+  margin-bottom: -100dvh;
+  overflow: hidden;
+  opacity: min(0.38, calc(0.04 + var(--salon-arrival, 0) * 0.36));
+  filter: contrast(calc(0.98 + var(--salon-arrival, 0) * 0.055))
+    saturate(calc(0.94 + var(--salon-arrival, 0) * 0.06));
+  will-change: filter, opacity;
+}
+
+.venue-arrival-art img {
+  position: absolute;
+  display: block;
+  width: min(92vw, 740px);
+  height: auto;
+  object-fit: contain;
+  will-change: transform, opacity;
+}
+
+.venue-arrival-art__facade {
+  top: 0;
+  left: 50%;
+  opacity: 0.56;
+  transform: translate3d(
+      calc(-50% + var(--motion-x) * 3px),
+      calc((1 - var(--salon-arrival, 0)) * 56px),
+      0
+    )
+    scale(calc(0.88 + var(--salon-arrival, 0) * 0.22));
+}
+
+.venue-arrival-art__entrance {
+  top: 8%;
+  left: 50%;
+  opacity: 0.72;
+  transform: translate3d(
+      calc(-50% + var(--motion-x) * 9px),
+      calc((1 - var(--salon-arrival, 0)) * 86px + var(--motion-y) * 5px),
+      0
+    )
+    scale(calc(0.76 + var(--salon-arrival, 0) * 0.37));
+}
+
+.invitation-scroll #venue .venue-card {
+  position: relative;
+  z-index: var(--z-content);
+}
+
+.venue-arrival-stage {
+  position: relative;
+  min-height: 120dvh;
+}
+
+.venue-arrival-anchor {
+  position: sticky;
+  top: max(24dvh, calc(112px + env(safe-area-inset-top)));
+  z-index: var(--z-content);
+  display: grid;
+  gap: 26px;
+  width: 100%;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.invitation-scroll #venue .venue-arrival-anchor .step-label,
+.invitation-scroll #venue .venue-arrival-anchor h2 {
+  margin: 0 auto !important;
+}
+
+.venue-practical {
+  position: relative;
+  z-index: var(--z-content);
+  width: 100%;
+  padding-top: clamp(52px, 8vh, 82px);
+}
+
+.evening-recap {
+  width: min(100%, 430px);
+  margin: clamp(92px, 13vh, 132px) auto 0;
+  padding-top: 52px;
+  border-top: 1px solid var(--invitation-hairline);
+  text-align: center;
+}
+
+.evening-recap .step-label {
+  margin-bottom: 40px !important;
+}
+
+.evening-recap__guests {
+  display: grid;
+  gap: 52px;
+}
+
+.evening-recap article {
+  display: grid;
+  gap: 24px;
+}
+
+.evening-recap h3 {
+  margin: 0;
+  font: italic 500 clamp(25px, 7vw, 32px) / 1.1 var(--invitation-display);
+}
+
+.evening-recap p {
+  display: grid;
+  gap: 8px;
+  margin: 0 !important;
+}
+
+.evening-recap p span {
+  color: var(--invitation-wine);
+  font: 600 10px/1.2 var(--invitation-utility);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.evening-recap p strong {
+  font: 400 19px/1.4 var(--invitation-serif);
+}
+
+/* Wishes deliberately becomes almost still. */
+.invitation-scroll #wishes .full-field {
+  position: relative;
+  isolation: isolate;
+}
+
+.invitation-scroll #wishes .full-field::after {
+  position: absolute;
+  inset: 18% -4% -8%;
+  z-index: -1;
+  border: 1px solid rgba(177, 108, 129, 0.16);
+  border-radius: 50%;
+  opacity: 0;
+  content: "";
+  transform: scale(0.82);
+  transition:
+    opacity 520ms var(--motion-ease-soft),
+    transform 720ms var(--motion-ease);
+}
+
+.invitation-scroll #wishes .full-field:focus-within::after {
+  opacity: 0.38;
+  transform: scale(1.05);
+}
+
+/* WOW 4 — the successful server response reveals candlelight pearls. */
+.confirmation-pearls {
+  position: absolute;
+  inset: 4% -7% auto;
+  z-index: var(--z-foreground);
+  height: 44%;
+}
+
+.confirmation-pearls i {
+  position: absolute;
+  width: 8px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff 0 18%,
+    #fff5ee 36%,
+    rgba(213, 164, 151, 0.58) 70%,
+    transparent 76%
+  );
+  box-shadow:
+    0 0 9px rgba(255, 252, 247, 0.82),
+    0 0 18px rgba(235, 191, 177, 0.28);
+}
+
+.confirmation-pearls i:nth-child(1) {
+  left: 8%;
+  top: 16%;
+}
+.confirmation-pearls i:nth-child(2) {
+  left: 86%;
+  top: 7%;
+  width: 6px;
+}
+.confirmation-pearls i:nth-child(3) {
+  left: 18%;
+  top: 72%;
+  width: 5px;
+}
+.confirmation-pearls i:nth-child(4) {
+  left: 78%;
+  top: 63%;
+  width: 7px;
+}
+.confirmation-pearls i:nth-child(5) {
+  left: 51%;
+  top: 2%;
+  width: 4px;
+}
+
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-pearls
+  i {
+  animation: pearl-candlelight 1100ms var(--motion-ease) both;
+  animation-delay: 400ms;
+}
+
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-pearls
+  i:nth-child(2) {
+  animation-delay: 600ms;
+}
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-pearls
+  i:nth-child(3) {
+  animation-delay: 760ms;
+}
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-pearls
+  i:nth-child(4) {
+  animation-delay: 920ms;
+}
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-pearls
+  i:nth-child(5) {
+  animation-delay: 1100ms;
+}
+
+@keyframes pearl-candlelight {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  52% {
+    opacity: 0.94;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.38;
+    transform: scale(1);
+  }
+}
+
+.invitation-scroll.is-confirmation-transition:not(.is-confirmation-revealed)
+  #confirmation
+  .confirmation-card
+  > :not(.confirmation-pearls) {
+  opacity: 0 !important;
+}
+
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .confirmation-card
+  > :not(.confirmation-pearls) {
+  animation: confirmation-settle 920ms var(--motion-ease) both !important;
+  animation-delay: 180ms !important;
+}
+
+.invitation-scroll.is-confirmation-revealed
+  #confirmation.is-cinematically-visible
+  .countdown {
+  animation-delay: 960ms !important;
+}
+
+@keyframes confirmation-settle {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 10% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* WOW 5 — a single photograph appears as pearl foregrounds part. */
+.photo-reveal-stage {
+  position: relative;
+  min-height: 132dvh;
+}
+
+.invitation-scroll #gallery .photo-reveal {
+  position: sticky;
+  top: max(16dvh, calc(82px + env(safe-area-inset-top)));
+  overflow: visible !important;
+  opacity: calc(0.42 + var(--finale-reveal, 0) * 0.58) !important;
+  transform: scale(calc(0.945 + var(--finale-reveal, 0) * 0.055)) !important;
+  transform-origin: 50% 52%;
+  will-change: transform, opacity;
+}
+
+.invitation-scroll #gallery .photo-reveal__portrait {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.invitation-scroll #gallery .photo-reveal__foreground {
+  position: absolute;
+  top: 16%;
+  z-index: var(--z-foreground);
+  display: block;
+  width: 46% !important;
+  height: auto !important;
+  opacity: calc(0.76 - var(--finale-reveal, 0) * 0.62);
+  object-fit: contain !important;
+  will-change: transform, opacity;
+}
+
+.photo-reveal__foreground--left {
+  left: -10%;
+  transform: translate3d(
+    calc(-10px - var(--finale-reveal, 0) * 18px + var(--motion-x) * -10px),
+    calc(var(--finale-reveal, 0) * -6px + var(--motion-y) * -5px),
+    0
+  ) !important;
+}
+
+.photo-reveal__foreground--right {
+  right: -10%;
+  transform: translate3d(
+    calc(10px + var(--finale-reveal, 0) * 20px + var(--motion-x) * 11px),
+    calc(var(--finale-reveal, 0) * 5px + var(--motion-y) * 6px),
+    0
+  ) !important;
+}
+
+.invitation-scroll #gallery .closing-line {
+  opacity: max(0.38, var(--finale-reveal, 1)) !important;
+}
+
+/* WOW 1 — the existing painted arch becomes the camera gate. */
+.portal,
+.portal .portal-arch,
+.portal .portal-film,
+.portal .portal-lens,
+.portal .portal-words,
+.portal .portal-name,
+.portal .portal-words .amp,
+.portal .portal-eyebrow,
+.portal .portal-place,
+.portal .portal-enter {
+  transition-timing-function: var(--motion-ease) !important;
+}
+
+.portal {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+.portal-destination {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("/wedding/story/bg/dream-2.webp") center / cover no-repeat;
+  opacity: 0.34;
+  transform: scale(1.045);
+  transform-origin: 50% 48%;
+  transition:
+    opacity 760ms var(--motion-ease-soft) 860ms,
+    transform var(--motion-cinematic) var(--motion-ease) !important;
+  will-change: transform, opacity;
+}
+
+.portal .portal-arch {
+  z-index: 1;
+  opacity: 1;
+  transform: scale(1) !important;
+  transform-origin: 50% 47%;
+  transition:
+    transform var(--motion-cinematic) var(--motion-ease),
+    opacity 270ms var(--motion-ease-soft) 1480ms !important;
+}
+
+.portal .portal-film {
+  transform: translate3d(
+      calc(var(--pointer-x, 0) * 1.5px),
+      calc(var(--pointer-y, 0) * 1px),
+      0
+    )
+    scale(1.02);
+  transform-origin: 50% 46%;
+  transition: transform var(--motion-cinematic) var(--motion-ease) !important;
+  will-change: transform;
+}
+
+.portal .portal-lens {
+  position: absolute;
+  inset: -5%;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    transparent 36%,
+    rgba(84, 53, 73, 0.13) 100%
+  );
+  opacity: 0.72;
+  transform: translate3d(
+      calc(var(--pointer-x, 0) * 5px),
+      calc(var(--pointer-y, 0) * 3px),
+      0
+    )
+    scale(1);
+  transition:
+    opacity 900ms var(--motion-ease-soft),
+    transform var(--motion-cinematic) var(--motion-ease) !important;
+}
+
+.portal .portal-lens i {
+  position: absolute;
+  width: 4px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 36% 30%,
+    #fff 0 20%,
+    #fff4e9 42%,
+    rgba(224, 184, 166, 0.44) 76%,
+    transparent 80%
+  );
+  box-shadow: 0 0 9px rgba(255, 244, 232, 0.68);
+}
+
+.portal .portal-lens i:nth-child(1) {
+  left: 28%;
+  top: 34%;
+}
+.portal .portal-lens i:nth-child(2) {
+  right: 24%;
+  top: 48%;
+  width: 3px;
+}
+
+.portal .portal-words {
+  z-index: 2;
+  transition: none !important;
+}
+
+.portal .portal-words h1,
+.portal.is-crossing .portal-words h1 {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.portal .portal-name,
+.portal .portal-words .amp {
+  display: inline-block;
+  transition:
+    transform 1220ms var(--motion-ease) 320ms,
+    opacity 210ms var(--motion-ease-soft) 1510ms !important;
+}
+
+.portal.is-crossing {
+  opacity: 1 !important;
+}
+
+.portal.is-crossing .portal-destination {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.portal.is-crossing .portal-arch {
+  opacity: 0.14;
+  transform: scale(1.16) !important;
+}
+
+.portal.is-crossing .portal-film {
+  transform: scale(1.18) translate3d(0, -1.35%, 0) !important;
+}
+
+.portal.is-crossing .portal-lens {
+  opacity: 0.16;
+  transform: scale(1.22);
+}
+
+.portal.is-crossing .portal-lens i {
+  animation: entrance-glint 690ms var(--motion-ease) both;
+}
+
+.portal.is-crossing .portal-lens i:nth-child(1) {
+  animation-delay: 90ms;
+}
+.portal.is-crossing .portal-lens i:nth-child(2) {
+  animation-delay: 310ms;
+}
+
+.portal.is-crossing .portal-name--elaine {
+  opacity: 0;
+  transform: translate3d(-48px, -3px, 0) scale(1.19);
+}
+
+.portal.is-crossing .portal-name--haykal {
+  opacity: 0;
+  transform: translate3d(52px, 4px, 0) scale(1.2);
+}
+
+.portal.is-crossing .portal-words .amp {
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(1.02);
+}
+
+.portal.is-crossing .portal-eyebrow,
+.portal.is-crossing .portal-place,
+.portal.is-crossing .portal-enter {
+  opacity: 0 !important;
+  transform: translate3d(0, 8px, 0) !important;
+  transition:
+    opacity 300ms var(--motion-ease-soft),
+    transform 520ms var(--motion-ease) !important;
+}
+
+@keyframes entrance-glint {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  48% {
+    opacity: 0.52;
+    transform: scale(1);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .invitation-scroll .dream-skies {
+    transform: translate3d(
+        calc(var(--motion-x) * 1.5px),
+        calc(var(--motion-y) * 1px - var(--kl-journey, 0) * 5px),
+        0
+      )
+      scale(calc(1 + var(--kl-journey, 0) * 0.03));
+  }
+
+  .invitation-scroll .scene-art:not(.floating-bloom) {
+    translate: calc(var(--motion-x) * 3px) calc(var(--motion-y) * 2px);
+  }
+}
+
+@media (max-width: 620px), (pointer: coarse) {
+  .invitation-scroll #rsvp,
+  .invitation-scroll #meal,
+  .invitation-scroll #travel {
+    min-height: 100dvh !important;
+    padding-bottom: calc(150px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .invitation-scroll .dream-skies,
+  .invitation-scroll .scene-art,
+  .invitation-scroll #invitation .floating-bloom,
+  .venue-arrival-art img {
+    translate: none !important;
+  }
+
+  .venue-arrival-art {
+    opacity: min(0.38, calc(0.04 + var(--salon-arrival, 0) * 0.36));
+  }
+
+  .invitation-scroll #gallery .photo-reveal__foreground {
+    width: 46% !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-veil,
+  .chapter-veil,
+  .kl-arrival-wash,
+  .venue-arrival-art,
+  .confirmation-pearls,
+  .photo-reveal__foreground,
+  .portal .portal-lens i {
+    display: none !important;
+  }
+
+  .invitation-scroll .dream-skies,
+  .invitation-scroll .scene-art,
+  .invitation-scroll .photo-reveal,
+  .portal,
+  .portal .portal-arch,
+  .portal .portal-film,
+  .portal .portal-words,
+  .portal .portal-name,
+  .portal .portal-words .amp {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .venue-arrival-stage,
+  .photo-reveal-stage {
+    min-height: 0 !important;
+  }
+
+  .venue-arrival-anchor,
+  .invitation-scroll #gallery .photo-reveal {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  .venue-practical {
+    padding-top: 52px;
+  }
+
+  .portal.is-crossing {
+    opacity: 0 !important;
+    transition: opacity 180ms ease !important;
+  }
+}
