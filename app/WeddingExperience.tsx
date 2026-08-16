@@ -9,7 +9,6 @@ import {
 } from "../lib/site-design";
 import { rsvpDeadlineLabel } from "../lib/rsvp-window";
 import { Dreamscape } from "./Dreamscape";
-import BubbleCursor from "./BubbleCursor";
 import { EtherealLoader } from "./EtherealLoader";
 import { SiteMenu } from "./SiteMenu";
 import { LockedInvitation } from "./LockedInvitation";
@@ -26,6 +25,19 @@ function ScriptName({ name }: { name: string }) {
     <>
       <span className="cap">{name.slice(0, 1)}</span>
       {name.slice(1)}
+    </>
+  );
+}
+
+function DressNote({ text }: { text: string }) {
+  const ladiesMarker = "Ladies:";
+  const ladiesIndex = text.indexOf(ladiesMarker);
+  if (ladiesIndex < 0) return <>{text}</>;
+
+  return (
+    <>
+      <span>{text.slice(0, ladiesIndex).trim()}</span>
+      <span>{text.slice(ladiesIndex).trim()}</span>
     </>
   );
 }
@@ -196,6 +208,18 @@ const sceneLabels: Record<string, string> = {
   recommendations: "Kuala Lumpur",
   wishes: "From the heart",
   confirmation: "Until November",
+};
+
+const wizardStepLabels: Record<string, string> = {
+  invitation: "The invitation",
+  reply: "Your reply",
+  dress: "Dress code",
+  meal: "Dinner",
+  travel: "Travel",
+  guide: "Kuala Lumpur",
+  venue: "The Grand Salon",
+  wishes: "From the heart",
+  final: "Until November",
 };
 
 // A couple entered as "Mr Lim" and "Mrs Lim" reads as one address:
@@ -1640,7 +1664,6 @@ export function WeddingExperience({
         />
       ) : null}
       <Dreamscape onReady={() => setFilmReady(true)} />
-      <BubbleCursor zIndex={9998} />
       <a className="skip-experience" href="#rsvp">
         Skip our story and go to the RSVP
       </a>
@@ -1658,53 +1681,7 @@ export function WeddingExperience({
             }
           >
             <span aria-hidden="true">{soundEnabled ? "❚❚" : "♪"}</span>
-            <small>{soundEnabled ? "Pause music" : "Play music"}</small>
-            {music.musicTitle ? <em>{music.musicTitle}</em> : null}
           </button>
-        </>
-      ) : null}
-      {activeSection !== "welcome" ? (
-        <>
-          <div className="scroll-progress" aria-hidden="true">
-            <i
-              style={{
-                height: `${((sectionIds.indexOf(activeSection) + 1) / sectionIds.length) * 100}%`,
-              }}
-            />
-          </div>
-          <nav className="scene-nav" aria-label="Your progress">
-            {wizardSteps.slice(0, -1).map((entry, index) => (
-              <button
-                key={entry.id}
-                type="button"
-                className={index === stepIndex ? "is-active" : ""}
-                onClick={() => {
-                  if (index <= stepIndex) setStep(index);
-                }}
-                aria-label={`Step ${index + 1} of ${wizardSteps.length - 1}`}
-                aria-current={index === stepIndex ? "step" : undefined}
-              >
-                <span />
-                <b>
-                  {entry.cta === "Begin"
-                    ? "The invitation"
-                    : entry.id === "reply"
-                      ? "Your reply"
-                      : entry.id === "dress"
-                        ? "Dress code"
-                        : entry.id === "meal"
-                          ? "Dinner"
-                          : entry.id === "travel"
-                            ? "Travel"
-                            : entry.id === "guide"
-                              ? "Kuala Lumpur"
-                              : entry.id === "venue"
-                                ? "The Grand Salon"
-                                : "Wishes"}
-                </b>
-              </button>
-            ))}
-          </nav>
         </>
       ) : null}
       <EditableDecorationOverlay
@@ -1746,13 +1723,13 @@ export function WeddingExperience({
         />
         <div className="scene-content invitation-card reveal">
           <p className="eyebrow">{content.familyLine}</p>
-          <p className="invitation-line">{content.invitationLine}</p>
           <h2>
             <span className="ink">
               <ScriptName name={content.brideName} /> <span className="amp">&amp;</span>{" "}
               <ScriptName name={content.groomName} />
             </span>
           </h2>
+          <p className="invitation-line">{content.invitationLine}</p>
           <RibbonDivider />
           <div className="event-details">
             <p>
@@ -1868,9 +1845,8 @@ export function WeddingExperience({
           {personalised ? (
             <>
               <p className="section-intro">
-                This invitation has been prepared for the guests named below.
-                We kindly ask that only those named attend, as we&rsquo;re
-                unable to accommodate additional guests or children.
+                We&rsquo;re delighted to celebrate with everyone named on this
+                invitation.
               </p>
               {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
                 <p className="rsvp-deadline-note">
@@ -1929,9 +1905,6 @@ export function WeddingExperience({
               </div>
               {someoneAttending ? (
                 <>
-                  <p className="field-hint">
-                    Please leave one WhatsApp number for your household.
-                  </p>
                   <div className="field-grid phone-grid">
                     <label className="phone-code">
                       <span className="visually-hidden">Country code</span>
@@ -1952,7 +1925,7 @@ export function WeddingExperience({
                       </select>
                     </label>
                     <label>
-                      <span>WhatsApp number</span>
+                      <span>Mobile number</span>
                       <input
                         required
                         value={rsvp.phoneNumber}
@@ -1967,6 +1940,9 @@ export function WeddingExperience({
                       />
                     </label>
                   </div>
+                  <p className="field-hint">
+                    We&rsquo;ll send your table number here via WhatsApp.
+                  </p>
                 </>
               ) : null}
               {guestResponses.length === 0 ? (
@@ -2034,7 +2010,9 @@ export function WeddingExperience({
           <div className="scene-content dress-card reveal">
             <p className="step-label">Dress code</p>
             <h2>{content.dressCode}</h2>
-            <p>{content.dressNote}</p>
+            <p className="dress-note">
+              <DressNote text={content.dressNote} />
+            </p>
             <p className="dress-restriction">{content.dressRestriction}</p>
             <ScrollOn />
           </div>
@@ -2060,9 +2038,6 @@ export function WeddingExperience({
           <div className="scene-content form-card reveal">
             <p className="step-label">At the table</p>
             <h2>Choose your main course</h2>
-            <p className="section-intro">
-              One happy decision before the dancing.
-            </p>
             <div className="guest-meal-list">
               {guestResponses
                 .filter((guest) => guest.rsvpStatus === "Confirmed")
@@ -2539,19 +2514,6 @@ export function WeddingExperience({
                 <p className="help-note">
                   We may share a few of these messages with our guests.
                 </p>
-                <label className="full-field">
-                  <span>Just for us</span>
-                  <textarea
-                    value={rsvp.advice}
-                    onChange={(event) => update("advice", event.target.value)}
-                    placeholder="A private note for Elaine & Haykal…"
-                    rows={4}
-                    maxLength={1500}
-                  />
-                </label>
-                <p className="help-note private-note">
-                  Only the two of us will read this one.
-                </p>
                 {error && activeSection === "wishes" ? (
                   <p className="form-error" role="alert">
                     {error}
@@ -2712,19 +2674,25 @@ export function WeddingExperience({
         </p>
       ) : null}
       {submitted ? renderCustomPages("confirmation") : null}
-      {personalised && stepIndex > 0 ? (
+      {personalised && stepIndex > 0 && !submitted ? (
         <div className="wizard-nav" aria-label="Continue">
-          {stepIndex > 0 && !submitted ? (
+          {stepIndex > 0 ? (
             <button
               type="button"
               className="wizard-back"
               onClick={() => setStep((value) => Math.max(0, value - 1))}
             >
-              Back
+              <span aria-hidden="true">&larr;</span> Back
             </button>
           ) : (
             <span />
           )}
+          <p className="wizard-position" aria-live="polite">
+            <span>{wizardStepLabels[wizardSteps[stepIndex].id] ?? "Your invitation"}</span>
+            <small>
+              {String(stepIndex + 1).padStart(2, "0")} / {String(wizardSteps.length - 1).padStart(2, "0")}
+            </small>
+          </p>
           {wizardSteps[stepIndex].cta ? (
             <button
               type="button"
@@ -2732,7 +2700,7 @@ export function WeddingExperience({
               disabled={!wizardSteps[stepIndex].ready}
               onClick={advance}
             >
-              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"}
+              {wizardSteps[stepIndex].cta === "Begin" ? "Begin" : "Next"} <span aria-hidden="true">&rarr;</span>
             </button>
           ) : (
             <span />

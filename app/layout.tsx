@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import "./editorial-refinement.css";
 
 /**
  * There was no viewport declaration at all, which meant env(safe-area-inset-*)

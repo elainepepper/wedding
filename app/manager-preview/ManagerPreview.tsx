@@ -1,6 +1,7 @@
 "use client";
 
 import "../manager/manager.css";
+import "../manager/manager-refinement.css";
 import { ManagerApp, type ManagerData } from "../manager/ManagerApp";
 
 /*
@@ -134,7 +135,7 @@ const demoData: ManagerData = {
 export function ManagerPreview() {
   return (
     <>
-      <p style={{ margin: 0, padding: ".55rem 1rem", background: "#9B3160", color: "#fff", font: "600 .72rem/1.4 Inter, sans-serif", letterSpacing: ".06em", textAlign: "center" }}>
+      <p className="manager-preview-banner">
         PREVIEW — a fictional guest list for demonstration. Nothing here is real, and nothing can be saved.
       </p>
       <ManagerApp

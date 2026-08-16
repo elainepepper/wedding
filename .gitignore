@@ -7,5 +7,6 @@ tests/screens/
 .env.local
 .env.*.local
 *.log
+*.tsbuildinfo
 .DS_Store
 .pnpm-store/

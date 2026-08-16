@@ -40,18 +40,25 @@ type Settings = Record<string, unknown> & {
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
 export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
 type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
+type ManagerTab = { id: Tab; label: string; index: string };
 
-const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
-  { id: "overview", label: "Overview", glyph: "◫" }, { id: "guests", label: "Guests", glyph: "♙" },
-  { id: "households", label: "Households", glyph: "⌂" }, { id: "rsvps", label: "RSVPs", glyph: "✓" },
-  { id: "seating", label: "Seating plan", glyph: "○" }, { id: "afterparty", label: "After-party", glyph: "✦" },
-  { id: "wishes", label: "Wishes & advice", glyph: "♡" },
-  { id: "imports", label: "Imports", glyph: "↓" }, { id: "exports", label: "Exports", glyph: "↑" },
-  { id: "chase", label: "Awaiting replies", glyph: "◷" },
-  { id: "dayof", label: "For the day", glyph: "❧" },
-  { id: "health", label: "Health check", glyph: "✓" },
-  { id: "settings", label: "Settings", glyph: "◇" },
+const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
+  { label: "Guest book", items: [
+    { id: "overview", label: "Overview", index: "01" }, { id: "guests", label: "Guests", index: "02" },
+    { id: "households", label: "Households", index: "03" }, { id: "rsvps", label: "RSVPs", index: "04" },
+  ] },
+  { label: "The celebration", items: [
+    { id: "seating", label: "Seating plan", index: "05" }, { id: "afterparty", label: "After-party", index: "06" },
+    { id: "wishes", label: "Wishes & advice", index: "07" }, { id: "chase", label: "Awaiting replies", index: "08" },
+    { id: "dayof", label: "For the day", index: "09" },
+  ] },
+  { label: "Studio", items: [
+    { id: "imports", label: "Imports", index: "10" }, { id: "exports", label: "Exports", index: "11" },
+    { id: "health", label: "Health check", index: "12" }, { id: "settings", label: "Settings", index: "13" },
+  ] },
 ];
+
+const tabs = navGroups.flatMap((group) => group.items);
 
 const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name ?? ""} ${guest.last_name ?? ""}`.trim() || "Unnamed guest";
 // The wedding evening begins 6:00pm in Kuala Lumpur; fall back to the known date if settings are blank.
@@ -139,8 +146,9 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const [data, setData] = useState<ManagerData | null>(demoData ?? null);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [toast, setToast] = useState("");
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "error" | "preview">(demoData ? "preview" : "saved");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [groupFilter, setGroupFilter] = useState("All");
@@ -168,9 +176,9 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       const result = await readApiResponse<ManagerData>(response);
       if (!response.ok) throw new Error(result.error || "Unable to load the guest manager.");
       setData(result);
-      setError("");
+      setLoadError("");
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load the guest manager.");
+      setLoadError(loadError instanceof Error ? loadError.message : "Unable to load the guest manager.");
     } finally { setLoading(false); }
   };
 
@@ -189,6 +197,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
     if (demoData) { notify("Preview only — nothing is saved here."); return; }
     if (inFlight.current) return;
     inFlight.current = true;
+    setSaveState("saving");
     // Take the row off the screen at once. If the save fails the background
     // reload puts it straight back, and the error message explains why.
     if (payload.action === "deleteGuest" || payload.action === "archiveGuest") {
@@ -207,7 +216,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       const response = await fetch("/api/manager", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(payload) });
       const result = await readApiResponse<{ summary?: { added: number; updated: number; skipped: number; errors: string[] } }>(response);
       if (!response.ok) throw new Error(result.error || "The change could not be saved.");
-      setError("");
+      setSaveState("saved");
       notify(result.summary ? `${result.summary.added} added · ${result.summary.updated} updated · ${result.summary.skipped} skipped` : success);
       // The screen used to wait for a full reload of every guest, household,
       // table and activity before it would respond — several seconds on a
@@ -219,7 +228,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       // Most callers do not catch. Without this the failure was invisible:
       // the button simply did nothing and no one could tell why.
       const message = failure instanceof Error ? failure.message : "The change could not be saved.";
-      setError(message);
+      setSaveState("error");
       notify(message);
       throw failure;          // callers that do catch still get to react
     } finally { inFlight.current = false; }
@@ -280,7 +289,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   };
 
   if (loading) return <ManagerLoading />;
-  if (error || !data) return <div className="manager-fatal"><span>✦</span><h1>We couldn’t open the guest book.</h1><p>{error}</p>{signedInEmail ? <small>Currently signed in as <strong>{signedInEmail}</strong></small> : null}<div className="manager-fatal-actions"><button onClick={() => load()}>Try again</button><button className="secondary-button" onClick={() => void onSignOut()}>Sign out and choose another account</button></div></div>;
+  if (loadError || !data) return <div className="manager-fatal"><span>✦</span><h1>We couldn’t open the guest book.</h1><p>{loadError}</p>{signedInEmail ? <small>Currently signed in as <strong>{signedInEmail}</strong></small> : null}<div className="manager-fatal-actions"><button onClick={() => load()}>Try again</button><button className="secondary-button" onClick={() => void onSignOut()}>Sign out and choose another account</button></div></div>;
 
   return (
     <div className="manager-shell">
@@ -288,7 +297,10 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       <aside className={`manager-sidebar${mobileNav ? " is-open" : ""}`}>
         <div className="manager-brand"><span>E <i>&amp;</i> H</span><small>Guest Manager</small></div>
         <nav aria-label="Guest manager">
-          {tabs.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setSelected([]); setMobileNav(false); }}><b>{item.glyph}</b><span>{item.label}</span>{item.id === "rsvps" && stats.pending ? <em>{stats.pending}</em> : null}</button>)}
+          {navGroups.map((group) => <div className="manager-nav-group" key={group.label}>
+            <p>{group.label}</p>
+            {group.items.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setSelected([]); setMobileNav(false); }}><b>{item.index}</b><span>{item.label}</span>{item.id === "rsvps" && stats.pending ? <em>{stats.pending}</em> : null}</button>)}
+          </div>)}
         </nav>
         <div className="manager-profile"><div>{initialAdminName.slice(0, 1).toUpperCase()}</div><p><strong>{initialAdminName}</strong><span>Administrator</span></p><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></div>
       </aside>
@@ -297,7 +309,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         <header className="manager-topbar">
           <button className="mobile-menu" onClick={() => setMobileNav((value) => !value)} aria-label="Open navigation">☰</button>
           <div><p className="manager-kicker">Elaine &amp; Haykal · 7 November 2026</p><h1>{tabs.find((item) => item.id === tab)?.label}</h1></div>
-          <div className="topbar-actions"><span><i /> All changes saved</span><button onClick={() => setGuestModal("new")}>＋ Add guest</button></div>
+          <div className="topbar-actions"><span className={`save-state save-state--${saveState}`} aria-live="polite"><i />{saveState === "preview" ? "Preview mode" : saveState === "saving" ? "Saving changes" : saveState === "error" ? "Save needs attention" : "All changes saved"}</span><button onClick={() => setGuestModal("new")}>＋ Add guest</button></div>
         </header>
 
         {tab === "overview" ? <Overview data={data} stats={stats} jump={jumpToGuests} setTab={setTab} /> : null}
@@ -342,12 +354,16 @@ function Overview({ data, stats, jump, setTab }: { data: ManagerData; stats: Rec
     ["Dietary notes", stats.dietary, "Chef attention", "All"], ["After-party", stats.afterParty, "Night owls confirmed", "After-party"],
     ["Need a room", stats.accommodation, "Accommodation requests", "All"], ["Unassigned", stats.unassigned, "Confirmed without a table", "Confirmed"],
   ];
+  const confirmedPercent = stats.total ? (stats.confirmed / stats.total) * 100 : 0;
+  const pendingPercent = stats.total ? (stats.pending / stats.total) * 100 : 0;
+  const declinedPercent = Math.max(0, 100 - confirmedPercent - pendingPercent);
   return <div className="manager-page overview-page">
     <section className="welcome-strip"><div><p>{greetingForNow()}</p><h2>Your celebration is taking shape.</h2><span>{stats.confirmed} of {stats.total} guests are confirmed · {stats.meals} meals selected</span></div><div className="countdown"><strong>{daysUntilWedding(data.settings.wedding_date)}</strong><span>days to go</span></div></section>
-    <section className="stat-grid">{cards.map(([label, value, note, filter]) => <button key={String(label)} onClick={() => jump(String(filter))}><span>{label}</span><strong>{value}</strong><small>{note}</small><i>↗</i></button>)}</section>
+    <section className="stat-grid" aria-label="Guest overview">{cards.map(([label, value, note, filter], index) => <button key={String(label)} onClick={() => jump(String(filter))}><i>{String(index + 1).padStart(2, "0")}</i><span>{label}</span><strong>{value}</strong><small>{note}</small></button>)}</section>
     <div className="overview-grid">
-      <section className="manager-panel response-panel"><div className="panel-head"><div><p className="panel-kicker">Response pulse</p><h3>RSVP progress</h3></div><button onClick={() => setTab("rsvps")}>View RSVPs</button></div>
-        <div className="response-ring" style={{ "--confirmed": `${stats.total ? (stats.confirmed / stats.total) * 100 : 0}%` } as React.CSSProperties}><div><strong>{Math.round(stats.total ? (stats.confirmed / stats.total) * 100 : 0)}%</strong><span>responded yes</span></div></div>
+      <section className="manager-panel response-panel"><div className="panel-head"><div><p className="panel-kicker">Response ledger</p><h3>RSVP progress</h3></div><button onClick={() => setTab("rsvps")}>View RSVPs</button></div>
+        <div className="response-summary"><strong>{Math.round(confirmedPercent)}%</strong><span>attendance confirmed</span></div>
+        <div className="response-meter" role="img" aria-label={`${stats.confirmed} confirmed, ${stats.pending} pending and ${stats.declined} declined`} style={{ "--confirmed": `${confirmedPercent}%`, "--pending": `${pendingPercent}%`, "--declined": `${declinedPercent}%` } as React.CSSProperties}><i className="confirmed" /><i className="pending" /><i className="declined" /></div>
         <div className="legend"><p><i className="confirmed" />Confirmed <b>{stats.confirmed}</b></p><p><i className="pending" />Pending <b>{stats.pending}</b></p><p><i className="declined" />Declined <b>{stats.declined}</b></p></div>
       </section>
       <section className="manager-panel activity-panel"><div className="panel-head"><div><p className="panel-kicker">Latest notes</p><h3>Recent activity</h3></div></div><div className="activity-list">{data.activities.slice(0, 5).map((activity) => <div key={activity.id}><i>✦</i><p><strong>{activity.action}</strong><span>{activity.detail}</span></p><time>{dateLabel(activity.created_at)}</time></div>)}</div></section>

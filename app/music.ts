@@ -10,6 +10,7 @@
  */
 
 let element: HTMLAudioElement | null = null;
+const WEDDING_MUSIC_VOLUME = 0.3;
 
 export function musicElement(): HTMLAudioElement {
   if (!element) {
@@ -19,6 +20,10 @@ export function musicElement(): HTMLAudioElement {
     element.setAttribute("data-wedding-music", "");
     document.body.appendChild(element);
   }
+  // The soundtrack should sit behind the invitation, never compete with it.
+  // Re-apply this when the shared player is requested so older open tabs also
+  // settle to the quieter level after a client-side navigation.
+  element.volume = WEDDING_MUSIC_VOLUME;
   return element;
 }
 
