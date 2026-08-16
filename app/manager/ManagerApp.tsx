@@ -117,6 +117,16 @@ function Status({ value }: { value: string | null | undefined }) {
   return <span className={`status status--${label.toLowerCase().replaceAll(" ", "-")}`}><i />{label}</span>;
 }
 
+function householdRsvpStatus(household: Household) {
+  const total = Number(household.guest_count) || 0;
+  const confirmed = Number(household.confirmed_count) || 0;
+  const declined = Number(household.declined_count) || 0;
+  if (total > 0 && confirmed === total) return "Confirmed";
+  if (total > 0 && declined === total) return "Declined";
+  if (total > 0 && confirmed + declined === total) return "Replied";
+  return "Pending";
+}
+
 async function readApiResponse<T>(response: Response): Promise<T & { error?: string }> {
   const body = await response.text();
 
@@ -628,7 +638,7 @@ function SendDeck({ households, guests, replyBy, act, notify, edit, addTo }: {
     >
       <header>
         <div><p className="deck-position">{position + 1} of {pile.length}</p><h3>{current.name}</h3></div>
-        <Status value={current.confirmed_count === current.guest_count && current.guest_count > 0 ? "Confirmed" : "Pending"} />
+        <Status value={householdRsvpStatus(current)} />
       </header>
 
       {problems(current).length ? <ul className="deck-warnings">
@@ -846,7 +856,7 @@ function Households({ households, guests, archived, adminRole, replyBy, act, not
     const open = openCards.includes(household.id) || Boolean(query);
     return <article className={`household-card${stateClass}${picked.includes(household.id) ? " is-picked" : ""}${open ? " is-open" : ""}`} key={household.id}>
       <label className="household-pick"><input type="checkbox" checked={picked.includes(household.id)} onChange={() => toggle(household.id)} aria-label={`Select ${household.name}`} /><span>Select</span></label>
-      <header><button type="button" className="household-summary" onClick={() => toggleCard(household.id)} aria-expanded={open}><span className="household-caret" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="household-initial">{household.name.slice(0, 1)}</span><span className="household-heading"><strong>{household.name}</strong><small>{household.guest_count} guest{household.guest_count === 1 ? "" : "s"}</small></span></button><Status value={household.confirmed_count === household.guest_count ? "Confirmed" : household.declined_count === household.guest_count ? "Declined" : "Pending"} /></header>
+      <header><button type="button" className="household-summary" onClick={() => toggleCard(household.id)} aria-expanded={open}><span className="household-caret" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="household-initial">{household.name.slice(0, 1)}</span><span className="household-heading"><strong>{household.name}</strong><small>{household.guest_count} guest{household.guest_count === 1 ? "" : "s"}</small></span></button><Status value={householdRsvpStatus(household)} /></header>
       {/* Sending never needs the card opened: the three things you actually
           do — WhatsApp it, copy the link, note that it has gone — sit on the
           face of every card, closed or open. */}

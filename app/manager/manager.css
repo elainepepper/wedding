@@ -139,7 +139,7 @@
 .group-chip { display: block; width: fit-content; padding: .22rem .45rem; border-radius: 999px; background: #f1e4df; color: var(--m-wine); font-size: .58rem; }
 .status { width: fit-content; display: inline-flex; align-items: center; gap: .36rem; color: #79676e; font-size: .62rem; font-weight: 650; white-space: nowrap; }
 .status i { width: 6px; height: 6px; border-radius: 50%; background: #c4b4b9; }
-.status--confirmed, .status--yes { color: #7d8a6e; }.status--confirmed i, .status--yes i { background: #B8B9A5; }
+.status--confirmed, .status--replied, .status--yes { color: #7d8a6e; }.status--confirmed i, .status--replied i, .status--yes i { background: #B8B9A5; }
 .status--declined, .status--no { color: #925468; }.status--declined i, .status--no i { background: #b6677d; }
 .status--pending i { background: #d4a358; }
 .diet-note { display: block; max-width: 140px; margin-top: .2rem; color: #9b5d68; font-size: .58rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
