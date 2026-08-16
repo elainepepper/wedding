@@ -257,13 +257,13 @@ const maps = (query: string) =>
 const foodPlaces = [
   {
     name: "Village Park Restaurant",
-    note: "A Kuala Lumpur favourite for nasi lemak, crisp chicken and fragrant coconut rice.",
+    note: "Nasi lemak, crisp fried chicken and fragrant coconut rice.",
     detail: "20 minutes by Grab",
     score: "Beloved local classic",
   },
   {
     name: "Super Kitchen Chilli Pan Mee",
-    note: "Springy noodles, punchy chilli and a poached egg — stir everything together before the first bite.",
+    note: "Springy noodles, chilli and a poached egg — stir everything together before the first bite.",
     detail: "15 minutes by Grab",
     score: "Casual local favourite",
   },
@@ -275,13 +275,13 @@ const foodPlaces = [
   },
   {
     name: "Jalan Alor Food Street",
-    note: "The famous night food street — satay, grilled seafood and noodles under the lanterns, from dusk till very late.",
+    note: "Satay, grilled seafood and noodles under the lanterns, from dusk till late.",
     detail: "10 minutes by Grab",
     score: "Night-market institution",
   },
   {
     name: "Lot 10 Hutong",
-    note: "Kuala Lumpur's legendary hawker names gathered in one food court beneath Lot 10.",
+    note: "Well-known hawker stalls gathered in one food court beneath Lot 10.",
     detail: "12 minutes on foot",
     score: "Heritage hawker hall",
   },
@@ -320,7 +320,7 @@ const nearbyHotels = [
   },
   {
     name: "Berjaya Times Square Hotel Kuala Lumpur",
-    note: "Four star and kinder on the purse, with generous family rooms.",
+    note: "Four-star hotel with generous family rooms.",
     walk: "20 minutes",
     score: "4.3 · 23,000 reviews",
   },
@@ -1868,17 +1868,16 @@ export function WeddingExperience({
           {personalised ? (
             <>
               <p className="section-intro">
-                Written for the names below. We are unable to welcome additional
-                guests or children.
+                This invitation has been prepared for the guests named below.
+                We kindly ask that only those named attend, as we&rsquo;re
+                unable to accommodate additional guests or children.
               </p>
               {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ? (
                 <p className="rsvp-deadline-note">
                   Kindly reply by{" "}
-                  <strong>
-                    {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}
-                  </strong>{" "}
-                  — you may return to this link to update your reply any time
-                  before then.
+                  {rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline)}. You
+                  may update your response through this link at any time before
+                  then.
                 </p>
               ) : null}
               <div className="party-rsvp-list">
@@ -1906,7 +1905,7 @@ export function WeddingExperience({
                           })
                         }
                       >
-                        Joyfully accept
+                        Will attend
                       </button>
                       <button
                         type="button"
@@ -1922,7 +1921,7 @@ export function WeddingExperience({
                           })
                         }
                       >
-                        Regretfully decline
+                        Unable to attend
                       </button>
                     </div>
                   </fieldset>
@@ -1930,9 +1929,8 @@ export function WeddingExperience({
               </div>
               {someoneAttending ? (
                 <>
-                  <p className="help-note phone-note">
-                    One number per household — whoever is easiest to reach on
-                    WhatsApp.
+                  <p className="field-hint">
+                    Please leave one WhatsApp number for your household.
                   </p>
                   <div className="field-grid phone-grid">
                     <label className="phone-code">
@@ -1954,7 +1952,7 @@ export function WeddingExperience({
                       </select>
                     </label>
                     <label>
-                      <span>My WhatsApp number is</span>
+                      <span>WhatsApp number</span>
                       <input
                         required
                         value={rsvp.phoneNumber}
@@ -1970,12 +1968,6 @@ export function WeddingExperience({
                     </label>
                   </div>
                 </>
-              ) : null}
-              {guestResponses.length > 1 ? (
-                <p className="help-note couple-note">
-                  You may each reply in your own right — if one of you can join
-                  us and the other cannot, that is perfectly all right.
-                </p>
               ) : null}
               {guestResponses.length === 0 ? (
                 <p className="form-error" role="alert">
@@ -2144,12 +2136,13 @@ export function WeddingExperience({
             onError={removeBrokenImage}
           />
           <div className="scene-content form-card form-card--glass reveal">
-            <p className="step-label">Your journey</p>
-            <h2>Coming from afar?</h2>
-            <p className="section-intro">Only if you are travelling to us.</p>
+            <p className="step-label">Travel</p>
+            <h2>Are you travelling to Kuala Lumpur?</h2>
             <fieldset>
-              <legend>
-                {attendingCount > 1 ? "We are flying in" : "I am flying in"}
+              {/* the heading above already asks; the legend repeats it only
+                  for assistive technology */}
+              <legend className="visually-hidden">
+                Are you travelling to Kuala Lumpur?
               </legend>
               <div className="segmented-control">
                 <button
@@ -2176,9 +2169,9 @@ export function WeddingExperience({
                 <p className="room-offer room-offer--full">
                   <strong>Our rooms at the Grand Hyatt are all taken</strong>
                   <span>
-                    We are sorry — the last of the rooms we held has gone. A few
-                    good places within a short walk are below, and the hotel
-                    itself may still have rooms of its own.
+                    We are sorry — the last of the rooms we held has gone.
+                    A few nearby options are below, and the hotel itself may
+                    still have rooms of its own.
                   </span>
                 </p>
                 <ul className="hotel-list">
@@ -2191,8 +2184,7 @@ export function WeddingExperience({
                       >
                         <strong>{hotel.name}</strong>
                         <span>{hotel.note}</span>
-                        <em className="place-score">★ {hotel.score}</em>
-                        <i>{hotel.walk} away ↗</i>
+                                                <i>{hotel.walk} away ↗</i>
                       </a>
                     </li>
                   ))}
@@ -2201,14 +2193,14 @@ export function WeddingExperience({
             ) : rsvp.flyingIn ? (
               <div className="slide-open travel-details">
                 <p className="room-offer">
-                  <strong>The Grand Room · RM850++ a night</strong>
+                  <strong>Grand Room — RM850++ per night</strong>
                   <span>
-                    A rate held for our guests at the Grand Hyatt, in the same
-                    building as the celebration.
+                    A preferred rate is available for our guests at Grand
+                    Hyatt Kuala Lumpur, where the reception will be held.
                   </span>
                 </p>
                 <fieldset>
-                  <legend>A room at the Grand Hyatt</legend>
+                  <legend>Would you like to stay at Grand Hyatt Kuala Lumpur?</legend>
                   <div className="segmented-control">
                     <button
                       type="button"
@@ -2292,9 +2284,8 @@ export function WeddingExperience({
                 ) : null}
                 {rsvp.roomAtHyatt === false ? (
                   <div className="slide-open">
-                    <p className="help-note">
-                      A few good places within a short walk, should you still be
-                      deciding.
+                    <p className="field-hint">
+                      A few nearby options, if you prefer to stay elsewhere.
                     </p>
                     <ul className="hotel-list">
                       {nearbyHotels.map((hotel) => (
@@ -2306,7 +2297,7 @@ export function WeddingExperience({
                           >
                             <strong>{hotel.name}</strong>
                             <span>{hotel.note}</span>
-                            <em className="place-score">★ {hotel.score}</em>
+                            
                             <i>{hotel.walk} away ↗</i>
                           </a>
                         </li>
@@ -2317,7 +2308,7 @@ export function WeddingExperience({
               </div>
             ) : null}
             <label className="full-field">
-              <span>It would help us if</span>
+              <span>Is there anything we can arrange for you?</span>
               <input
                 value={rsvp.accessibilityNote}
                 onChange={(event) =>
@@ -2373,7 +2364,6 @@ export function WeddingExperience({
             </p>
             <div className="arrival-grid">
               <article>
-                <span>01</span>
                 <h3>By MRT</h3>
                 <p>
                   Take the Putrajaya Line to Conlay station, leave by Entrance
@@ -2382,7 +2372,6 @@ export function WeddingExperience({
                 </p>
               </article>
               <article>
-                <span>02</span>
                 <h3>By car</h3>
                 <p>
                   Make your way to the hotel entrance on Jalan Pinang, where the
@@ -2391,11 +2380,10 @@ export function WeddingExperience({
                 </p>
               </article>
               <article>
-                <span>03</span>
                 <h3>By Grab</h3>
                 <p>
-                  Simply set your destination to “Grand Hyatt Kuala Lumpur” and
-                  ask to be set down at the main lobby.
+                  Set your destination to Grand Hyatt Kuala Lumpur and ask to
+                  be dropped at the main lobby.
                 </p>
               </article>
             </div>
@@ -2415,7 +2403,7 @@ export function WeddingExperience({
             >
               <iframe
                 title="Map to Grand Hyatt Kuala Lumpur"
-                src="https://www.google.com/maps?q=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+Kuala+Lumpur&output=embed"
+                src="https://maps.google.com/maps?q=Grand%20Hyatt%20Kuala%20Lumpur&t=m&z=16&output=embed&iwloc=near"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
@@ -2539,7 +2527,7 @@ export function WeddingExperience({
             {personalised ? (
               <>
                 <label className="full-field">
-                  <span>Your message</span>
+                  <span>For our guest book</span>
                   <textarea
                     value={rsvp.wishes}
                     onChange={(event) => update("wishes", event.target.value)}
@@ -2549,14 +2537,14 @@ export function WeddingExperience({
                   />
                 </label>
                 <p className="help-note">
-                  We may share a few messages with our guests.
+                  We may share a few of these messages with our guests.
                 </p>
                 <label className="full-field">
-                  <span>A word just for us</span>
+                  <span>Just for us</span>
                   <textarea
                     value={rsvp.advice}
                     onChange={(event) => update("advice", event.target.value)}
-                    placeholder="Something you have learned…"
+                    placeholder="A private note for Elaine & Haykal…"
                     rows={4}
                     maxLength={1500}
                   />

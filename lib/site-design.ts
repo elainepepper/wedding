@@ -170,7 +170,7 @@ export const defaultSiteDesign: SiteDesign = {
     venueAddress: "Level 1, Grand Hyatt Kuala Lumpur\n12 Jalan Pinang, 50450 Kuala Lumpur",
     dressKicker: "An evening in your finest",
     dressCode: "Formal",
-    dressNote: "Gentlemen: a suit with a tie or bow tie. Ladies: an elegant dress or traditional attire — qipao, baju kurung and sari are all warmly welcomed.",
+    dressNote: "Gentlemen: a suit with a tie or bow tie. Ladies: an elegant dress or traditional attire, such as a qipao, baju kurung or sari.",
     dressRestriction: "We kindly ask that white, ivory, cream and beige be reserved for the bride.",
     wishesKicker: "A few words for our forever",
     wishesHeading: "A few words for us to keep",
@@ -201,7 +201,10 @@ const legacyCopy: Partial<Record<keyof SiteContent, string>> = {
 // A stored copy that matches an earlier default is treated the same way —
 // it upgrades to the current wording rather than pinning the old draft.
 const previousDefaults: Partial<Record<keyof SiteContent, string[]>> = {
-  dressNote: ["Gentlemen in suits, with a tie or bow tie. Ladies in your most elegant dress, or in traditional dress — a qipao, baju kurung or sari would be beautiful."],
+  dressNote: [
+    "Gentlemen in suits, with a tie or bow tie. Ladies in your most elegant dress, or in traditional dress — a qipao, baju kurung or sari would be beautiful.",
+    "Gentlemen: a suit with a tie or bow tie. Ladies: an elegant dress or traditional attire — qipao, baju kurung and sari are all warmly welcomed.",
+  ],
   dressRestriction: ["We kindly ask that white, ivory, cream and beige be left to the bride."],
   wishesHeading: ["Your wishes for our next chapter"],
 };

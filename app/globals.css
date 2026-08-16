@@ -6492,3 +6492,126 @@ canvas { pointer-events: none; }
   .descent-live i { animation: none; }
   .pour-liquid, .pour-surface { transform: none; }
 }
+
+/* ==================================================================== */
+/* THE CORRECTION PASS — copy, alignment, hierarchy, overlap.           */
+/* Everything here answers a specific finding from the mobile review:   */
+/* headers shouting, navigation covering content, helper cards, script  */
+/* where information lives, and “almost aligned” compositions.          */
+/* ==================================================================== */
+
+/* 1 · The header whispers. PAUSE MUSIC and MENU are interface, not
+   headings — 11px caps over a breath of ivory so they read anywhere. */
+.wizard .sound-control small,
+.wizard .site-menu-button { font-size: .62rem !important; letter-spacing: .22em; }
+.wizard .sound-control > span { font-size: .72rem; }
+.wizard::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: calc(84px + env(safe-area-inset-top));
+  z-index: 55;
+  pointer-events: none;
+  background: linear-gradient(
+    rgba(246, 238, 232, .96) 0%,
+    rgba(246, 238, 232, .78) 45%,
+    rgba(246, 238, 232, 0) 100%
+  );
+}
+.wizard .sound-control, .wizard .site-menu-button { z-index: 60; }
+
+/* 2 · BACK / NEXT never sits on content: every wizard page reserves the
+   navigation's ground inside its own scroll. */
+.wizard .scene { padding-bottom: calc(118px + env(safe-area-inset-bottom)) !important; }
+
+/* 3 · Helper prose is editorial text with a fine rule, not a pale pill. */
+.wizard .help-note,
+.wizard .field-hint,
+.wizard .rsvp-deadline-note {
+  margin: .9rem auto 1.1rem;
+  max-width: 30rem;
+  padding: 0 0 0 .85rem;
+  border: 0;
+  border-left: 2px solid rgba(190, 106, 121, .38);
+  border-radius: 0;
+  background: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  font: 400 clamp(.92rem, 3.6vw, 1rem)/1.6 var(--font-body) !important;
+  font-style: normal !important;
+  color: rgba(74, 58, 60, .85) !important;
+  text-align: left;
+}
+.wizard .help-note strong, .wizard .rsvp-deadline-note strong { font-weight: 600; }
+
+/* 4 · Practical prose stands upright; italic is kept for asides. */
+.wizard .section-intro { font-style: normal; }
+
+/* 5 · The programme: label, heading and ledger share one left axis. */
+.wizard .scene--schedule .step-label { text-align: left; }
+.wizard .scene--schedule .evening-timeline { margin-left: 0; margin-right: auto; }
+.evening-timeline li { grid-template-columns: 5.5rem 1fr; gap: 1.3rem; }
+.wizard .scene .evening-timeline .timeline-time { font-size: clamp(1.05rem, 4.2vw, 1.25rem) !important; }
+.wizard .scene .evening-timeline h3 {
+  font-size: clamp(1.5rem, 6.2vw, 1.9rem) !important;
+  line-height: 1.22;
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-weight: 500;
+}
+
+/* 6 · Names of places are information: the editorial serif, dark, first.
+   The thin hand leaves the guide entirely. */
+.guide-group li strong,
+.app-list strong,
+.hotel-list strong {
+  font-family: "Bodoni Moda", "Playfair Display", Georgia, serif !important;
+  font-weight: 500 !important;
+  font-size: 1.12rem !important;
+  color: #3a2d30 !important;
+}
+.guide-group li span,
+.app-list > li > span,
+.hotel-list span { font-style: normal !important; }
+.guide-group li em,
+.hotel-list i {
+  font: 500 .6rem/1.5 var(--font-sans) !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}
+.guide-group li a, .hotel-list a, .app-list li {
+  background: none !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  border-bottom: 1px solid rgba(190, 106, 121, .22);
+  text-align: left;
+}
+.guide-group li:last-child a, .hotel-list li:last-child a, .app-list li:last-child { border-bottom: 0; }
+
+/* 7 · The bride's colour note is a footnote, not a proclamation. */
+.wedding-shell .dress-restriction {
+  margin: 1.2rem 0 .5rem !important;
+  max-width: 30rem;
+  padding: 0 !important;
+  border: 0 !important;
+  color: rgba(122, 37, 73, .75) !important;
+  font: italic 400 clamp(.85rem, 3.4vw, .95rem)/1.6 var(--font-body) !important;
+}
+
+/* 8 · The map is a tool: sensible frame, no jewellery. */
+.venue-map {
+  aspect-ratio: 4 / 3;
+  height: auto !important;
+  max-height: 340px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.venue-map::after { display: none; }
+
+/* 9 · Placeholders whisper below the size of what the guest will type. */
+.scene textarea::placeholder,
+.scene input::placeholder { font-size: .95rem; }
+
+/* 10 · The response controls are compact — name, two answers, rule. */
+.party-rsvp-list { gap: .4rem; }
+.party-rsvp-list fieldset { padding: .55rem 0; }
