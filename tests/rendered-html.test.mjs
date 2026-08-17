@@ -6,10 +6,11 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const exists = (path) => access(new URL(`../${path}`, import.meta.url));
 
 test("renders the finished wedding invitation content", async () => {
-  const [experience, layout, calendar] = await Promise.all([
+  const [experience, layout, calendar, dreamscape] = await Promise.all([
     read("app/WeddingExperience.tsx"),
     read("app/layout.tsx"),
     read("public/elaine-haykal-wedding.ics"),
+    read("app/Dreamscape.tsx"),
   ]);
   assert.match(experience, /Elaine &amp; Haykal/);
   assert.match(experience, /7 November 2026/);
@@ -41,6 +42,11 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(experience, /arrivalStepConfirmed/);
   assert.match(experience, /disabled=\{!rsvp\.arrivalDate\}/);
   assert.match(experience, /setArrivalStepConfirmed\(true\)/);
+  // A long mobile chapter must keep its painted sky while the viewport is
+  // anywhere inside its bounds, rather than fading to the plain fallback.
+  assert.match(dreamscape, /middle < rect\.top/);
+  assert.match(dreamscape, /middle > rect\.bottom/);
+  assert.doesNotMatch(dreamscape, /Math\.abs\(centre - middle\)/);
   const confirmationIndex = experience.indexOf('id="confirmation"');
   const recapIndex = experience.indexOf(
     "<EveningRecap guests={guestResponses} />",
