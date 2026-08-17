@@ -207,18 +207,6 @@ const sceneLabels: Record<string, string> = {
   confirmation: "Until November",
 };
 
-const wizardStepLabels: Record<string, string> = {
-  invitation: "The invitation",
-  reply: "Your reply",
-  dress: "Dress code",
-  meal: "Dinner",
-  travel: "Travel",
-  guide: "Kuala Lumpur",
-  venue: "The Grand Salon",
-  wishes: "From the heart",
-  final: "Until November",
-};
-
 // A couple entered as "Mr Lim" and "Mrs Lim" reads as one address:
 // "Mr & Mrs Lim". Malaysian honorifics carry the same pattern — "Dato
 // Ahmad" and "Datin Ahmad" become "Dato & Datin Ahmad" — so any two of
@@ -784,6 +772,7 @@ export function WeddingExperience({
   const [submitted, setSubmitted] = useState(false);
   const submissionInFlight = useRef(false);
   const submissionId = useRef("");
+  const progressRef = useRef<HTMLDivElement | null>(null);
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [openMealDetail, setOpenMealDetail] = useState<string | null>(null);
   const [music, setMusic] = useState<MusicSettings>({
@@ -1344,6 +1333,19 @@ export function WeddingExperience({
           }
         });
       if (nearest) setActiveSection(nearest);
+      const scrollable = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const progress = Math.min(1, Math.max(0, window.scrollY / scrollable));
+      progressRef.current?.style.setProperty(
+        "--invitation-progress",
+        String(progress),
+      );
+      progressRef.current?.setAttribute(
+        "aria-valuenow",
+        String(Math.round(progress * 100)),
+      );
     };
     const request = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -1682,6 +1684,22 @@ export function WeddingExperience({
     >
       <DreamBackdrop />
 
+      {personalised && !submitted ? (
+        <div
+          ref={progressRef}
+          className="invitation-progress"
+          role="progressbar"
+          aria-label="Invitation progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={0}
+        >
+          <span aria-hidden="true">
+            <i />
+          </span>
+        </div>
+      ) : null}
+
       <EtherealLoader ready={filmReady} />
       {personalised ? (
         <SiteMenu
@@ -1890,127 +1908,111 @@ export function WeddingExperience({
             <p className="step-label">Your reply</p>
             {personalised ? (
               <>
-                {replyPhase === "attendance" ? (
-                  <>
-                    <h2 className="script-heading script-heading--long">
-                      Will you
-                      <br />
-                      join us?
-                    </h2>
-                    <p className="section-intro">
-                      We&rsquo;re delighted to celebrate with everyone named on
-                      this invitation.
-                    </p>
-                    <p className="rsvp-deadline-note">
-                      Kindly reply by {deadlineLabel}. You may update your
-                      response through this link at any time before then.
-                    </p>
-                    <div className="party-rsvp-list">
-                      {guestResponses.map((guest) => (
-                        <fieldset key={guest.id}>
-                          <legend>{guest.name}</legend>
-                          <div className="segmented-control">
-                            <button
-                              type="button"
-                              aria-pressed={guest.rsvpStatus === "Confirmed"}
-                              data-ripple
-                              className={
-                                guest.rsvpStatus === "Confirmed"
-                                  ? "is-selected"
-                                  : ""
-                              }
-                              onClick={() =>
-                                updateGuest(guest.id, {
-                                  rsvpStatus: "Confirmed",
-                                  receptionAttending: true,
-                                })
-                              }
-                            >
-                              Will attend
-                            </button>
-                            <button
-                              type="button"
-                              aria-pressed={guest.rsvpStatus === "Declined"}
-                              data-ripple
-                              className={
-                                guest.rsvpStatus === "Declined"
-                                  ? "is-selected"
-                                  : ""
-                              }
-                              onClick={() =>
-                                updateGuest(guest.id, {
-                                  rsvpStatus: "Declined",
-                                  receptionAttending: false,
-                                  ceremonyAttending: false,
-                                  mealSelection: "",
-                                })
-                              }
-                            >
-                              Unable to attend
-                            </button>
-                          </div>
-                        </fieldset>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="reply-contact slide-open">
-                    <h2>Mobile number</h2>
-                    <p className="section-intro">
-                      We&rsquo;ll send your table number here via WhatsApp.
-                    </p>
-                    <div className="field-grid phone-grid">
-                      <label className="phone-code">
-                        <span className="visually-hidden">Country code</span>
-                        <select
-                          value={rsvp.countryCode}
-                          onChange={(event) =>
-                            update("countryCode", event.target.value)
-                          }
-                          aria-label="Country calling code"
-                        >
-                          {countryCodes.map(([country, code]) => (
-                            <option key={`${country}-${code}`} value={code}>
-                              {country === "Other"
-                                ? "Other"
-                                : `${country} ${code}`}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        <span className="visually-hidden">Mobile number</span>
-                        <input
-                          required
-                          value={rsvp.phoneNumber}
-                          onChange={(event) =>
-                            update("phoneNumber", event.target.value)
-                          }
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel-national"
-                          placeholder="12 345 6789"
-                          maxLength={24}
-                          autoFocus
-                        />
-                      </label>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => {
-                        setReplyPhase("attendance");
-                        window.requestAnimationFrame(() =>
-                          window.requestAnimationFrame(() =>
-                            scrollToSection("rsvp"),
-                          ),
-                        );
-                      }}
-                    >
-                      Change attendance
-                    </button>
+                <>
+                  <h2 className="script-heading script-heading--long">
+                    Will you
+                    <br />
+                    join us?
+                  </h2>
+                  <p className="section-intro">
+                    We&rsquo;re delighted to celebrate with everyone named on
+                    this invitation.
+                  </p>
+                  <p className="rsvp-deadline-note">
+                    Kindly reply by {deadlineLabel}. You may update your
+                    response through this link at any time before then.
+                  </p>
+                  <div className="party-rsvp-list">
+                    {guestResponses.map((guest) => (
+                      <fieldset key={guest.id}>
+                        <legend>{guest.name}</legend>
+                        <div className="segmented-control">
+                          <button
+                            type="button"
+                            aria-pressed={guest.rsvpStatus === "Confirmed"}
+                            data-ripple
+                            className={
+                              guest.rsvpStatus === "Confirmed"
+                                ? "is-selected"
+                                : ""
+                            }
+                            onClick={() =>
+                              updateGuest(guest.id, {
+                                rsvpStatus: "Confirmed",
+                                receptionAttending: true,
+                              })
+                            }
+                          >
+                            Will attend
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={guest.rsvpStatus === "Declined"}
+                            data-ripple
+                            className={
+                              guest.rsvpStatus === "Declined"
+                                ? "is-selected"
+                                : ""
+                            }
+                            onClick={() =>
+                              updateGuest(guest.id, {
+                                rsvpStatus: "Declined",
+                                receptionAttending: false,
+                                ceremonyAttending: false,
+                                mealSelection: "",
+                              })
+                            }
+                          >
+                            Unable to attend
+                          </button>
+                        </div>
+                      </fieldset>
+                    ))}
                   </div>
-                )}
+                  {attendanceComplete && someoneAttending ? (
+                    <div className="reply-contact slide-open">
+                      <h2 className="reply-contact-title">Mobile number</h2>
+                      <p className="section-intro">
+                        We&rsquo;ll send your table number here via WhatsApp.
+                      </p>
+                      <div className="field-grid phone-grid">
+                        <label className="phone-code">
+                          <span className="visually-hidden">Country code</span>
+                          <select
+                            value={rsvp.countryCode}
+                            onChange={(event) =>
+                              update("countryCode", event.target.value)
+                            }
+                            aria-label="Country calling code"
+                          >
+                            {countryCodes.map(([country, code]) => (
+                              <option key={`${country}-${code}`} value={code}>
+                                {country === "Other"
+                                  ? "Other"
+                                  : `${country} ${code}`}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span className="visually-hidden">Mobile number</span>
+                          <input
+                            required
+                            value={rsvp.phoneNumber}
+                            onChange={(event) =>
+                              update("phoneNumber", event.target.value)
+                            }
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel-national"
+                            placeholder="12 345 6789"
+                            maxLength={24}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
                 {guestResponses.length === 0 ? (
                   <p className="form-error" role="alert">
                     We are unable to find the names attached to this invitation,
@@ -2781,7 +2783,7 @@ export function WeddingExperience({
                 href={
                   previewMode
                     ? "/after-party?preview=1"
-                    : `/after-party?token=${encodeURIComponent(token)}`
+                    : `/after-party?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(`/i/${token}`)}`
                 }
               >
                 See the after-party details{" "}
@@ -2821,62 +2823,6 @@ export function WeddingExperience({
         </p>
       ) : null}
       {submitted ? renderCustomPages("confirmation") : null}
-      {personalised &&
-      activeWizardIndex > 0 &&
-      usesFixedWizardNav &&
-      !submitted ? (
-        <div className="wizard-nav" aria-label="RSVP progress">
-          {activeWizardIndex > 0 ? (
-            <button
-              type="button"
-              className="wizard-back"
-              onClick={() => {
-                if (currentStepId === "reply" && replyPhase === "contact") {
-                  setReplyPhase("attendance");
-                  window.requestAnimationFrame(() =>
-                    window.requestAnimationFrame(() => scrollToSection("rsvp")),
-                  );
-                  return;
-                }
-                const previous = wizardSteps[activeWizardIndex - 1];
-                const target = previous?.sections.find((id) =>
-                  document.getElementById(id),
-                );
-                if (target) scrollToSection(target);
-              }}
-            >
-              <span aria-hidden="true">&larr;</span> Back
-            </button>
-          ) : (
-            <span />
-          )}
-          <p className="wizard-position" aria-live="polite">
-            <span>
-              {wizardStepLabels[wizardSteps[activeWizardIndex].id] ??
-                "Your invitation"}
-            </span>
-            <small>
-              {String(activeWizardIndex + 1).padStart(2, "0")} /{" "}
-              {String(wizardSteps.length - 1).padStart(2, "0")}
-            </small>
-          </p>
-          {wizardSteps[activeWizardIndex].cta ? (
-            <button
-              type="button"
-              className="wizard-next"
-              disabled={!fixedNextReady}
-              onClick={advance}
-            >
-              {wizardSteps[activeWizardIndex].cta === "Begin"
-                ? "Begin"
-                : "Next"}{" "}
-              <span aria-hidden="true">&rarr;</span>
-            </button>
-          ) : (
-            <span />
-          )}
-        </div>
-      ) : null}
     </main>
   );
 }

@@ -615,7 +615,14 @@ body {
 
 .invitation-scroll .reply-contact {
   width: 100%;
+  margin-top: 64px;
   text-align: center;
+}
+
+.invitation-scroll .reply-contact .reply-contact-title {
+  margin: 0 auto 18px !important;
+  font: italic 500 clamp(26px, 7.5vw, 32px) / 1.2 var(--invitation-display) !important;
+  letter-spacing: -0.015em;
 }
 
 .invitation-scroll .phone-grid {
@@ -1974,4 +1981,62 @@ body {
 
 .invitation-scroll #confirmation .evening-recap + .ribbon-divider {
   margin-top: 62px;
+}
+
+/* One quiet thread replaces the former Back/Next footer. It follows the
+   actual document rather than pretending this continuous scroll is a set of
+   separate form pages. */
+.invitation-scroll .invitation-progress {
+  --invitation-progress: 0;
+  position: fixed;
+  z-index: 121;
+  left: 50%;
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px));
+  width: min(30vw, 124px);
+  height: 22px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.invitation-scroll .invitation-progress > span {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(155, 49, 96, 0.2);
+  box-shadow: 0 0 8px rgba(244, 204, 215, 0.2);
+}
+
+.invitation-scroll .invitation-progress > span::before {
+  position: absolute;
+  inset: 0;
+  width: calc(var(--invitation-progress) * 100%);
+  content: "";
+  background: linear-gradient(
+    90deg,
+    rgba(155, 49, 96, 0.38),
+    rgba(244, 207, 217, 0.9)
+  );
+  box-shadow: 0 0 7px rgba(224, 154, 175, 0.42);
+}
+
+.invitation-scroll .invitation-progress i {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--invitation-progress) * 100%);
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(255, 250, 246, 0.92);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 28%,
+    #fff 0 12%,
+    #f7dce3 36%,
+    #c97991 100%
+  );
+  box-shadow:
+    0 0 8px rgba(255, 229, 235, 0.76),
+    0 0 2px rgba(116, 52, 72, 0.55);
+  transform: translate(-50%, -50%);
 }

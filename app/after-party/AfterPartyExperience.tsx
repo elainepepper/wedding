@@ -15,9 +15,18 @@ export function AfterPartyExperience() {
   );
   const [message, setMessage] = useState("");
   const [details, setDetails] = useState<PartyDetails | null>(null);
+  const [returnHref, setReturnHref] = useState("/");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const token = params.get("token") || "";
+    const requestedReturn = params.get("returnTo") || "";
+    const safeReturn = requestedReturn.startsWith("/i/")
+      ? requestedReturn
+      : token
+        ? `/i/${encodeURIComponent(token)}`
+        : "/";
+    setReturnHref(params.get("preview") === "1" ? "/preview" : safeReturn);
 
     if (params.get("preview") === "1") {
       setDetails({
@@ -32,7 +41,6 @@ export function AfterPartyExperience() {
 
     // The invitation itself is the key: the server verifies this token before
     // returning any private after-party detail.
-    const token = params.get("token") || "";
     let cancelled = false;
 
     fetch("/api/after-party", {
@@ -96,7 +104,7 @@ export function AfterPartyExperience() {
           </span>
           <h1>This page is resting quietly.</h1>
           <p>{message}</p>
-          <a className="after-party-coda__return" href="/">
+          <a className="after-party-coda__return" href={returnHref}>
             Return to the invitation <span aria-hidden="true">&rarr;</span>
           </a>
         </div>
@@ -106,7 +114,7 @@ export function AfterPartyExperience() {
 
   return (
     <main className="after-party-coda">
-      <a className="after-party-coda__back" href="/">
+      <a className="after-party-coda__back" href={returnHref}>
         <span aria-hidden="true">&larr;</span> Invitation
       </a>
 
@@ -165,7 +173,7 @@ export function AfterPartyExperience() {
             Please keep these details with you; this part of the evening is
             invitation only.
           </p>
-          <a className="after-party-coda__return" href="/">
+          <a className="after-party-coda__return" href={returnHref}>
             Return to the invitation <span aria-hidden="true">&rarr;</span>
           </a>
         </div>
