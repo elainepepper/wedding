@@ -613,6 +613,15 @@ body {
   margin-top: 44px !important;
 }
 
+.invitation-scroll .arrival-date-continue {
+  margin-top: 24px !important;
+}
+
+.invitation-scroll .arrival-date-continue:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .invitation-scroll .reply-contact {
   width: 100%;
   margin-top: 64px;

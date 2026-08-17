@@ -775,6 +775,7 @@ export function WeddingExperience({
   const progressRef = useRef<HTMLDivElement | null>(null);
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [openMealDetail, setOpenMealDetail] = useState<string | null>(null);
+  const [arrivalStepConfirmed, setArrivalStepConfirmed] = useState(false);
   const [music, setMusic] = useState<MusicSettings>({
     musicUrl: null,
     musicTitle: null,
@@ -1085,7 +1086,8 @@ export function WeddingExperience({
       : rsvp.roomAtHyatt === true
         ? Boolean(rsvp.bedPreference) &&
           Boolean(rsvp.nights) &&
-          Boolean(rsvp.arrivalDate)
+          Boolean(rsvp.arrivalDate) &&
+          arrivalStepConfirmed
         : rsvp.roomAtHyatt === false;
   const travelComplete =
     mealComplete &&
@@ -1199,7 +1201,8 @@ export function WeddingExperience({
           ? "bed"
           : rsvp.roomAtHyatt === true && !rsvp.nights
             ? "nights"
-            : rsvp.roomAtHyatt === true && !rsvp.arrivalDate
+            : rsvp.roomAtHyatt === true &&
+                (!rsvp.arrivalDate || !arrivalStepConfirmed)
               ? "arrival"
               : null;
   const travelQuestionTitle =
@@ -2231,6 +2234,7 @@ export function WeddingExperience({
                     update("bedPreference", null);
                     update("nights", null);
                     update("arrivalDate", "");
+                    setArrivalStepConfirmed(false);
                   }}
                 >
                   <span>Travelling</span>
@@ -2245,6 +2249,7 @@ export function WeddingExperience({
                       update("bedPreference", null);
                       update("nights", null);
                       update("arrivalDate", "");
+                      setArrivalStepConfirmed(false);
                     }}
                   >
                     <span>Grand Hyatt</span>
@@ -2327,6 +2332,7 @@ export function WeddingExperience({
                         }
                         onClick={() => {
                           update("roomAtHyatt", true);
+                          setArrivalStepConfirmed(false);
                         }}
                       >
                         Yes, please
@@ -2403,6 +2409,7 @@ export function WeddingExperience({
                               }
                               onClick={() => {
                                 update("nights", count);
+                                setArrivalStepConfirmed(false);
                               }}
                             >
                               {count} {count === 1 ? "night" : "nights"}
@@ -2429,10 +2436,24 @@ export function WeddingExperience({
                       </label>
                     ) : null}
                     {pendingTravelQuestion === "arrival" ? (
-                      <p className="help-note">
-                        We will pass this to the hotel and be in touch. Nothing
-                        is charged here.
-                      </p>
+                      <>
+                        <button
+                          type="button"
+                          className="chapter-continue arrival-date-continue"
+                          disabled={!rsvp.arrivalDate}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (rsvp.arrivalDate)
+                              setArrivalStepConfirmed(true);
+                          }}
+                        >
+                          Continue <span aria-hidden="true">&rarr;</span>
+                        </button>
+                        <p className="help-note">
+                          We will pass this to the hotel and be in touch.
+                          Nothing is charged here.
+                        </p>
+                      </>
                     ) : null}
                   </div>
                 ) : null}

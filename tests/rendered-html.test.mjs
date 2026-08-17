@@ -36,6 +36,11 @@ test("renders the finished wedding invitation content", async () => {
   // Opening iOS native form controls must not also start audio: Safari closes
   // the date sheet if media playback steals the same user activation.
   assert.match(experience, /input, select, textarea, label/);
+  // Selecting an arrival date must leave the native picker step mounted.
+  // Only the explicit Continue action may confirm and advance the step.
+  assert.match(experience, /arrivalStepConfirmed/);
+  assert.match(experience, /disabled=\{!rsvp\.arrivalDate\}/);
+  assert.match(experience, /setArrivalStepConfirmed\(true\)/);
   const confirmationIndex = experience.indexOf('id="confirmation"');
   const recapIndex = experience.indexOf(
     "<EveningRecap guests={guestResponses} />",
