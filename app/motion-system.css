@@ -865,6 +865,15 @@
     translate: none !important;
   }
 
+  /* A transformed ancestor makes iOS Safari repeatedly dismiss its native
+     date sheet as the visual viewport changes. The travel form stays planted
+     on touch devices; the environmental transition continues around it. */
+  .invitation-scroll #travel .scene-content {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
   .venue-arrival-art {
     opacity: min(0.38, calc(0.04 + var(--salon-arrival, 0) * 0.36));
   }
@@ -920,4 +929,24 @@
     opacity: 0 !important;
     transition: opacity 180ms ease !important;
   }
+}
+
+/* Final legibility pass: preserve the wine-coloured hierarchy while making
+   reading copy decisively darker against the moving watercolour backgrounds. */
+.invitation-scroll .scene-content
+  :where(p, li, dd, dt, label, legend, small) {
+  color: rgba(48, 34, 39, 0.92);
+}
+
+.invitation-scroll
+  :where(input, textarea, select, input::placeholder, textarea::placeholder) {
+  color: rgba(45, 32, 37, 0.9) !important;
+}
+
+.invitation-scroll :where(input::placeholder, textarea::placeholder) {
+  opacity: 0.72 !important;
+}
+
+.invitation-scroll :where(.step-label, .eyebrow) {
+  color: #84254f !important;
 }
