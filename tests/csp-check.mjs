@@ -14,7 +14,7 @@ await page.goto("http://localhost:3000/invitation-preview", { waitUntil: "networ
 await page.waitForTimeout(2500);
 await tap(/^\s*RSVP\s*$/); await tap(/Joyfully accept/);
 await nextUntil(/02 · DRESS CODE/i); await nextUntil(/03 · AT THE TABLE/i);
-await page.locator("button.choice-card:visible").first().click({ force: true }); await page.waitForTimeout(400);
+await page.locator("button.meal-select-button:visible").first().click({ force: true }); await page.waitForTimeout(400);
 await nextUntil(/04 · YOUR JOURNEY/i); await tap(/^\s*No\s*$/);
 await nextUntil(/FINDING YOUR WAY/i);
 await page.waitForTimeout(2500);

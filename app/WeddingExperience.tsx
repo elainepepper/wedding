@@ -349,6 +349,54 @@ const nearbyHotels = [
   },
 ] as const;
 
+function NearbyHotelList() {
+  const [openHotel, setOpenHotel] = useState<string | null>(null);
+
+  return (
+    <ul className="hotel-list hotel-disclosures">
+      {nearbyHotels.map((hotel, index) => {
+        const panelId = `hotel-description-${index}`;
+        const isOpen = openHotel === hotel.name;
+        return (
+          <li className={isOpen ? "is-open" : ""} key={hotel.name}>
+            <button
+              type="button"
+              className="hotel-disclosure-toggle"
+              aria-expanded={isOpen}
+              aria-controls={panelId}
+              onClick={() =>
+                setOpenHotel((current) =>
+                  current === hotel.name ? null : hotel.name,
+                )
+              }
+            >
+              <strong>
+                <HotelName name={hotel.name} />
+              </strong>
+              <span>{isOpen ? "Details −" : "Details +"}</span>
+            </button>
+            <div
+              className="hotel-description"
+              id={panelId}
+              aria-hidden={!isOpen}
+            >
+              <p>{hotel.note}</p>
+            </div>
+            <a
+              className="hotel-distance-link"
+              href={maps(`${hotel.name} Kuala Lumpur`)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {hotel.walk} away <span aria-hidden="true">↗</span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 const pamperPlaces = [
   {
     name: "V Spa Bukit Bintang",
@@ -599,28 +647,50 @@ function EditableDecorationOverlay({
 }
 
 function ChoiceButton({
+  id,
   selected,
   title,
   detail,
-  onClick,
+  detailsOpen,
+  onToggleDetails,
+  onSelect,
 }: {
+  id: string;
   selected: boolean;
   title: string;
-  detail?: string;
-  onClick: () => void;
+  detail: string;
+  detailsOpen: boolean;
+  onToggleDetails: () => void;
+  onSelect: () => void;
 }) {
+  const panelId = `${id}-description`;
   return (
-    <button
-      type="button"
-      className={`choice-card${selected ? " is-selected" : ""}`}
-      aria-pressed={selected}
-      onClick={onClick}
-      data-ripple
+    <article
+      className={`meal-option${selected ? " is-selected" : ""}${detailsOpen ? " is-open" : ""}`}
     >
-      <strong>{title}</strong>
-      {detail ? <small>{detail}</small> : null}
-      <span className="choice-mark">{selected ? "✓ Selected" : "Select"}</span>
-    </button>
+      <button
+        type="button"
+        className="meal-details-toggle"
+        aria-expanded={detailsOpen}
+        aria-controls={panelId}
+        onClick={onToggleDetails}
+      >
+        <strong>{title}</strong>
+        <span>{detailsOpen ? "Details −" : "Details +"}</span>
+      </button>
+      <div className="meal-description" id={panelId} aria-hidden={!detailsOpen}>
+        <p>{detail}</p>
+      </div>
+      <button
+        type="button"
+        className="meal-select-button"
+        aria-pressed={selected}
+        onClick={onSelect}
+        data-ripple
+      >
+        {selected ? "✓ Selected" : "Select this main course"}
+      </button>
+    </article>
   );
 }
 
@@ -755,6 +825,7 @@ export function WeddingExperience({
   const submissionInFlight = useRef(false);
   const submissionId = useRef("");
   const [openGuide, setOpenGuide] = useState<string | null>(null);
+  const [openMealDetail, setOpenMealDetail] = useState<string | null>(null);
   const [music, setMusic] = useState<MusicSettings>({
     musicUrl: null,
     musicTitle: null,
@@ -913,20 +984,26 @@ export function WeddingExperience({
               ? "no"
               : null,
           flyingIn: travelWasAnswered ? travelling : null,
-          roomAtHyatt:
-            travelWasAnswered && travelling ? requestedHyatt : null,
+          roomAtHyatt: travelWasAnswered && travelling ? requestedHyatt : null,
           arrivalDate:
-            confirmedGuests.map((guest) => guest.travel_arrival || "").find(Boolean) || "",
+            confirmedGuests
+              .map((guest) => guest.travel_arrival || "")
+              .find(Boolean) || "",
           departureDate:
-            confirmedGuests.map((guest) => guest.travel_departure || "").find(Boolean) || "",
+            confirmedGuests
+              .map((guest) => guest.travel_departure || "")
+              .find(Boolean) || "",
           accommodation:
-            confirmedGuests.map((guest) => guest.accommodation_name || "").find(Boolean) || "",
+            confirmedGuests
+              .map((guest) => guest.accommodation_name || "")
+              .find(Boolean) || "",
           accessibilityNote:
             confirmedGuests
               .map((guest) => guest.accessibility || "")
               .find(Boolean) || "",
           wishes:
-            result.guests.map((guest) => guest.wishes || "").find(Boolean) || "",
+            result.guests.map((guest) => guest.wishes || "").find(Boolean) ||
+            "",
           advice:
             confirmedGuests
               .map((guest) => guest.marriage_advice || "")
@@ -1073,7 +1150,7 @@ export function WeddingExperience({
         ready: true,
         cta: "Begin",
       },
-      { id: "reply", sections: ["rsvp"], ready: rsvpComplete, cta: "Continue" },
+      { id: "reply", sections: ["rsvp"], ready: rsvpComplete, cta: "Next" },
     ];
     // Each step may only exist while its section is actually on the page —
     // these conditions mirror the render gates below. A step whose section
@@ -1087,35 +1164,35 @@ export function WeddingExperience({
         id: "dress",
         sections: ["dress"],
         ready: true,
-        cta: "Continue",
+        cta: "Next",
       });
     if (anyYes)
       steps.push({
         id: "meal",
         sections: ["meal"],
         ready: mealComplete,
-        cta: "Continue",
+        cta: "Next",
       });
     if (anyYes && !hiddenScenes.has("travel"))
       steps.push({
         id: "travel",
         sections: ["travel"],
         ready: travelComplete,
-        cta: "Continue",
+        cta: "Next",
       });
     if (flyingIn && !hiddenScenes.has("recommendations"))
       steps.push({
         id: "guide",
         sections: ["recommendations"],
         ready: true,
-        cta: "Continue",
+        cta: "Next",
       });
     if (travelComplete && !hiddenScenes.has("venue"))
       steps.push({
         id: "venue",
         sections: ["venue"],
         ready: true,
-        cta: "Continue",
+        cta: "Next",
       });
     steps.push({
       id: "wishes",
@@ -1150,6 +1227,10 @@ export function WeddingExperience({
   const usesFixedWizardNav = ["reply", "meal", "travel"].includes(
     currentStepId,
   );
+  const fixedNextReady =
+    currentStepId === "reply" && replyPhase === "attendance"
+      ? attendanceComplete
+      : wizardSteps[activeWizardIndex]?.ready;
   const pendingTravelQuestion =
     rsvp.flyingIn === null
       ? "journey"
@@ -1192,6 +1273,18 @@ export function WeddingExperience({
   // Next is deterministic: a complete page turns once; an incomplete Travel
   // page carries the guest to the exact answer still needed.
   const advance = () => {
+    if (
+      currentStepId === "reply" &&
+      replyPhase === "attendance" &&
+      attendanceComplete &&
+      someoneAttending
+    ) {
+      setReplyPhase("contact");
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => scrollToSection("rsvp")),
+      );
+      return;
+    }
     if (
       wizardSteps[activeWizardIndex].id === "travel" &&
       !travelComplete &&
@@ -1792,7 +1885,9 @@ export function WeddingExperience({
           />
           <div className="scene-content schedule-card reveal">
             <p className="step-label">The programme</p>
-            <h2>The evening</h2>
+            <h2 className="script-heading script-heading--section">
+              The evening
+            </h2>
             <ol className="evening-timeline">
               {eveningMoments.map((moment, index) => (
                 <li
@@ -1837,7 +1932,7 @@ export function WeddingExperience({
               <>
                 {replyPhase === "attendance" ? (
                   <>
-                    <h2 className="script-heading">
+                    <h2 className="script-heading script-heading--long">
                       Will you
                       <br />
                       join us?
@@ -1897,22 +1992,6 @@ export function WeddingExperience({
                         </fieldset>
                       ))}
                     </div>
-                    {attendanceComplete && someoneAttending ? (
-                      <button
-                        type="button"
-                        className="chapter-continue reply-continue"
-                        onClick={() => {
-                          setReplyPhase("contact");
-                          window.requestAnimationFrame(() =>
-                            window.requestAnimationFrame(() =>
-                              scrollToSection("rsvp"),
-                            ),
-                          );
-                        }}
-                      >
-                        Continue <span aria-hidden="true">&rarr;</span>
-                      </button>
-                    ) : null}
                   </>
                 ) : (
                   <div className="reply-contact slide-open">
@@ -2030,7 +2109,9 @@ export function WeddingExperience({
           />
           <div className="scene-content dress-card reveal">
             <p className="step-label">Dress code</p>
-            <h2>{content.dressCode}</h2>
+            <h2 className="script-heading script-heading--section">
+              {content.dressCode}
+            </h2>
             <p className="dress-note">
               <DressNote text={content.dressNote} />
             </p>
@@ -2058,7 +2139,9 @@ export function WeddingExperience({
           />
           <div className="scene-content form-card reveal">
             <p className="step-label">At the table</p>
-            <h2>Choose your main course</h2>
+            <h2 className="script-heading script-heading--long">
+              Choose your main course
+            </h2>
             <div className="guest-meal-list">
               {guestResponses
                 .filter((guest) => guest.rsvpStatus === "Confirmed")
@@ -2070,18 +2153,40 @@ export function WeddingExperience({
                     ) : (
                       <div className="choice-grid choice-grid--two meal-choices">
                         <ChoiceButton
+                          id={`meal-${guest.id}-salmon`}
                           selected={guest.mealSelection === "Salmon"}
                           title="Seared Alaskan salmon"
                           detail={salmonDescription}
-                          onClick={() =>
+                          detailsOpen={
+                            openMealDetail === `meal-${guest.id}-salmon`
+                          }
+                          onToggleDetails={() =>
+                            setOpenMealDetail((current) =>
+                              current === `meal-${guest.id}-salmon`
+                                ? null
+                                : `meal-${guest.id}-salmon`,
+                            )
+                          }
+                          onSelect={() =>
                             updateGuest(guest.id, { mealSelection: "Salmon" })
                           }
                         />
                         <ChoiceButton
+                          id={`meal-${guest.id}-lamb`}
                           selected={guest.mealSelection === "Lamb"}
                           title="Almond dukkha-crusted lamb"
                           detail={lambDescription}
-                          onClick={() =>
+                          detailsOpen={
+                            openMealDetail === `meal-${guest.id}-lamb`
+                          }
+                          onToggleDetails={() =>
+                            setOpenMealDetail((current) =>
+                              current === `meal-${guest.id}-lamb`
+                                ? null
+                                : `meal-${guest.id}-lamb`,
+                            )
+                          }
+                          onSelect={() =>
                             updateGuest(guest.id, { mealSelection: "Lamb" })
                           }
                         />
@@ -2124,20 +2229,12 @@ export function WeddingExperience({
           data-scene
           data-cinematic="travel"
         >
-          <img
-            className="scene-art scene-art--pearl"
-            src="/wedding/pearl-floral.webp"
-            alt=""
-            loading="lazy"
-            aria-hidden="true"
-            onError={removeBrokenImage}
-          />
           <div className="scene-content form-card form-card--glass reveal">
             <p className="step-label">Travel</p>
             <h2
               className={
                 pendingTravelQuestion === "journey"
-                  ? "script-heading"
+                  ? "script-heading script-heading--long"
                   : undefined
               }
             >
@@ -2228,23 +2325,7 @@ export function WeddingExperience({
                     have rooms of its own.
                   </span>
                 </p>
-                <ul className="hotel-list">
-                  {nearbyHotels.map((hotel) => (
-                    <li key={hotel.name}>
-                      <a
-                        href={maps(`${hotel.name} Kuala Lumpur`)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <strong>
-                          <HotelName name={hotel.name} />
-                        </strong>
-                        <span>{hotel.note}</span>
-                        <i>{hotel.walk} away ↗</i>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <NearbyHotelList />
               </div>
             ) : rsvp.flyingIn ? (
               <div className="slide-open travel-details">
@@ -2387,24 +2468,7 @@ export function WeddingExperience({
                     <p className="field-hint">
                       A few nearby options, if you prefer to stay elsewhere.
                     </p>
-                    <ul className="hotel-list">
-                      {nearbyHotels.map((hotel) => (
-                        <li key={hotel.name}>
-                          <a
-                            href={maps(`${hotel.name} Kuala Lumpur`)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <strong>
-                              <HotelName name={hotel.name} />
-                            </strong>
-                            <span>{hotel.note}</span>
-
-                            <i>{hotel.walk} away ↗</i>
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    <NearbyHotelList />
                   </div>
                 ) : null}
               </div>
@@ -2448,7 +2512,9 @@ export function WeddingExperience({
           <div className="kl-arrival-wash" aria-hidden="true" />
           <div className="scene-content reveal">
             <p className="step-label">Kuala Lumpur</p>
-            <h2>A few places we love</h2>
+            <h2 className="script-heading script-heading--section">
+              A few places we love
+            </h2>
             <p className="section-intro">When you are in town.</p>
             <div className="guide editorial-guide">
               {guideCategories.map((category) => {
@@ -2557,7 +2623,9 @@ export function WeddingExperience({
               </div>
               <div className="venue-arrival-anchor">
                 <p className="step-label">Getting there</p>
-                <h2 className="display-serif">{content.venueName}</h2>
+                <h2 className="script-heading script-heading--section">
+                  {content.venueName}
+                </h2>
               </div>
             </div>
             <div className="venue-practical">
@@ -2617,7 +2685,6 @@ export function WeddingExperience({
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
-              <EveningRecap guests={guestResponses} />
             </div>
           </div>
         </section>
@@ -2643,7 +2710,9 @@ export function WeddingExperience({
           />
           <div className="scene-content wishes-card reveal">
             <p className="step-label">From the heart</p>
-            <h2>{content.wishesHeading}</h2>
+            <h2 className="script-heading script-heading--long">
+              {content.wishesHeading}
+            </h2>
             {personalised ? (
               <>
                 <label className="full-field">
@@ -2717,7 +2786,7 @@ export function WeddingExperience({
             <div className="wax-seal" aria-hidden="true">
               E<span>&amp;</span>H
             </div>
-            <h2>
+            <h2 className="script-heading script-heading--long confirmation-script-heading">
               Thank you,
               <br />
               {rsvp.guestName || "dear guest"}.
@@ -2727,6 +2796,9 @@ export function WeddingExperience({
                 ? confirmationCopy
                 : "We shall miss you dearly on the night, and we are so grateful to carry your love with us from afar."}
             </p>
+            {rsvp.attendance === "yes" ? (
+              <EveningRecap guests={guestResponses} />
+            ) : null}
             <RibbonDivider />
             <div className="confirmation-details">
               <span>7 November 2026</span>
@@ -2794,7 +2866,9 @@ export function WeddingExperience({
           data-ripple-zone
         >
           <div className="scene-content reveal">
-            <h2>Until then.</h2>
+            <h2 className="script-heading script-heading--section">
+              Until then.
+            </h2>
             <div className="photo-reveal-stage">
               <PhotoRail />
             </div>
@@ -2814,12 +2888,19 @@ export function WeddingExperience({
       activeWizardIndex > 0 &&
       usesFixedWizardNav &&
       !submitted ? (
-        <div className="wizard-nav" aria-label="Continue">
+        <div className="wizard-nav" aria-label="RSVP progress">
           {activeWizardIndex > 0 ? (
             <button
               type="button"
               className="wizard-back"
               onClick={() => {
+                if (currentStepId === "reply" && replyPhase === "contact") {
+                  setReplyPhase("attendance");
+                  window.requestAnimationFrame(() =>
+                    window.requestAnimationFrame(() => scrollToSection("rsvp")),
+                  );
+                  return;
+                }
                 const previous = wizardSteps[activeWizardIndex - 1];
                 const target = previous?.sections.find((id) =>
                   document.getElementById(id),
@@ -2846,7 +2927,7 @@ export function WeddingExperience({
             <button
               type="button"
               className="wizard-next"
-              disabled={!wizardSteps[activeWizardIndex].ready}
+              disabled={!fixedNextReady}
               onClick={advance}
             >
               {wizardSteps[activeWizardIndex].cta === "Begin"

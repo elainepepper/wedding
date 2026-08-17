@@ -52,7 +52,7 @@ await report("reply");
 await tap(/Joyfully accept/);
 await nextUntil(/02 · DRESS CODE/i); await report("dress");
 await nextUntil(/03 · AT THE TABLE/i); await report("dinner");
-await page.locator("button.choice-card:visible").first().click({ force: true }); await page.waitForTimeout(400);
+await page.locator("button.meal-select-button:visible").first().click({ force: true }); await page.waitForTimeout(400);
 await nextUntil(/04 · YOUR JOURNEY/i); await report("travel");
 await tap(/^\s*Yes\s*$/); await tap(/No, thank you/);
 await nextUntil(/While you are here/i); await report("kuala lumpur");

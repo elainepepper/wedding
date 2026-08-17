@@ -73,7 +73,7 @@ for (const [label, device] of Object.entries(DEVICES)) {
     check(label, "dress code step reached", await nextUntil(/02 · DRESS CODE/i));
     check(label, "dinner step reached", await nextUntil(/03 · AT THE TABLE/i));
     // meal: pick salmon for the sample guest
-    await page.locator("button.choice-card:visible").first().click({ timeout: 8000, force: true });
+    await page.locator("button.meal-select-button:visible").first().click({ timeout: 8000, force: true });
     await page.waitForTimeout(500);
     check(label, "travel step reached", await nextUntil(/04 · YOUR JOURNEY/i));
     await clickByText("No");                         // not flying in

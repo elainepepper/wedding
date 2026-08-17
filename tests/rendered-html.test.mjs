@@ -21,6 +21,18 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(calendar, /DTSTART:20261107T100000Z/);
   assert.match(calendar, /The Grand Salon\\, Grand Hyatt Kuala Lumpur/);
   assert.match(layout, /og-wedding\.png/);
+  // The release-candidate presentation keeps RSVP progression singular and
+  // disclosure controls separate from the persisted meal answer.
+  assert.match(experience, /className="meal-details-toggle"/);
+  assert.match(experience, /aria-expanded=\{detailsOpen\}/);
+  assert.match(experience, /className="meal-select-button"/);
+  assert.match(experience, /className="hotel-disclosure-toggle"/);
+  assert.match(experience, /className="hotel-distance-link"/);
+  assert.doesNotMatch(experience, /className="chapter-continue reply-continue"/);
+  assert.doesNotMatch(experience, /scene-art scene-art--pearl/);
+  const confirmationIndex = experience.indexOf('id="confirmation"');
+  const recapIndex = experience.indexOf("<EveningRecap guests={guestResponses} />");
+  assert.ok(confirmationIndex >= 0 && recapIndex > confirmationIndex);
   // No leftover build-scaffolding markers.
   assert.doesNotMatch(`${experience}${layout}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });

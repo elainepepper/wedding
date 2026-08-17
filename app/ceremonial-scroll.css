@@ -1681,3 +1681,244 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ========================================================================== */
+/* FINAL PRE-RELEASE PRESENTATION CORRECTION                                  */
+/* ========================================================================== */
+
+/* One exact script voice, measured in three tiers so long wording and dynamic
+   guest names keep every swash inside narrow phone viewports. */
+.invitation-scroll h2.script-heading {
+  width: min(100%, 350px) !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  padding: 0.12em 0.08em 0.22em !important;
+  overflow: visible !important;
+  font-family: var(--invitation-script) !important;
+  font-feature-settings:
+    "calt" 1,
+    "dlig" 1;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  text-rendering: optimizeLegibility;
+  text-wrap: balance;
+}
+
+.invitation-scroll h2.script-heading--section {
+  font-size: clamp(52px, 14.5vw, 68px) !important;
+  line-height: 1.08 !important;
+}
+
+.invitation-scroll h2.script-heading--long {
+  font-size: clamp(46px, 12.5vw, 58px) !important;
+  line-height: 1.12 !important;
+}
+
+.invitation-scroll #confirmation h2.confirmation-script-heading {
+  width: min(100%, 352px) !important;
+  font-size: clamp(44px, 11.8vw, 56px) !important;
+  line-height: 1.12 !important;
+}
+
+/* Meal descriptions are supporting information. The title and selection
+   remain separate controls so asking for details can never change an answer. */
+.invitation-scroll .meal-option {
+  width: 100%;
+  padding: 30px 4px;
+  border-top: 1px solid var(--invitation-hairline);
+  text-align: center;
+}
+
+.invitation-scroll .meal-option:last-child {
+  border-bottom: 1px solid var(--invitation-hairline);
+}
+
+.invitation-scroll .meal-details-toggle,
+.invitation-scroll .meal-select-button {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 7px 4px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: center;
+}
+
+.invitation-scroll .meal-details-toggle {
+  gap: 12px;
+}
+
+.invitation-scroll .meal-details-toggle strong {
+  color: var(--invitation-wine);
+  font: italic 500 27px/1.08 var(--invitation-serif);
+}
+
+.invitation-scroll .meal-details-toggle span,
+.invitation-scroll .meal-select-button {
+  color: rgba(63, 48, 51, 0.5);
+  font: 600 10px/1.2 var(--invitation-utility);
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .meal-select-button {
+  margin-top: 8px;
+  color: var(--invitation-wine);
+}
+
+.invitation-scroll .meal-description {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: min(100%, 292px);
+  margin: 0 auto;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms var(--motion-ease-soft),
+    opacity 180ms var(--motion-ease-soft);
+}
+
+.invitation-scroll .meal-description > p {
+  min-height: 0;
+  margin: 0 !important;
+  overflow: hidden;
+  color: rgba(63, 48, 51, 0.76);
+  font: 400 15px/1.5 var(--invitation-serif);
+  text-align: center;
+}
+
+.invitation-scroll .meal-option.is-open .meal-description {
+  grid-template-rows: 1fr;
+  margin-top: 10px;
+  opacity: 1;
+}
+
+.invitation-scroll .meal-option.is-selected .meal-select-button {
+  font-weight: 700;
+}
+
+/* Alternative accommodation reads as a curated index. Description disclosure
+   and the external directions link remain unambiguously separate targets. */
+.invitation-scroll .hotel-disclosures > li {
+  width: 100%;
+  padding: 28px 4px;
+  border-top: 1px solid var(--invitation-hairline);
+  text-align: center;
+}
+
+.invitation-scroll .hotel-disclosures > li:last-child {
+  border-bottom: 1px solid var(--invitation-hairline);
+}
+
+.invitation-scroll .hotel-disclosure-toggle {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 4px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: center;
+}
+
+.invitation-scroll .hotel-disclosure-toggle strong {
+  color: var(--invitation-ink);
+  font: 500 23px/1.14 var(--invitation-display);
+}
+
+.invitation-scroll .hotel-disclosure-toggle strong span {
+  font: 400 18px/1.2 var(--invitation-serif);
+}
+
+.invitation-scroll .hotel-disclosure-toggle > span,
+.invitation-scroll .hotel-distance-link {
+  color: var(--invitation-wine) !important;
+  font: 600 10px/1.2 var(--invitation-utility) !important;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.invitation-scroll .hotel-description {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: min(100%, 292px);
+  margin: 0 auto;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms var(--motion-ease-soft),
+    opacity 180ms var(--motion-ease-soft);
+}
+
+.invitation-scroll .hotel-description > p {
+  min-height: 0;
+  margin: 0 !important;
+  overflow: hidden;
+  color: rgba(63, 48, 51, 0.76);
+  font: 400 15px/1.5 var(--invitation-serif);
+  text-align: center;
+}
+
+.invitation-scroll .hotel-disclosures > li.is-open .hotel-description {
+  grid-template-rows: 1fr;
+  margin-top: 12px;
+  opacity: 1;
+}
+
+.invitation-scroll .hotel-disclosures .hotel-distance-link {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px !important;
+  width: auto;
+  min-height: 44px;
+  margin: 2px auto 0;
+  padding: 10px 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  text-decoration: none;
+}
+
+.invitation-scroll
+  :is(
+    .meal-details-toggle,
+    .meal-select-button,
+    .hotel-disclosure-toggle,
+    .hotel-distance-link
+  ):focus-visible {
+  outline: 1px solid var(--invitation-wine);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .invitation-scroll .meal-option:hover .meal-description,
+  .invitation-scroll .hotel-disclosures > li:hover .hotel-description {
+    grid-template-rows: 1fr;
+    margin-top: 10px;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-scroll .meal-description,
+  .invitation-scroll .hotel-description {
+    transition: none !important;
+  }
+}
+
+/* The saved recap now belongs to the successful RSVP keepsake, between the
+   confirmation copy and the printed date/venue details. */
+.invitation-scroll #confirmation .evening-recap {
+  width: min(100%, 360px);
+  margin: 64px auto 0;
+  padding-top: 44px;
+}
+
+.invitation-scroll #confirmation .evening-recap + .ribbon-divider {
+  margin-top: 62px;
+}

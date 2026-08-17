@@ -219,15 +219,6 @@
   will-change: transform, opacity;
 }
 
-.invitation-scroll #travel .scene-art--pearl {
-  display: block !important;
-  opacity: calc(0.16 + var(--cinematic-exit, 0) * 0.12) !important;
-  transform: translate3d(0, calc(var(--cinematic-exit, 0) * -14px), 0)
-    scale(calc(1 + var(--cinematic-exit, 0) * 0.026));
-  transform-origin: 50% 46%;
-  will-change: transform, opacity;
-}
-
 .kl-arrival-wash {
   position: absolute;
   inset: -18%;
