@@ -10,7 +10,7 @@ type Guest = {
   relationship: string | null;
   rsvp_status: string; ceremony_invited: number; ceremony_attending: number | null; reception_invited: number;
   reception_attending: number | null; after_party_eligible: number; after_party_invited: number;
-  after_party_attending: string; meal_selection: string | null; dietary_requirements: string | null;
+  after_party_attending: string; after_party_rsvp_updated_at?: string | null; after_party_discovered_at?: string | null; meal_selection: string | null; dietary_requirements: string | null;
   allergies: string | null; child_meal: number; accessibility: string | null; transport_required: number;
   accommodation_required: number; table_id: number | null; seat_number: number | null; invitation_sent: number;
   invitation_sent_at: string | null; rsvp_submitted_at: string | null; internal_notes: string | null;
@@ -37,6 +37,7 @@ type Settings = Record<string, unknown> & {
   wedding_name: string; couple_names: string; wedding_date: string; rsvp_deadline: string; timezone: string; site_design?: unknown;
   website_url?: string | null; invitation_wording?: string | null; confirmation_message?: string | null; date_format?: string | null;
   cloudinary_cloud_name?: string | null; formspree_form_id?: string | null; music_url?: string | null; music_title?: string | null;
+  after_hours_rsvp_deadline?: string | null; after_hours_location_revealed?: number | boolean; after_hours_venue?: string | null; after_hours_address?: string | null; after_hours_transport_note?: string | null; after_hours_music_url?: string | null;
 };
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
 export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
@@ -1297,6 +1298,14 @@ function SettingsPanel({ settings, managers, adminRole, activities, act, guests 
     afterPartyWhere: (settings.after_party_where as string) || "",
     afterPartyDress: (settings.after_party_dress as string) || "",
     afterPartyEntry: (settings.after_party_entry as string) || "",
+    afterHoursRsvpDeadline: (settings.after_hours_rsvp_deadline as string) || "2026-10-15",
+    afterHoursLocationRevealed:
+      settings.after_hours_location_revealed === true ||
+      Number(settings.after_hours_location_revealed) === 1,
+    afterHoursVenue: (settings.after_hours_venue as string) || "",
+    afterHoursAddress: (settings.after_hours_address as string) || "",
+    afterHoursTransportNote: (settings.after_hours_transport_note as string) || "",
+    afterHoursMusicUrl: (settings.after_hours_music_url as string) || "",
     roomBlockSize: String(settings.room_block_size ?? 15),
   });
   const [managerForm, setManagerForm] = useState({ name: "", email: "", role: "partner" as "partner" | "planner" });
@@ -1321,10 +1330,12 @@ function SettingsPanel({ settings, managers, adminRole, activities, act, guests 
       </div>
       <div className="panel-head"><div><p className="panel-kicker">The private chapter</p><h3>After-party details</h3></div></div>
       <div className="settings-grid">
-        <label><span>When</span><input value={form.afterPartyWhen} onChange={(event) => setForm({ ...form, afterPartyWhen: event.target.value })} placeholder="After the final toast" /></label>
-        <label><span>Where</span><input value={form.afterPartyWhere} onChange={(event) => setForm({ ...form, afterPartyWhere: event.target.value })} placeholder="Revealed at the reception" /></label>
-        <label className="wide"><span>To wear</span><input value={form.afterPartyDress} onChange={(event) => setForm({ ...form, afterPartyDress: event.target.value })} placeholder="Come exactly as you are" /></label>
-        <label className="wide"><span>At the door</span><input value={form.afterPartyEntry} onChange={(event) => setForm({ ...form, afterPartyEntry: event.target.value })} placeholder="Give your name quietly at the door" /></label>
+        <label><span>RSVP deadline</span><input type="date" value={form.afterHoursRsvpDeadline} onChange={(event) => setForm({ ...form, afterHoursRsvpDeadline: event.target.value })} /></label>
+        <Toggle label="Reveal location" value={form.afterHoursLocationRevealed} set={(value) => setForm({ ...form, afterHoursLocationRevealed: value })} />
+        <label><span>Venue name</span><input value={form.afterHoursVenue} onChange={(event) => setForm({ ...form, afterHoursVenue: event.target.value })} placeholder="Leave empty while hidden" /></label>
+        <label><span>Address</span><input value={form.afterHoursAddress} onChange={(event) => setForm({ ...form, afterHoursAddress: event.target.value })} placeholder="Leave empty while hidden" /></label>
+        <label className="wide"><span>Transport note</span><input value={form.afterHoursTransportNote} onChange={(event) => setForm({ ...form, afterHoursTransportNote: event.target.value })} placeholder="Optional" /></label>
+        <label className="wide"><span>After Hours music URL</span><input type="url" value={form.afterHoursMusicUrl} onChange={(event) => setForm({ ...form, afterHoursMusicUrl: event.target.value })} placeholder="Optional audio asset" /></label>
       </div>
       <p className="security-note"><span>✦</span><strong>Invitation-key access</strong> These details appear only to guests whose invitation includes the after-party. Everyone else never sees the page exists.</p>
       <p className="security-note"><span>◇</span><strong>Music is consent-based</strong> Add an MP3 delivery URL here. Guests choose whether to play it; audio never autoplays.</p>

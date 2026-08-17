@@ -186,7 +186,7 @@ export async function POST(request: Request) {
       if ("mobile" in payload && editMobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(editMobile)) {
         return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
       }
-      const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", afterPartyAttending: "after_party_attending", accommodationName: "accommodation_name", travelArrival: "travel_arrival", travelDeparture: "travel_departure", wishes: "wishes", marriageAdvice: "marriage_advice" };
+      const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", accommodationName: "accommodation_name", travelArrival: "travel_arrival", travelDeparture: "travel_departure", wishes: "wishes", marriageAdvice: "marriage_advice" };
       const ageGroup = canonicalAgeGroup("ageGroup" in payload ? payload.ageGroup : guestDoc.data().age_group);
       const update: Record<string, unknown> = {
         age_group: ageGroup,
@@ -196,6 +196,10 @@ export async function POST(request: Request) {
       Object.entries(fields).forEach(([key, field]) => {
         if (key in payload) update[field] = clean(payload[key], ["internalNotes", "wishes", "marriageAdvice"].includes(key) ? 1500 : 800) || null;
       });
+      if ("afterPartyAttending" in payload) {
+        update.after_party_attending = payload.afterPartyAttending === "Yes" || payload.afterPartyAttending === "No" ? payload.afterPartyAttending : "Pending";
+        update.after_party_rsvp_updated_at = serverTimestamp();
+      }
       if ("rsvpStatus" in payload) update.rsvp_status = canonicalRsvpStatus(payload.rsvpStatus);
       if ("mealSelection" in payload) update.meal_selection = payload.mealSelection === "Lamb" || payload.mealSelection === "Salmon" ? payload.mealSelection : null;
       if ("bedPreference" in payload) update.bed_preference = payload.bedPreference === "King" || payload.bedPreference === "Twin" ? payload.bedPreference : null;
@@ -266,7 +270,10 @@ export async function POST(request: Request) {
       if (field === "rsvpStatus") value = canonicalRsvpStatus(value);
       if (field === "afterPartyEligible" || field === "afterPartyInvited") value = value ? 1 : 0;
       const batch = weddingRef.firestore.batch();
-      for (const guestId of guestIds) { const doc = await docById("guests", guestId); if (doc) batch.set(doc.ref, { [targetField]: value ?? null, updated_at: serverTimestamp() }, { merge: true }); }
+      for (const guestId of guestIds) { const doc = await docById("guests", guestId); if (doc) {
+        if (field === "afterPartyInvited" && Boolean(value) && canonicalRsvpStatus(doc.data().rsvp_status) !== "Confirmed") return Response.json({ error: "After Hours access can only be enabled for a confirmed reception guest." }, { status: 400 });
+        batch.set(doc.ref, { [targetField]: value ?? null, ...(field === "afterPartyInvited" && Boolean(value) ? { after_party_eligible: 1 } : {}), updated_at: serverTimestamp() }, { merge: true });
+      } }
       await batch.commit();
       await addActivity(admin.displayName, "Guests bulk edited", "guest", guestIds.join(","), `${field} updated for ${guestIds.length} guests`);
       return Response.json({ ok: true });
@@ -467,7 +474,7 @@ export async function POST(request: Request) {
     }
 
     if (action === "saveSettings") {
-      await weddingRef.set({ wedding_name: clean(payload.weddingName, 180) || "Elaine & Haykal", couple_names: clean(payload.coupleNames, 180) || "Elaine and Haykal", wedding_date: clean(payload.weddingDate, 20) || "2026-11-07", rsvp_deadline: clean(payload.rsvpDeadline, 20) || "2026-09-15", website_url: clean(payload.websiteUrl, 300) || null, invitation_wording: clean(payload.invitationWording, 1000) || null, confirmation_message: clean(payload.confirmationMessage, 1000) || null, timezone: clean(payload.timezone, 80) || "Australia/Perth", date_format: clean(payload.dateFormat, 40) || "D MMMM YYYY", formspree_form_id: clean(payload.formspreeFormId, 180) || null, cloudinary_cloud_name: clean(payload.cloudinaryCloudName, 180) || null, music_url: clean(payload.musicUrl, 600) || null, music_title: clean(payload.musicTitle, 180) || null, after_party_when: clean(payload.afterPartyWhen, 200) || null, after_party_where: clean(payload.afterPartyWhere, 300) || null, after_party_dress: clean(payload.afterPartyDress, 300) || null, after_party_entry: clean(payload.afterPartyEntry, 300) || null, room_block_size: Math.max(0, Math.min(999, integer(payload.roomBlockSize) ?? 0)), updated_at: serverTimestamp() }, { merge: true });
+      await weddingRef.set({ wedding_name: clean(payload.weddingName, 180) || "Elaine & Haykal", couple_names: clean(payload.coupleNames, 180) || "Elaine and Haykal", wedding_date: clean(payload.weddingDate, 20) || "2026-11-07", rsvp_deadline: clean(payload.rsvpDeadline, 20) || "2026-09-15", website_url: clean(payload.websiteUrl, 300) || null, invitation_wording: clean(payload.invitationWording, 1000) || null, confirmation_message: clean(payload.confirmationMessage, 1000) || null, timezone: clean(payload.timezone, 80) || "Australia/Perth", date_format: clean(payload.dateFormat, 40) || "D MMMM YYYY", formspree_form_id: clean(payload.formspreeFormId, 180) || null, cloudinary_cloud_name: clean(payload.cloudinaryCloudName, 180) || null, music_url: clean(payload.musicUrl, 600) || null, music_title: clean(payload.musicTitle, 180) || null, after_hours_rsvp_deadline: clean(payload.afterHoursRsvpDeadline, 20) || "2026-10-15", after_hours_location_revealed: payload.afterHoursLocationRevealed ? 1 : 0, after_hours_venue: clean(payload.afterHoursVenue, 240) || null, after_hours_address: clean(payload.afterHoursAddress, 500) || null, after_hours_transport_note: clean(payload.afterHoursTransportNote, 500) || null, after_hours_music_url: clean(payload.afterHoursMusicUrl, 600) || null, room_block_size: Math.max(0, Math.min(999, integer(payload.roomBlockSize) ?? 0)), updated_at: serverTimestamp() }, { merge: true });
       await addActivity(admin.displayName, "Wedding settings updated", "settings", "elaine-haykal-2026", "Settings saved");
       return Response.json({ ok: true });
     }

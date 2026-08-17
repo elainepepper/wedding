@@ -16,7 +16,7 @@ test("the invitation and manager share the hardened RSVP contract", async () => 
   assert.match(inviteRoute, /last_rsvp_submission_id/);
   assert.match(inviteRoute, /marriage_advice: guest\.marriage_advice/);
   assert.match(inviteRoute, /has_submitted/);
-  assert.match(inviteRoute, /afterPartyInvited = guests\.some\(\(guest\) => isEnabledFlag/);
+  assert.match(inviteRoute, /const afterHoursGuestIds = new Set/);
   assert.doesNotMatch(inviteRoute, /filter\(\(guest\) => !\/\^\(child\|infant/);
 
   assert.match(experience, /submissionInFlight\.current/);

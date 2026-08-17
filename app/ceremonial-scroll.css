@@ -1368,6 +1368,34 @@ body {
   content: none !important;
 }
 
+.invitation-scroll #afterparty .afterparty-enter {
+  min-height: 150px;
+  margin-top: 36px !important;
+  border: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.invitation-scroll #afterparty .afterparty-enter img {
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(120, 53, 83, 0.16));
+  transition: transform 500ms ease;
+}
+
+.invitation-scroll #afterparty .afterparty-enter:is(:hover, :focus-visible) img {
+  transform: scale(1.035);
+}
+
+.invitation-scroll #afterparty .afterparty-enter span {
+  font: 600 11px/1.2 var(--invitation-utility);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 .invitation-scroll #afterparty h2 {
   font-family: var(--invitation-display) !important;
 }

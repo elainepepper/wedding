@@ -2804,10 +2804,8 @@ export function WeddingExperience({
         >
           <div className="scene-content reveal">
             <div className="afterparty-arch">
-              <p className="step-label">After the last dance</p>
-              <h2>The night continues</h2>
               <p className="section-intro">
-                There is a little more to the evening waiting for you.
+                One more invitation is waiting for you.
               </p>
               <a
                 className="afterparty-enter"
@@ -2817,8 +2815,12 @@ export function WeddingExperience({
                     : `/after-party?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(`/i/${token}`)}`
                 }
               >
-                See the after-party details{" "}
-                <span aria-hidden="true">&rarr;</span>
+                <img
+                  src="/wedding/after-hours/south-sea-pearl.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>Open the invitation</span>
               </a>
             </div>
           </div>

@@ -60,17 +60,35 @@ test("uses the exact required meal wording", async () => {
 });
 
 test("ships the private, server-enforced after-party gate", async () => {
-  const [experience, route] = await Promise.all([
+  const [experience, route, invitationRoute, manager] = await Promise.all([
     read("app/after-party/AfterPartyExperience.tsx"),
     read("app/api/after-party/route.ts"),
+    read("app/api/invite/[token]/route.ts"),
+    read("app/manager/ManagerApp.tsx"),
   ]);
-  assert.match(experience, /For invited guests/);
-  assert.match(experience, /invitation only/i);
-  assert.match(experience, /invitation itself is the key/i);
-  // Eligibility is enforced server-side against the invitation token.
+  assert.match(experience, /The formalities are over\./);
+  assert.match(experience, /Now let&rsquo;s have some fun\./);
+  assert.match(experience, /Private transmission/i);
+  assert.match(experience, /south-sea-pearl\.png/);
+  // Eligibility, reception attendance and the table-discovery lifecycle are
+  // enforced server-side against the invitation token.
+  assert.match(route, /after_party_eligible/);
   assert.match(route, /after_party_invited/);
+  assert.match(route, /reception_attending/);
+  assert.match(route, /table_id/);
   assert.match(route, /invitation_token/);
   assert.match(route, /invitation_enabled/);
+  assert.match(route, /after_party_rsvp_updated_at/);
+  assert.match(route, /after_party_discovered_at/);
+  // The ordinary invitation omits the entire private capability for an
+  // ineligible household instead of rendering and hiding it in CSS.
+  assert.match(invitationRoute, /afterHoursGuestIds/);
+  assert.match(
+    invitationRoute,
+    /\.\.\.\(afterPartyInvited \? \{ afterPartyInvited: true \} : \{\}\)/,
+  );
+  assert.match(manager, /afterHoursRsvpDeadline/);
+  assert.match(manager, /afterHoursLocationRevealed/);
 });
 
 test("includes the complete manager and locked-down Firestore rules", async () => {

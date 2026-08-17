@@ -1,181 +1,314 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { musicElement } from "../music";
 
-type PartyDetails = {
-  when: string;
-  where: string;
-  dress: string;
-  entry: string;
+type PartyGuest = {
+  id: number;
+  name: string;
+  attending: "Yes" | "No" | "Pending";
+};
+type PartySettings = {
+  deadline: string;
+  musicUrl: string | null;
+  location:
+    | { revealed: false }
+    | {
+        revealed: true;
+        venue: string;
+        address: string | null;
+        transportNote: string | null;
+      };
+};
+
+const previewGuests: PartyGuest[] = [
+  { id: -1, name: "Your name", attending: "Pending" },
+];
+const deadlineLabel = (value: string | undefined) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return "15 October 2026";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
 };
 
 export function AfterPartyExperience() {
-  const [state, setState] = useState<"checking" | "unlocked" | "denied">(
+  const [state, setState] = useState<"checking" | "door" | "inside" | "denied">(
     "checking",
   );
-  const [message, setMessage] = useState("");
-  const [details, setDetails] = useState<PartyDetails | null>(null);
+  const [guests, setGuests] = useState<PartyGuest[]>([]);
+  const [settings, setSettings] = useState<PartySettings | null>(null);
+  const [responses, setResponses] = useState<Record<number, "Yes" | "No">>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [returnHref, setReturnHref] = useState("/");
+  const [token, setToken] = useState("");
+  const [entering, setEntering] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const preview = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("preview") === "1",
+    [],
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token") || "";
+    const nextToken = params.get("token")?.trim() || "";
     const requestedReturn = params.get("returnTo") || "";
-    const safeReturn = requestedReturn.startsWith("/i/")
-      ? requestedReturn
-      : token
-        ? `/i/${encodeURIComponent(token)}`
-        : "/";
-    setReturnHref(params.get("preview") === "1" ? "/preview" : safeReturn);
-
+    setToken(nextToken);
+    setReturnHref(
+      params.get("preview") === "1"
+        ? "/preview"
+        : requestedReturn.startsWith("/i/")
+          ? requestedReturn
+          : nextToken
+            ? `/i/${encodeURIComponent(nextToken)}`
+            : "/",
+    );
     if (params.get("preview") === "1") {
-      setDetails({
-        when: "After the final toast",
-        where: "Revealed at the reception",
-        dress: "Come exactly as you are",
-        entry: "Give your name quietly at the door",
+      setGuests(previewGuests);
+      setSettings({
+        deadline: "2026-10-15",
+        musicUrl: null,
+        location: { revealed: false },
       });
-      setState("unlocked");
+      setState("door");
       return;
     }
 
-    // The invitation itself is the key: the server verifies this token before
-    // returning any private after-party detail.
     let cancelled = false;
-
     fetch("/api/after-party", {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token: nextToken }),
     })
       .then(async (response) => {
         const result = (await response.json()) as {
           ok?: boolean;
-          error?: string;
-          details?: PartyDetails;
+          guests?: PartyGuest[];
+          settings?: PartySettings;
         };
         if (cancelled) return;
-        if (response.ok && result.ok) {
-          setDetails(result.details ?? null);
-          setState("unlocked");
-        } else {
-          setMessage(
-            result.error ||
-              "This private part of the evening is not included in your invitation.",
-          );
+        if (!response.ok || !result.ok || !result.guests?.length) {
           setState("denied");
+          return;
         }
+        setGuests(result.guests);
+        setSettings(result.settings ?? null);
+        setResponses(
+          result.guests.reduce<Record<number, "Yes" | "No">>(
+            (current, guest) => {
+              if (guest.attending === "Yes" || guest.attending === "No")
+                current[guest.id] = guest.attending;
+              return current;
+            },
+            {},
+          ),
+        );
+        setState("door");
       })
       .catch(() => {
-        if (!cancelled) {
-          setMessage(
-            "The after-party details could not open just now. Please try your invitation link once more.",
-          );
-          setState("denied");
-        }
+        if (!cancelled) setState("denied");
       });
-
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (state === "checking") {
-    return (
-      <main className="after-party-coda after-party-coda--state">
-        <div className="after-party-coda__state-copy">
-          <p className="after-party-coda__eyebrow">Elaine &amp; Haykal</p>
-          <span className="after-party-coda__flourish" aria-hidden="true">
-            ❦
-          </span>
-          <h1>Preparing the evening&hellip;</h1>
-        </div>
-      </main>
-    );
-  }
+  const enter = () => {
+    if (entering) return;
+    setEntering(true);
+    if (settings?.musicUrl) {
+      const audio = musicElement();
+      const wanted = new URL(settings.musicUrl, window.location.origin).href;
+      if (audio.src !== wanted) audio.src = wanted;
+      audio.volume = 0.18;
+      audio.loop = true;
+      audio.play().catch(() => undefined);
+      audioRef.current = audio;
+    }
+    window.setTimeout(() => setState("inside"), 1450);
+  };
 
-  if (state === "denied") {
+  const submit = async () => {
+    if (saving || guests.some((guest) => !responses[guest.id])) return;
+    setSaving(true);
+    setError("");
+    try {
+      if (!preview) {
+        const response = await fetch("/api/after-party", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            action: "respond",
+            responses: guests.map((guest) => ({
+              id: guest.id,
+              attending: responses[guest.id],
+            })),
+          }),
+        });
+        const result = (await response.json()) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!response.ok || !result.ok)
+          throw new Error(result.error || "Your reply could not be saved.");
+      }
+      setSaved(true);
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "Your reply could not be saved. Please try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      audioRef.current?.pause();
+    },
+    [],
+  );
+
+  if (state === "checking")
     return (
-      <main className="after-party-coda after-party-coda--state">
-        <div className="after-party-coda__state-copy">
-          <p className="after-party-coda__eyebrow">Elaine &amp; Haykal</p>
-          <span className="after-party-coda__flourish" aria-hidden="true">
-            ❦
-          </span>
-          <h1>This page is resting quietly.</h1>
-          <p>{message}</p>
-          <a className="after-party-coda__return" href={returnHref}>
-            Return to the invitation <span aria-hidden="true">&rarr;</span>
-          </a>
-        </div>
+      <main
+        data-experience="after-hours"
+        className="ah-state"
+        aria-busy="true"
+      />
+    );
+
+  if (state === "denied")
+    return (
+      <main data-experience="after-hours" className="ah-state">
+        <p>E+H</p>
+        <h1>This page is resting quietly.</h1>
+        <a href={returnHref}>Return to invitation</a>
       </main>
     );
-  }
+
+  if (state === "door")
+    return (
+      <main
+        data-experience="after-hours"
+        className={`ah-door${entering ? " is-entering" : ""}`}
+      >
+        <div className="ah-door__arch" aria-hidden="true" />
+        <div className="ah-door__shadow" aria-hidden="true" />
+        <div className="ah-door__copy">
+          <p>One more invitation is waiting for you.</p>
+          <button
+            type="button"
+            onClick={enter}
+            disabled={entering}
+            aria-label="Open the hidden invitation"
+          >
+            <img src="/wedding/after-hours/south-sea-pearl.png" alt="" />
+            <span>Open the doorway</span>
+          </button>
+        </div>
+        <div className="ah-door__pink-light" aria-hidden="true" />
+      </main>
+    );
 
   return (
-    <main className="after-party-coda">
-      <a className="after-party-coda__back" href={returnHref}>
-        <span aria-hidden="true">&larr;</span> Invitation
+    <main data-experience="after-hours" className="ah-world">
+      <a className="ah-return" href={returnHref}>
+        Return to invitation
       </a>
-
-      <section
-        className="after-party-coda__hero"
-        aria-labelledby="after-party-title"
-      >
-        <div className="after-party-coda__hero-copy">
-          <p className="after-party-coda__eyebrow">After the last dance</p>
-          <h1 id="after-party-title" className="after-party-coda__title">
-            <span>The night</span>
-            <em>continues</em>
-          </h1>
-          <span className="after-party-coda__flourish" aria-hidden="true">
-            ❦
-          </span>
-          <p className="after-party-coda__intro">
-            One more glass, a little more music, and a little longer together.
-          </p>
-          <a
-            className="after-party-coda__details-link"
-            href="#after-party-details"
-          >
-            The details <span aria-hidden="true">&darr;</span>
-          </a>
-        </div>
+      <div className="ah-grain" aria-hidden="true" />
+      <section className="ah-threshold" aria-label="After Hours introduction">
+        <p className="ah-transmission">Private transmission</p>
+        <div className="ah-liquid" aria-hidden="true" />
+        <p className="ah-threshold__formal">The formalities are over.</p>
+        <p className="ah-threshold__fun">Now let&rsquo;s have some fun.</p>
       </section>
-
-      <section
-        id="after-party-details"
-        className="after-party-coda__details"
-        aria-labelledby="after-party-details-title"
-      >
-        <div className="after-party-coda__details-copy">
-          <p className="after-party-coda__eyebrow">For invited guests</p>
-          <h2 id="after-party-details-title">After hours</h2>
-          <dl>
-            <div>
-              <dt>When</dt>
-              <dd>{details?.when}</dd>
-            </div>
-            <div>
-              <dt>Where</dt>
-              <dd>{details?.where}</dd>
-            </div>
-            <div>
-              <dt>To wear</dt>
-              <dd>{details?.dress}</dd>
-            </div>
-            <div>
-              <dt>At the door</dt>
-              <dd>{details?.entry}</dd>
-            </div>
-          </dl>
-          <p className="after-party-coda__privacy">
-            Please keep these details with you; this part of the evening is
-            invitation only.
+      <section className="ah-title-scene" aria-labelledby="after-hours-title">
+        <p>E+H / After Hours</p>
+        <h1 id="after-hours-title">
+          <span>After</span>
+          <span>Hours</span>
+        </h1>
+        <div className="ah-shadow-pass" aria-hidden="true" />
+      </section>
+      <section className="ah-details">
+        <p className="ah-kicker">After Hours</p>
+        <div className="ah-location">
+          <h2>Location</h2>
+          {settings?.location.revealed ? (
+            <>
+              <strong>{settings.location.venue}</strong>
+              {settings.location.address ? (
+                <address>{settings.location.address}</address>
+              ) : null}
+              {settings.location.transportNote ? (
+                <p>{settings.location.transportNote}</p>
+              ) : null}
+            </>
+          ) : (
+            <p>Revealed closer to the night.</p>
+          )}
+        </div>
+        <div className="ah-rsvp">
+          <p className="ah-kicker">Your reply</p>
+          <h2>Will you stay?</h2>
+          {guests.map((guest) => (
+            <fieldset key={guest.id}>
+              <legend>{guest.name}</legend>
+              <button
+                type="button"
+                className={responses[guest.id] === "Yes" ? "is-selected" : ""}
+                onClick={() =>
+                  setResponses((current) => ({ ...current, [guest.id]: "Yes" }))
+                }
+              >
+                I&rsquo;ll be there
+              </button>
+              <button
+                type="button"
+                className={responses[guest.id] === "No" ? "is-selected" : ""}
+                onClick={() =>
+                  setResponses((current) => ({ ...current, [guest.id]: "No" }))
+                }
+              >
+                Not this time
+              </button>
+            </fieldset>
+          ))}
+          <p className="ah-deadline">
+            Reply by {deadlineLabel(settings?.deadline)}.
           </p>
-          <a className="after-party-coda__return" href={returnHref}>
-            Return to the invitation <span aria-hidden="true">&rarr;</span>
-          </a>
+          {error ? (
+            <p className="ah-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {saved ? (
+            <p className="ah-saved" role="status">
+              Your After Hours reply is saved.
+            </p>
+          ) : (
+            <button
+              className="ah-submit"
+              type="button"
+              disabled={saving || guests.some((guest) => !responses[guest.id])}
+              onClick={submit}
+            >
+              {saving ? "Saving…" : "Send reply"}
+            </button>
+          )}
         </div>
       </section>
     </main>

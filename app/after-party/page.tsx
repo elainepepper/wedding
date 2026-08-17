@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AfterPartyExperience } from "./AfterPartyExperience";
+import "./after-hours.css";
 
 export const metadata: Metadata = {
   title: "A little secret",

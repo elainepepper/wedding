@@ -43,7 +43,7 @@ async function householdForToken(token: string) {
 
 // Only the fields the invitation experience needs ever leave the server.
 // Internal notes, seating, categories and send-tracking stay private.
-function publicGuest(guest: Record<string, unknown>) {
+function publicGuest(guest: Record<string, unknown>, afterHoursAccess: boolean) {
   return {
     id: guest.id,
     first_name: guest.first_name ?? "",
@@ -54,8 +54,7 @@ function publicGuest(guest: Record<string, unknown>) {
     child_meal: isChildAgeGroup(guest.age_group) || isEnabledFlag(guest.child_meal) ? 1 : 0,
     ceremony_invited: isEnabledFlag(guest.ceremony_invited) ? 1 : 0,
     reception_invited: isEnabledFlag(guest.reception_invited) ? 1 : 0,
-    after_party_invited: isEnabledFlag(guest.after_party_invited) ? 1 : 0,
-    after_party_attending: guest.after_party_attending ?? "Pending",
+    ...(afterHoursAccess ? { after_party_invited: 1, after_party_attending: guest.after_party_attending ?? "Pending" } : {}),
     meal_selection: guest.meal_selection ?? null,
     dietary_requirements: guest.dietary_requirements ?? null,
     allergies: guest.allergies ?? null,
@@ -133,7 +132,8 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     tableDocs.forEach((doc) => { if (doc.exists) tableNames.set(Number(doc.data()?.id), String(doc.data()?.name ?? "")); });
   }
   guests.forEach((guest) => { guest.table_name = tableNames.get(Number(guest.table_id)) ?? null; });
-  const afterPartyInvited = guests.some((guest) => isEnabledFlag(guest.after_party_invited));
+  const afterHoursGuestIds = new Set(guests.filter((guest) => isEnabledFlag(guest.after_party_eligible) && isEnabledFlag(guest.after_party_invited) && canonicalRsvpStatus(guest.rsvp_status) === "Confirmed" && isEnabledFlag(guest.reception_attending) && Number(guest.table_id ?? 0) > 0).map((guest) => Number(guest.id)));
+  const afterPartyInvited = afterHoursGuestIds.size > 0;
   const events = eventSnapshot.docs.map((doc) => doc.data())
     // The private after-party must not exist at all for guests who are not
     // invited to it — it is never sent to the browser, not merely hidden.
@@ -144,7 +144,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
   const roomBlock = await roomBlockState(settings, Number(household.id));
   return Response.json({
     household: { id: household.id, name: household.name, maxGuests: guests.length },
-    guests: guests.map(publicGuest),
+    guests: guests.map((guest) => publicGuest(guest, afterHoursGuestIds.has(Number(guest.id)))),
     events,
     settings: {
       rsvp_deadline: settings.rsvp_deadline ?? null,
@@ -152,7 +152,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
       music_url: settings.music_url ?? null,
       music_title: settings.music_title ?? null,
     },
-    afterPartyInvited,
+    ...(afterPartyInvited ? { afterPartyInvited: true } : {}),
     roomBlock,
   }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
@@ -221,7 +221,6 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     const child = isChildAgeGroup(permission.age_group) || isEnabledFlag(permission.child_meal);
     const ceremonyInvited = isEnabledFlag(permission.ceremony_invited);
     const receptionInvited = isEnabledFlag(permission.reception_invited);
-    const afterPartyInvitedForGuest = isEnabledFlag(permission.after_party_invited);
     const meal = response.mealSelection === "Lamb" || response.mealSelection === "Salmon" ? response.mealSelection : null;
     if (status === "Confirmed" && receptionInvited && !child && !meal) return Response.json({ error: "Please choose lamb or salmon for every attending guest." }, { status: 400 });
     anyAttending ||= status === "Confirmed";
@@ -229,7 +228,6 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       rsvp_status: status,
       ceremony_attending: ceremonyInvited ? Number(status === "Confirmed" && response.ceremonyAttending !== false) : null,
       reception_attending: receptionInvited ? Number(status === "Confirmed" && response.receptionAttending !== false) : null,
-      after_party_attending: afterPartyInvitedForGuest && (response.afterPartyAttending === "Yes" || response.afterPartyAttending === "No") ? response.afterPartyAttending : "Pending",
       meal_selection: child ? null : meal,
       dietary_requirements: clean(response.dietaryRequirements, 800) || null,
       allergies: clean(response.allergies, 800) || null,
