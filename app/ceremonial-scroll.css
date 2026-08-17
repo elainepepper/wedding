@@ -1158,7 +1158,7 @@ body {
   margin: 52px auto 0 !important;
   overflow: hidden !important;
   background: rgba(255, 250, 247, 0.18) !important;
-  border: 1px solid var(--invitation-hairline) !important;
+  border: 1px solid rgba(122, 37, 73, 0.38) !important;
   border-radius: 4px !important;
   box-shadow: none !important;
 }
@@ -1376,27 +1376,60 @@ body {
 }
 
 .invitation-scroll .photo-rail {
-  display: block !important;
-  width: min(calc(100% - 40px), 520px) !important;
+  display: flex !important;
+  gap: clamp(12px, 3.5vw, 20px);
+  width: 100% !important;
   height: auto !important;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: auto;
   margin: 58px auto 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
+  padding: 0 calc((100% - min(72vw, 330px)) / 2) 18px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: calc((100% - min(72vw, 330px)) / 2);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   background: transparent !important;
   border: 0 !important;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+  contain: inline-size;
+}
+
+.invitation-scroll .photo-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.invitation-scroll #gallery .photo-rail__item {
+  flex: 0 0 min(72vw, 330px) !important;
+  width: min(72vw, 330px);
+  aspect-ratio: 4 / 5;
+  margin: 0 !important;
+  overflow: hidden;
+  scroll-snap-align: center;
+  scroll-snap-stop: normal;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
   clip-path: none !important;
 }
 
-.invitation-scroll .photo-rail img {
+.invitation-scroll #gallery .photo-rail__item img {
   display: block;
   width: 100% !important;
   height: 100% !important;
   object-fit: cover;
   object-position: center;
   clip-path: none !important;
+}
+
+.invitation-scroll .photo-rail:focus-visible {
+  outline: 1px solid rgba(122, 37, 73, 0.42);
+  outline-offset: 6px;
 }
 
 .invitation-scroll .closing-line {
@@ -1727,6 +1760,7 @@ body {
   width: min(100%, 352px) !important;
   font-size: clamp(44px, 11.8vw, 56px) !important;
   line-height: 1.12 !important;
+  text-transform: none !important;
 }
 
 /* Meal descriptions are supporting information. The title and selection

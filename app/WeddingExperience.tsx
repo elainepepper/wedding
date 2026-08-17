@@ -253,6 +253,18 @@ function joinGuestNames(names: Array<string | null | undefined>) {
   return clean.join(" & ");
 }
 
+// Guest data may arrive in administrative all-caps. Preserve intentionally
+// mixed-case names, but give all-caps records a gracious invitation treatment
+// instead of repeating database casing in the confirmation headline.
+function invitationCaseName(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed !== trimmed.toLocaleUpperCase()) return trimmed;
+
+  return trimmed
+    .toLocaleLowerCase()
+    .replace(/(^|[\s&'’.-])\p{L}/gu, (match) => match.toLocaleUpperCase());
+}
+
 function splitMobile(mobile: string | null) {
   if (!mobile) return { countryCode: "+60", phoneNumber: "" };
   const compact = mobile.replace(/[\s()-]/g, "");
@@ -590,58 +602,6 @@ function Countdown() {
         <strong>{minutes}</strong>
         <span>minutes</span>
       </div>
-    </div>
-  );
-}
-
-function EditableDecorationOverlay({
-  design,
-  activeScene,
-}: {
-  design: SiteDesign;
-  activeScene: string;
-}) {
-  return (
-    <div className="editable-decoration-overlay" aria-hidden="true">
-      {design.decorations.map((item) => {
-        const active = item.visible && item.scene === activeScene;
-        // Pointer drift: depth-based parallax obeys the editor's master cursor
-        // toggle; the "cursor" preset adds a stronger, per-element follow.
-        const drift =
-          (design.cursorMotion ? item.depth * 9 : 0) +
-          (item.motion === "cursor" ? 26 * item.motionStrength : 0);
-        const motionVars = {
-          "--m-amp": `${(4 + item.motionStrength * 14).toFixed(1)}px`,
-          "--m-deg": `${(1.5 + item.motionStrength * 5).toFixed(1)}deg`,
-          "--m-dur": `${(11 - item.motionStrength * 6).toFixed(1)}s`,
-        } as CSSProperties;
-        return (
-          <span
-            key={item.id}
-            className={`deco-wrap${active ? " is-active" : ""}`}
-            style={{
-              left: `${item.x}%`,
-              top: `${item.y}%`,
-              width: `${item.width}%`,
-              opacity: active ? item.opacity : 0,
-              zIndex: item.depth + 4,
-              transform: `translate3d(calc(-50% + var(--pointer-x) * ${drift}px), calc(-50% + var(--pointer-y) * ${drift * 0.7}px), 0) rotate(${item.rotation}deg)`,
-            }}
-          >
-            <img
-              src={item.src}
-              alt=""
-              className={
-                item.motion !== "none" && item.motion !== "cursor"
-                  ? `deco-anim deco-anim--${item.motion}`
-                  : undefined
-              }
-              style={motionVars}
-              onError={removeBrokenImage}
-            />
-          </span>
-        );
-      })}
     </div>
   );
 }
@@ -1254,7 +1214,7 @@ export function WeddingExperience({
             ? "How long will you stay?"
             : pendingTravelQuestion === "arrival"
               ? "When will you arrive?"
-              : "Is there anything we can arrange for you?";
+              : "How can we make your visit more comfortable?";
 
   const revealTravelQuestion = (question: string) => {
     // This is reserved for an explicit press of the fixed Next control. The
@@ -1699,9 +1659,14 @@ export function WeddingExperience({
     inviteData?.settings?.confirmation_message?.trim() || "";
   const confirmationCopy =
     !storedConfirmationCopy ||
-    storedConfirmationCopy.includes("hardly wait to celebrate, feast and dance")
-      ? "Your place at our table is saved. We can’t wait to celebrate with you."
+    storedConfirmationCopy.includes(
+      "hardly wait to celebrate, feast and dance",
+    ) ||
+    storedConfirmationCopy.includes("Your place at our table is saved")
+      ? "We’re delighted you’ll be joining us. We can’t wait to celebrate with you."
       : storedConfirmationCopy;
+  const confirmationGuestName =
+    invitationCaseName(rsvp.guestName) || "dear guest";
   const deadlineLabel =
     rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ||
     "15 September 2026";
@@ -1765,11 +1730,6 @@ export function WeddingExperience({
           </button>
         </>
       ) : null}
-      <EditableDecorationOverlay
-        design={siteDesign}
-        activeScene={activeSection}
-      />
-
       {stepHas("invitation") ? (
         <section
           id="invitation"
@@ -2605,22 +2565,6 @@ export function WeddingExperience({
         >
           <div className="scene-content venue-card reveal">
             <div className="venue-arrival-stage">
-              <div className="venue-arrival-art" aria-hidden="true">
-                <img
-                  className="venue-arrival-art__facade"
-                  src="/wedding/story/grand-hyatt-facade.webp"
-                  alt=""
-                  loading="lazy"
-                  onError={removeBrokenImage}
-                />
-                <img
-                  className="venue-arrival-art__entrance"
-                  src="/wedding/story/grand-hyatt-entrance.webp"
-                  alt=""
-                  loading="lazy"
-                  onError={removeBrokenImage}
-                />
-              </div>
               <div className="venue-arrival-anchor">
                 <p className="step-label">Getting there</p>
                 <h2 className="script-heading script-heading--section">
@@ -2789,7 +2733,7 @@ export function WeddingExperience({
             <h2 className="script-heading script-heading--long confirmation-script-heading">
               Thank you,
               <br />
-              {rsvp.guestName || "dear guest"}.
+              {confirmationGuestName}.
             </h2>
             <p>
               {rsvp.attendance === "yes"
