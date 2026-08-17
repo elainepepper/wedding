@@ -41,7 +41,9 @@ Upload these top-level items:
 
 Do not upload or commit `node_modules`, `.next`, `.env`, `.env.local`, a Firebase service-account file, or any Cloudinary secret.
 
-The supplied illustrations are already in `public/wedding/decor/`. The six-second landing film is already in `public/wedding/landing-film.mp4`. Do not upload the Baidu folders or WhatsApp video separately.
+The retired sticker pack must not be restored. The six-second landing film is
+already in `public/wedding/landing-film.mp4`. Do not upload the Baidu folders or
+WhatsApp video separately.
 
 ## 3. Connect GitHub to Netlify
 

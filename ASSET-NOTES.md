@@ -1,6 +1,7 @@
 # Supplied artwork notes
 
-All decorative imagery in `public/wedding/decor/` comes from artwork supplied by the site owner. No AI-generated or replacement illustrations were created.
+The former decorative sticker set was removed at the site owner's request and
+must not be restored or referenced by guest-facing code.
 
 The light cinematic landing scene uses selected elements from:
 
@@ -10,10 +11,7 @@ The light cinematic landing scene uses selected elements from:
 
 The selected PNG artwork was only resized and converted to transparent WebP for faster loading. The four landing assets are:
 
-- `lace-bow-white.webp`
-- `lace-ribbon-white.webp`
-- `ribbon-pink-sheer.webp`
-- `lace-tape-white.webp`
+- Retired at the site owner's request.
 
 The `8048` set was reviewed but not placed on the landing scene because its blue details and generic “Love Thanks” wording conflict with the five-colour pink palette and personalised invitation copy.
 

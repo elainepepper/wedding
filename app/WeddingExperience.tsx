@@ -1214,7 +1214,7 @@ export function WeddingExperience({
             ? "How long will you stay?"
             : pendingTravelQuestion === "arrival"
               ? "When will you arrive?"
-              : "How can we make your visit more comfortable?";
+              : "Is there anything you may need on the evening?";
 
   const revealTravelQuestion = (question: string) => {
     // This is reserved for an explicit press of the fixed Next control. The
@@ -2193,7 +2193,8 @@ export function WeddingExperience({
             <p className="step-label">Travel</p>
             <h2
               className={
-                pendingTravelQuestion === "journey"
+                pendingTravelQuestion === "journey" ||
+                pendingTravelQuestion === "room"
                   ? "script-heading script-heading--long"
                   : undefined
               }
@@ -2644,14 +2645,6 @@ export function WeddingExperience({
           data-scene
           data-cinematic="wishes"
         >
-          <img
-            className="scene-art scene-art--wishes-lace"
-            src="/wedding/decor/lace-tape-white.webp"
-            alt=""
-            loading="lazy"
-            aria-hidden="true"
-            onError={removeBrokenImage}
-          />
           <div className="scene-content wishes-card reveal">
             <p className="step-label">From the heart</p>
             <h2 className="script-heading script-heading--long">

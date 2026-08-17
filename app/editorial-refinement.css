@@ -188,7 +188,7 @@
 
 @media (hover: hover) {
   .wedding-shell.wizard #rsvp .segmented-control button:hover {
-    background: transparent url("/wedding/decor/lace-hover-blush-v2.webp") center / 100% 100% no-repeat !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 }
 
@@ -465,7 +465,7 @@
   .wedding-shell.wizard #meal .choice-card:hover,
   .wedding-shell.wizard #travel .segmented-control button:hover,
   .wedding-shell.wizard .confirmation-actions .calendar-button:hover {
-    background: transparent url("/wedding/decor/lace-hover-blush-v2.webp") center / 100% 100% no-repeat !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 }
 
@@ -499,7 +499,7 @@
 
 @media (hover: hover) {
   .wedding-shell.wizard .site-menu-button:hover {
-    background: transparent url("/wedding/decor/lace-hover-blush-v2.webp") center / 100% 100% no-repeat !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 }
 
@@ -683,7 +683,7 @@
 
 @media (hover: hover) and (pointer: fine) and (min-width: 821px) {
   .wedding-shell.wizard #rsvp .segmented-control button:hover {
-    background: transparent url("/wedding/decor/lace-hover-blush-v2.webp") center / 100% 100% no-repeat !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 }
 

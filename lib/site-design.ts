@@ -122,11 +122,6 @@ export const fontPairs = [
 ] as const;
 
 export const decorationLibrary = [
-  { name: "White lace bow", src: "/wedding/decor/lace-bow-white.webp" },
-  { name: "White lace ribbon", src: "/wedding/decor/lace-ribbon-white.webp" },
-  { name: "Pink sheer bow", src: "/wedding/decor/ribbon-pink-sheer.webp" },
-  { name: "White lace tape", src: "/wedding/decor/lace-tape-white.webp" },
-  { name: "French bow", src: "/wedding/decor/bow.webp" },
   { name: "Pearl floral", src: "/wedding/pearl-floral.webp" },
   { name: "Floral arch", src: "/wedding/floral-frame.webp" },
   { name: "Dinner table", src: "/wedding/dinner-table.webp" },
@@ -175,9 +170,7 @@ export const defaultSiteDesign: SiteDesign = {
     wishesKicker: "A few words for our forever",
     wishesHeading: "A few words for us to keep",
   },
-  decorations: [
-    { id: "invitation-lace-ribbon", name: "Invitation lace ribbon", scene: "invitation", src: "/wedding/decor/lace-ribbon-white.webp", x: 50, y: 12, width: 64, opacity: .34, rotation: 0, depth: -1, visible: true, motion: "float", motionStrength: .35 },
-  ],
+  decorations: [],
   hiddenBuiltIns: ["invitation-frame"],
   textLayout: {},
   hiddenScenes: [],

@@ -351,7 +351,7 @@
 
 .venue-arrival-stage {
   position: relative;
-  min-height: 120dvh;
+  min-height: 72dvh;
 }
 
 .venue-arrival-anchor {
@@ -374,7 +374,13 @@
   position: relative;
   z-index: var(--z-content);
   width: 100%;
-  padding-top: clamp(52px, 8vh, 82px);
+  padding-top: clamp(28px, 4vh, 44px);
+}
+
+@media (min-width: 821px) {
+  .venue-arrival-stage {
+    min-height: 84dvh;
+  }
 }
 
 .evening-recap {

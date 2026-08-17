@@ -1413,7 +1413,7 @@ body {
   scroll-snap-stop: normal;
   background: transparent !important;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: clamp(12px, 3.4vw, 18px) !important;
   box-shadow: none !important;
   clip-path: none !important;
 }
@@ -1731,11 +1731,13 @@ body {
   font-feature-settings:
     "calt" 1,
     "dlig" 1;
-  font-weight: 400 !important;
+  font-weight: 500 !important;
+  -webkit-text-stroke: 0.12px currentColor;
   letter-spacing: 0 !important;
   text-align: center !important;
   text-rendering: optimizeLegibility;
   text-wrap: balance;
+  paint-order: stroke fill;
 }
 
 .invitation-scroll h2.script-heading--section {

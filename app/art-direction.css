@@ -504,8 +504,7 @@
   .wedding-shell.wizard #meal .choice-card:hover,
   .wedding-shell.wizard #travel .segmented-control button:hover,
   .wedding-shell.wizard .confirmation-actions .calendar-button:hover {
-    background: transparent url("/wedding/decor/lace-hover-blush-v2.webp")
-      center / 100% 100% no-repeat !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
   .wedding-shell.wizard #recommendations .guide-group > button span,
   .wedding-shell.wizard .wizard-nav :is(.wizard-back, .wizard-next) {

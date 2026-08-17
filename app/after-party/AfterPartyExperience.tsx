@@ -133,12 +133,6 @@ export function AfterPartyExperience() {
             The details <span aria-hidden="true">&darr;</span>
           </a>
         </div>
-        <img
-          className="after-party-coda__ribbon"
-          src="/wedding/decor/ribbon-pink-sheer.webp"
-          alt=""
-          aria-hidden="true"
-        />
       </section>
 
       <section
