@@ -1710,6 +1710,14 @@ body {
   line-height: 1.08 !important;
 }
 
+.invitation-scroll #gallery h2.script-heading--section {
+  width: min(100%, 350px) !important;
+  font-family: var(--invitation-script) !important;
+  font-size: clamp(52px, 14.5vw, 68px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+}
+
 .invitation-scroll h2.script-heading--long {
   font-size: clamp(46px, 12.5vw, 58px) !important;
   line-height: 1.12 !important;
@@ -1891,8 +1899,17 @@ body {
     .hotel-disclosure-toggle,
     .hotel-distance-link
   ):focus-visible {
-  outline: 1px solid var(--invitation-wine);
-  outline-offset: 4px;
+  outline: 0;
+  box-shadow: inset 0 -1px 0 rgba(155, 49, 96, 0.7);
+}
+
+.invitation-scroll
+  :is(.meal-details-toggle, .hotel-disclosure-toggle):focus-visible
+  strong {
+  text-decoration: underline;
+  text-decoration-color: rgba(155, 49, 96, 0.6);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
 }
 
 @media (hover: hover) and (pointer: fine) {
