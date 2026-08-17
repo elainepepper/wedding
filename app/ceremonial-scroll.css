@@ -621,7 +621,7 @@ body {
 
 .invitation-scroll .reply-contact .reply-contact-title {
   margin: 0 auto 18px !important;
-  font: italic 500 clamp(26px, 7.5vw, 32px) / 1.2 var(--invitation-display) !important;
+  font: italic 500 clamp(13px, 3.75vw, 16px) / 1.2 var(--invitation-display) !important;
   letter-spacing: -0.015em;
 }
 
