@@ -129,8 +129,17 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
         if (node.offsetParent === null && node.getClientRects().length === 0) return;
         const rect = node.getBoundingClientRect();
         if (rect.height === 0) return;
-        const centre = rect.top + rect.height / 2;
-        const nearness = 1 - smoothstep(0, height * 0.92, Math.abs(centre - middle));
+        // Measure the viewport midpoint against the section's visible bounds,
+        // not against the centre of the whole section. Long mobile chapters
+        // can be several viewports tall; measuring their centre made every sky
+        // fade to zero while the guest was still plainly inside that chapter.
+        const distance =
+          middle < rect.top
+            ? rect.top - middle
+            : middle > rect.bottom
+              ? middle - rect.bottom
+              : 0;
+        const nearness = 1 - smoothstep(0, height * 0.92, distance);
         const name = node.dataset.sky || "";
         wanted.set(name, Math.max(wanted.get(name) ?? 0, nearness));
       });
