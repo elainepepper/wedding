@@ -28,13 +28,24 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(experience, /className="meal-select-button"/);
   assert.match(experience, /className="hotel-disclosure-toggle"/);
   assert.match(experience, /className="hotel-distance-link"/);
-  assert.doesNotMatch(experience, /className="chapter-continue reply-continue"/);
+  assert.doesNotMatch(
+    experience,
+    /className="chapter-continue reply-continue"/,
+  );
   assert.doesNotMatch(experience, /scene-art scene-art--pearl/);
+  // Opening iOS native form controls must not also start audio: Safari closes
+  // the date sheet if media playback steals the same user activation.
+  assert.match(experience, /input, select, textarea, label/);
   const confirmationIndex = experience.indexOf('id="confirmation"');
-  const recapIndex = experience.indexOf("<EveningRecap guests={guestResponses} />");
+  const recapIndex = experience.indexOf(
+    "<EveningRecap guests={guestResponses} />",
+  );
   assert.ok(confirmationIndex >= 0 && recapIndex > confirmationIndex);
   // No leftover build-scaffolding markers.
-  assert.doesNotMatch(`${experience}${layout}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
+  assert.doesNotMatch(
+    `${experience}${layout}`,
+    /codex-preview|Your site is taking shape|react-loading-skeleton/i,
+  );
 });
 
 test("uses the exact required meal wording", async () => {
@@ -59,7 +70,17 @@ test("ships the private, server-enforced after-party gate", async () => {
 
 test("includes the complete manager and locked-down Firestore rules", async () => {
   const manager = await read("app/manager/ManagerApp.tsx");
-  for (const section of ["Overview", "Guests", "Households", "RSVPs", "Seating plan", "After-party", "Imports", "Exports", "Settings"]) {
+  for (const section of [
+    "Overview",
+    "Guests",
+    "Households",
+    "RSVPs",
+    "Seating plan",
+    "After-party",
+    "Imports",
+    "Exports",
+    "Settings",
+  ]) {
     assert.match(manager, new RegExp(section, "i"));
   }
   const rules = await read("firestore.rules");

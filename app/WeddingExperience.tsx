@@ -839,7 +839,17 @@ export function WeddingExperience({
   useEffect(() => {
     if (!music.musicUrl) return;
     const events = ["click", "touchend", "pointerdown", "keydown"] as const;
-    const start = () => {
+    const start = (event?: Event) => {
+      // iOS dismisses its native date sheet when media playback is started by
+      // the same gesture. Form controls must keep that gesture entirely for
+      // themselves; another ordinary tap can still begin the soundtrack.
+      if (
+        event?.target instanceof Element &&
+        event.target.closest(
+          'input, select, textarea, label, [contenteditable="true"]',
+        )
+      )
+        return;
       const player = audioRef.current;
       if (!player) return;
       // Already playing — or played before and deliberately paused by the
