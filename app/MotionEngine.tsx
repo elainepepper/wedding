@@ -38,6 +38,16 @@ export function MotionEngine() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reducedMotion.matches) return;
 
+    // iOS/Android already provide weighted, momentum-based touch scrolling.
+    // Running Lenis and ScrollTrigger beside native touch scrolling adds a
+    // second scroll coordinator and can make a newly revealed RSVP chapter
+    // jump as measurements refresh. It also keeps an unnecessary RAF loop
+    // alive throughout a long, video-backed invitation. Keep the approved
+    // motion engine for precise pointers, and let phones use their native,
+    // considerably more memory-efficient scrolling.
+    if (window.matchMedia("(pointer: coarse), (max-width: 900px)").matches)
+      return;
+
     gsap.registerPlugin(ScrollTrigger);
 
     const lenis = new Lenis({

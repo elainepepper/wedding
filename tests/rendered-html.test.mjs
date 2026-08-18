@@ -6,12 +6,14 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const exists = (path) => access(new URL(`../${path}`, import.meta.url));
 
 test("renders the finished wedding invitation content", async () => {
-  const [experience, layout, calendar, dreamscape] = await Promise.all([
-    read("app/WeddingExperience.tsx"),
-    read("app/layout.tsx"),
-    read("public/elaine-haykal-wedding.ics"),
-    read("app/Dreamscape.tsx"),
-  ]);
+  const [experience, layout, calendar, dreamscape, motionEngine] =
+    await Promise.all([
+      read("app/WeddingExperience.tsx"),
+      read("app/layout.tsx"),
+      read("public/elaine-haykal-wedding.ics"),
+      read("app/Dreamscape.tsx"),
+      read("app/MotionEngine.tsx"),
+    ]);
   assert.match(experience, /Elaine &amp; Haykal/);
   assert.match(experience, /7 November 2026/);
   assert.match(experience, /Grand Hyatt/);
@@ -52,9 +54,13 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(experience, /elaine-haykal-rsvp-draft:/);
   assert.match(experience, /window\.sessionStorage\.setItem/);
   assert.match(experience, /window\.sessionStorage\.removeItem/);
+  assert.match(experience, /resumeSection/);
+  assert.match(experience, /target\.scrollIntoView/);
   assert.match(dreamscape, /index === strongestIndex/);
   assert.match(dreamscape, /autoPlay=\{index === 0\}/);
   assert.match(dreamscape, /preload=\{index === 0 \? "auto" : "none"\}/);
+  assert.match(dreamscape, /film\.removeAttribute\("src"\)/);
+  assert.match(motionEngine, /\(pointer: coarse\), \(max-width: 900px\)/);
   const confirmationIndex = experience.indexOf('id="confirmation"');
   const recapIndex = experience.indexOf(
     "<EveningRecap guests={guestResponses} />",
@@ -133,7 +139,10 @@ test("enforces the wedding planner's crew-only boundary", async () => {
     read("app/api/manager/health/route.ts"),
   ]);
   assert.match(route, /PLANNER_ALLOWED_ACTIONS/);
-  assert.match(route, /String\(guestDoc\.data\(\)\.category \?\? ""\) !== "Crew"/);
+  assert.match(
+    route,
+    /String\(guestDoc\.data\(\)\.category \?\? ""\) !== "Crew"/,
+  );
   assert.match(route, /field !== "tableId"/);
   assert.match(route, /invitation_token: null/);
   assert.match(route, /marriage_advice: null/);
@@ -157,7 +166,10 @@ test("keeps manager invitation states and mobile actions consistent", async () =
     read("app/manager/ManagerApp.tsx"),
     read("app/manager/manager.css"),
   ]);
-  assert.match(manager, /type InvitationState = "not-sent" \| "sent" \| "replied"/);
+  assert.match(
+    manager,
+    /type InvitationState = "not-sent" \| "sent" \| "replied"/,
+  );
   assert.match(manager, /function invitationCounts/);
   assert.match(manager, /Primary manager actions/);
   assert.match(manager, /Start sending/);

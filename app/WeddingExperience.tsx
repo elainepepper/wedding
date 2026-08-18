@@ -171,6 +171,7 @@ type RsvpDraft = {
   guestResponses: GuestResponse[];
   replyPhase: "attendance" | "contact";
   arrivalStepConfirmed: boolean;
+  resumeSection?: string;
 };
 
 const draftKey = (token: string) => `elaine-haykal-rsvp-draft:${token}`;
@@ -807,6 +808,7 @@ export function WeddingExperience({
   const [submitted, setSubmitted] = useState(false);
   const submissionInFlight = useRef(false);
   const submissionId = useRef("");
+  const resumeSectionRef = useRef<string | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [openMealDetail, setOpenMealDetail] = useState<string | null>(null);
@@ -1066,6 +1068,7 @@ export function WeddingExperience({
         if (draft) {
           setReplyPhase(draft.replyPhase);
           setArrivalStepConfirmed(draft.arrivalStepConfirmed);
+          resumeSectionRef.current = draft.resumeSection ?? null;
         }
         // Set this last: it enables draft persistence, after the authoritative
         // response (or a validated recovery draft) has populated the form.
@@ -1100,6 +1103,23 @@ export function WeddingExperience({
       guestResponses,
       replyPhase,
       arrivalStepConfirmed,
+      // Keep the last meaningful RSVP chapter so an iOS memory-pressure
+      // reload returns the guest to the form instead of looking like the
+      // invitation restarted. Preserve the recovered section until it has
+      // actually been restored; the initial "welcome" render must not erase it.
+      resumeSection:
+        resumeSectionRef.current ??
+        ([
+          "rsvp",
+          "dress",
+          "meal",
+          "travel",
+          "recommendations",
+          "venue",
+          "wishes",
+        ].includes(activeSection)
+          ? activeSection
+          : undefined),
     };
     try {
       window.sessionStorage.setItem(draftKey(token), JSON.stringify(draft));
@@ -1114,6 +1134,7 @@ export function WeddingExperience({
     guestResponses,
     replyPhase,
     arrivalStepConfirmed,
+    activeSection,
   ]);
 
   const hiddenScenes = useMemo(
@@ -1471,6 +1492,28 @@ export function WeddingExperience({
   // A chapter becomes part of the scroll as soon as its factual prerequisites
   // are met; it is never absolutely positioned or treated as a separate page.
   const stepHas = (id: string) => sectionIds.includes(id);
+
+  // The saved answers already survive an involuntary Safari reload. Restore
+  // the guest's place as soon as the answer-gated section has remounted, too.
+  // This uses native scrolling and runs once; it cannot compete with typing,
+  // date pickers, or normal touch momentum.
+  useEffect(() => {
+    const section = resumeSectionRef.current;
+    if (!inviteData || !section || !sectionIds.includes(section)) return;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const target = document.getElementById(section);
+        if (!target) return;
+        target.scrollIntoView({ behavior: "auto", block: "start" });
+        resumeSectionRef.current = null;
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [inviteData, sectionIds]);
 
   const renderCustomPages = (anchor: string) =>
     (stepHas(anchor) ? (customAfter.get(anchor) ?? []) : []).map((page) => (

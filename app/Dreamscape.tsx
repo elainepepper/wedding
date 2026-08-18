@@ -178,13 +178,30 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     // even fully transparent, is more video than a phone's renderer can
     // carry through a long visit — the hidden ones wait, paused, on their
     // first frame until their painting is called for.
+    const releaseHiddenFilms = window.matchMedia(
+      "(max-width: 900px), (pointer: coarse)",
+    ).matches;
     const syncFilm = (layer: HTMLElement, show: boolean) => {
       const film = layer.querySelector<HTMLVideoElement>("video");
-      if (!film || show !== film.paused) return;
+      if (!film) return;
       if (show) {
+        const source = film.dataset.src;
+        if (!film.getAttribute("src") && source) {
+          film.src = source;
+          film.load();
+        }
         film.playbackRate = 0.4;
-        film.play().catch(() => undefined);
-      } else film.pause();
+        if (film.paused) film.play().catch(() => undefined);
+      } else {
+        if (!film.paused) film.pause();
+        // A paused full-screen film may retain its decoder and frame buffers
+        // on iOS. Release hidden films entirely on phones; the still painting
+        // underneath remains visible while the next active film starts.
+        if (releaseHiddenFilms && film.getAttribute("src")) {
+          film.removeAttribute("src");
+          film.load();
+        }
+      }
     };
 
     const render = () => {
@@ -323,7 +340,7 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
                   el.setAttribute("webkit-playsinline", "");
                 }
               }}
-              src={asset(`videos/${name}.mp4`)}
+              data-src={asset(`videos/${name}.mp4`)}
               poster={asset(`bg/${name}.webp`)}
               playsInline
               autoPlay={index === 0}
@@ -334,6 +351,10 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
               onCanPlayThrough={index === 0 ? filmReady : undefined}
               onLoadedData={index === 0 ? filmReady : undefined}
               onError={(event) => {
+                // Removing a hidden film's src is intentional memory cleanup,
+                // not a missing asset. Keep the element so it can be reused
+                // when that painting becomes active again.
+                if (!event.currentTarget.getAttribute("src")) return;
                 // no film for this painting — leave the still showing
                 (event.currentTarget as HTMLVideoElement).remove();
                 if (index === 0) filmReady();
