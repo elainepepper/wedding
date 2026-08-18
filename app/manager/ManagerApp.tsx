@@ -42,21 +42,21 @@ type Settings = Record<string, unknown> & {
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
 export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
 type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
-type ManagerTab = { id: Tab; label: string; index: string };
+type ManagerTab = { id: Tab; label: string };
 
 const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
-  { label: "Guest book", items: [
-    { id: "overview", label: "Overview", index: "01" }, { id: "guests", label: "Guests", index: "02" },
-    { id: "households", label: "Households", index: "03" }, { id: "rsvps", label: "RSVPs", index: "04" },
+  { label: "Guest list", items: [
+    { id: "overview", label: "Overview" }, { id: "guests", label: "Guests" },
+    { id: "households", label: "Invitations" }, { id: "rsvps", label: "Replies" },
   ] },
-  { label: "The celebration", items: [
-    { id: "seating", label: "Seating plan", index: "05" }, { id: "afterparty", label: "After-party", index: "06" },
-    { id: "wishes", label: "Wishes & advice", index: "07" }, { id: "chase", label: "Awaiting replies", index: "08" },
-    { id: "dayof", label: "For the day", index: "09" },
+  { label: "Plan the day", items: [
+    { id: "seating", label: "Seating plan" }, { id: "afterparty", label: "After-party" },
+    { id: "wishes", label: "Wishes" }, { id: "chase", label: "Follow-up" },
+    { id: "dayof", label: "Day-of briefs" },
   ] },
-  { label: "Studio", items: [
-    { id: "imports", label: "Imports", index: "10" }, { id: "exports", label: "Exports", index: "11" },
-    { id: "health", label: "Health check", index: "12" }, { id: "settings", label: "Settings", index: "13" },
+  { label: "Files & admin", items: [
+    { id: "exports", label: "Export files" }, { id: "imports", label: "Import guests" },
+    { id: "health", label: "Health check" }, { id: "settings", label: "Settings" },
   ] },
 ];
 
@@ -198,6 +198,15 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   }, [undo]);
   const [mobileNav, setMobileNav] = useState(false);
   const toastTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!mobileNav) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNav(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileNav]);
 
   const load = async (quiet = false) => {
     // Demo mode: a fabricated guest list stands in for the database, so the
@@ -345,16 +354,29 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const visibleNavGroups = isPlanner
     ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => plannerTabs.has(item.id)) })).filter((group) => group.items.length)
     : navGroups;
+  const primaryMobileTabs: Array<[Tab, string]> = isPlanner
+    ? [["guests", "Guests"], ["seating", "Seat"], ["exports", "Export"], ["overview", "Check"]]
+    : [["households", "Send"], ["chase", "Chase"], ["seating", "Seat"], ["overview", "Check"]];
+  const primaryMobileIds = new Set(primaryMobileTabs.map(([id]) => id));
+  const secondaryNavGroups = visibleNavGroups
+    .map((group) => ({ ...group, items: group.items.filter((item) => item.id !== "exports" && !primaryMobileIds.has(item.id)) }))
+    .filter((group) => group.items.length);
+  const navigateTo = (nextTab: Tab) => {
+    setTab(nextTab);
+    setSelected([]);
+    setMobileNav(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="manager-shell">
       <a className="skip-link" href="#manager-main">Skip to manager content</a>
-      <aside className={`manager-sidebar${mobileNav ? " is-open" : ""}`}>
+      <aside className="manager-sidebar">
         <div className="manager-brand"><span>E <i>&amp;</i> H</span><small>Guest Manager</small></div>
         <nav aria-label="Guest manager">
           {visibleNavGroups.map((group) => <div className="manager-nav-group" key={group.label}>
             <p>{group.label}</p>
-            {group.items.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setSelected([]); setMobileNav(false); }}><b>{item.index}</b><span>{item.label}</span></button>)}
+            {group.items.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => navigateTo(item.id)}><span>{item.label}</span></button>)}
           </div>)}
         </nav>
         <div className="manager-profile"><div>{initialAdminName.slice(0, 1).toUpperCase()}</div><p><strong>{initialAdminName}</strong><span>{isPlanner ? "Wedding planner" : "Administrator"}</span></p><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></div>
@@ -363,7 +385,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       <main id="manager-main" className="manager-main">
         <header className="manager-topbar">
           <div><p className="manager-kicker">Elaine &amp; Haykal · 7 November 2026</p><h1>{tabs.find((item) => item.id === tab)?.label}</h1></div>
-          <div className="topbar-actions"><span className={`save-state save-state--${saveState}`} aria-live="polite"><i />{saveState === "preview" ? "Preview mode" : saveState === "saving" ? "Saving changes" : saveState === "error" ? "Save needs attention" : "All changes saved"}</span><button onClick={() => setGuestModal("new")}><span aria-hidden="true">＋</span><span className="add-guest-label">{isPlanner ? "Add crew member" : "Add guest"}</span></button></div>
+          <div className="topbar-actions"><span className={`save-state save-state--${saveState}`} aria-live="polite"><i />{saveState === "preview" ? "Preview mode" : saveState === "saving" ? "Saving changes" : saveState === "error" ? "Save needs attention" : "All changes saved"}</span><button className="topbar-export" type="button" onClick={() => navigateTo("exports")}><span aria-hidden="true">↓</span><span>Export</span></button><button className="topbar-add" type="button" onClick={() => setGuestModal("new")}><span aria-hidden="true">＋</span><span className="add-guest-label">{isPlanner ? "Add crew member" : "Add guest"}</span></button></div>
         </header>
 
         {tab === "overview" ? <Overview data={data} stats={stats} jump={jumpToGuests} setTab={setTab} adminRole={data.admin.role} /> : null}
@@ -388,11 +410,20 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       </main>
 
       <nav className="manager-bottom-nav" aria-label="Primary manager actions">
-        {(isPlanner
-          ? [["guests", "Guests"], ["seating", "Seat"], ["exports", "Meals"], ["overview", "Check"]]
-          : [["households", "Send"], ["chase", "Chase"], ["seating", "Seat"], ["overview", "Check"]]
-        ).map(([id, label]) => <button key={id} type="button" className={tab === id ? "is-active" : ""} onClick={() => { setTab(id as Tab); setSelected([]); window.scrollTo({ top: 0, behavior: "smooth" }); }}><i aria-hidden="true" />{label}</button>)}
+        {primaryMobileTabs.map(([id, label]) => <button key={id} type="button" className={tab === id ? "is-active" : ""} onClick={() => navigateTo(id)}><i aria-hidden="true" />{label}</button>)}
+        <button type="button" className={mobileNav ? "is-active" : ""} aria-expanded={mobileNav} aria-controls="manager-more-menu" onClick={() => setMobileNav((open) => !open)}><i aria-hidden="true" />Menu</button>
       </nav>
+
+      {mobileNav ? <div className="manager-more-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setMobileNav(false); }}>
+        <section id="manager-more-menu" className="manager-more-sheet" role="dialog" aria-modal="true" aria-labelledby="manager-more-title">
+          <header><div><p>Guest Manager</p><h2 id="manager-more-title">Menu</h2></div><button type="button" aria-label="Close menu" autoFocus onClick={() => setMobileNav(false)}>×</button></header>
+          <button className="manager-export-shortcut" type="button" onClick={() => navigateTo("exports")}><span><strong>Export files</strong><small>Venue, chef, seating and complete reports</small></span><b aria-hidden="true">→</b></button>
+          <nav aria-label="More manager sections">
+            {secondaryNavGroups.map((group) => <div key={group.label}><p>{group.label}</p><div>{group.items.map((item) => <button type="button" key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => navigateTo(item.id)}>{item.label}</button>)}</div></div>)}
+          </nav>
+          <footer><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></footer>
+        </section>
+      </div> : null}
 
       {undo ? <div className="undo-bar" role="status">
         <span>{undo.label}</span>
