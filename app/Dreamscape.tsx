@@ -26,14 +26,19 @@ import { removeBrokenImage } from "./image-fallback";
 // True when the browser says the guest is saving data or on a slow network.
 // Not every browser reports this; when it says nothing we assume plenty.
 export function thriftyConnection() {
-  const link = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  const link = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }
+  ).connection;
   if (!link) return false;
   return Boolean(link.saveData) || /(^|-)2g$/.test(link.effectiveType ?? "");
 }
 
 const SKIES = ["dream-1", "dream-2", "dream-3"] as const;
 const asset = (name: string) => `/wedding/story/${name}`;
-const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min = 0, max = 1) =>
+  Math.min(max, Math.max(min, value));
 const smoothstep = (edge0: number, edge1: number, value: number) => {
   const x = clamp((value - edge0) / Math.max(0.0001, edge1 - edge0));
   return x * x * (3 - 2 * x);
@@ -53,15 +58,21 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     // On phones the paintings hold perfectly still: writing a transform on
     // every scrolled frame is exactly the kind of work that made scrolling
     // feel jumpy on iOS Safari and Android. The crossfades stay.
-    if (window.matchMedia("(max-width: 900px), (pointer: coarse)").matches) return;
+    if (window.matchMedia("(max-width: 900px), (pointer: coarse)").matches)
+      return;
     const box = boxRef.current;
     if (!box) return;
     let frame = 0;
     const render = () => {
       frame = 0;
-      box.style.setProperty("--parallax", `${Math.round(window.scrollY * -0.06)}px`);
+      box.style.setProperty(
+        "--parallax",
+        `${Math.round(window.scrollY * -0.06)}px`,
+      );
     };
-    const request = () => { if (!frame) frame = requestAnimationFrame(render); };
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
     window.addEventListener("scroll", request, { passive: true });
     render();
     return () => {
@@ -83,9 +94,16 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
 
   // whatever happens, the page is never held hostage to a video
   useEffect(() => {
-    if (!motion) { announced.current = true; onReady?.(); return; }
+    if (!motion) {
+      announced.current = true;
+      onReady?.();
+      return;
+    }
     const timer = window.setTimeout(() => {
-      if (!announced.current) { announced.current = true; onReady?.(); }
+      if (!announced.current) {
+        announced.current = true;
+        onReady?.();
+      }
     }, 4000);
     return () => window.clearTimeout(timer);
   }, [motion, onReady]);
@@ -104,15 +122,28 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     if (!motion) return;
     const resumeVisibleFilm = () => {
       if (document.hidden) return;
-      filmsRef.current.forEach((film) => {
+      const films = filmsRef.current.filter((film): film is HTMLVideoElement =>
+        Boolean(film),
+      );
+      const visible = films.reduce<HTMLVideoElement | null>((best, film) => {
+        const opacity = Number.parseFloat(
+          film.closest<HTMLElement>(".dream-sky")?.style.opacity || "0",
+        );
+        const bestOpacity = best
+          ? Number.parseFloat(
+              best.closest<HTMLElement>(".dream-sky")?.style.opacity || "0",
+            )
+          : -1;
+        return opacity > bestOpacity ? film : best;
+      }, null);
+      films.forEach((film) => {
         if (!film) return;
         film.playbackRate = 0.4;
-        const layer = film.closest<HTMLElement>(".dream-sky");
-        if (Number.parseFloat(layer?.style.opacity || "0") > 0.02) {
+        if (film === visible) {
           film.muted = true;
           film.defaultMuted = true;
           film.play().catch(() => undefined);
-        }
+        } else film.pause();
       });
     };
     window.addEventListener("pageshow", resumeVisibleFilm);
@@ -153,8 +184,7 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
       if (show) {
         film.playbackRate = 0.4;
         film.play().catch(() => undefined);
-      }
-      else film.pause();
+      } else film.pause();
     };
 
     const render = () => {
@@ -164,12 +194,14 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
 
       // every claimant on the page, re-read each frame so sections that appear
       // as the guest answers questions are picked up without any wiring
-      const claims = Array.from(document.querySelectorAll<HTMLElement>("[data-sky]"))
-        .filter((node) => !node.classList.contains("dream-sky"));
+      const claims = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-sky]"),
+      ).filter((node) => !node.classList.contains("dream-sky"));
 
       const wanted = new Map<string, number>();
       claims.forEach((node) => {
-        if (node.offsetParent === null && node.getClientRects().length === 0) return;
+        if (node.offsetParent === null && node.getClientRects().length === 0)
+          return;
         const rect = node.getBoundingClientRect();
         if (rect.height === 0) return;
         // Measure the viewport midpoint against the section's visible bounds,
@@ -188,32 +220,54 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
       });
 
       let strongest = 0;
-      layers.forEach((layer) => {
+      let strongestIndex = 0;
+      layers.forEach((layer, index) => {
         const value = wanted.get(layer.dataset.sky || "") ?? 0;
-        strongest = Math.max(strongest, value);
+        if (value > strongest) {
+          strongest = value;
+          strongestIndex = index;
+        }
         const opacity = smoothstep(0.12, 0.62, value);
         layer.style.opacity = opacity.toFixed(3);
-        syncFilm(layer, opacity > 0.02);
       });
+      layers.forEach((layer, index) =>
+        syncFilm(
+          layer,
+          strongest >= 0.05 ? index === strongestIndex : index === 0,
+        ),
+      );
       // nothing nearby (a very tall section) — hold the first painting rather
       // than letting the page fall through to bare colour
-      if (strongest < 0.05) layers.forEach((layer, index) => { layer.style.opacity = index === 0 ? "1" : "0"; syncFilm(layer, index === 0); });
+      if (strongest < 0.05)
+        layers.forEach((layer, index) => {
+          layer.style.opacity = index === 0 ? "1" : "0";
+          syncFilm(layer, index === 0);
+        });
 
       const doc = document.documentElement;
-      const progress = clamp(window.scrollY / Math.max(1, doc.scrollHeight - height));
+      const progress = clamp(
+        window.scrollY / Math.max(1, doc.scrollHeight - height),
+      );
       drift += (progress - drift) * (reduce.matches ? 1 : 0.08);
       box.style.setProperty("--drift", drift.toFixed(4));
 
       if (Math.abs(progress - drift) > 0.0005) request();
     };
-    const request = () => { if (!frame) frame = requestAnimationFrame(render); };
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
 
     window.addEventListener("scroll", request, { passive: true });
     window.addEventListener("resize", request, { passive: true });
     reduce.addEventListener("change", request);
     // sections appear and disappear as the journey unlocks
     const observer = new MutationObserver(request);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "class"] });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["hidden", "class"],
+    });
     render();
 
     return () => {
@@ -226,17 +280,31 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
   }, []);
 
   return (
-    <div className="dream-skies dream-skies--site" ref={boxRef} aria-hidden="true">
+    <div
+      className="dream-skies dream-skies--site"
+      ref={boxRef}
+      aria-hidden="true"
+    >
       {SKIES.map((name, index) => (
         <div
           key={name}
           className="dream-sky"
           data-sky={name}
-          style={{ "--layer": index, opacity: index === 0 ? 1 : 0 } as CSSProperties}
+          style={
+            { "--layer": index, opacity: index === 0 ? 1 : 0 } as CSSProperties
+          }
         >
           <picture>
-            <source media="(max-width: 780px)" srcSet={asset(`bg/${name}-tall.webp`)} />
-            <img src={asset(`bg/${name}.webp`)} alt="" loading={index === 0 ? "eager" : "lazy"} onError={removeBrokenImage} />
+            <source
+              media="(max-width: 780px)"
+              srcSet={asset(`bg/${name}-tall.webp`)}
+            />
+            <img
+              src={asset(`bg/${name}.webp`)}
+              alt=""
+              loading={index === 0 ? "eager" : "lazy"}
+              onError={removeBrokenImage}
+            />
           </picture>
           {motion ? (
             <video
@@ -258,11 +326,11 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
               src={asset(`videos/${name}.mp4`)}
               poster={asset(`bg/${name}.webp`)}
               playsInline
-              autoPlay
+              autoPlay={index === 0}
               loop
               muted
               disablePictureInPicture
-              preload={index === 0 ? "auto" : "metadata"}
+              preload={index === 0 ? "auto" : "none"}
               onCanPlayThrough={index === 0 ? filmReady : undefined}
               onLoadedData={index === 0 ? filmReady : undefined}
               onError={(event) => {
