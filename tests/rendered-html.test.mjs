@@ -152,6 +152,22 @@ test("keeps the full-screen invitation menu keyboard-contained", async () => {
   assert.match(menu, /document\.activeElement === last/);
 });
 
+test("keeps manager invitation states and mobile actions consistent", async () => {
+  const [manager, styles] = await Promise.all([
+    read("app/manager/ManagerApp.tsx"),
+    read("app/manager/manager.css"),
+  ]);
+  assert.match(manager, /type InvitationState = "not-sent" \| "sent" \| "replied"/);
+  assert.match(manager, /function invitationCounts/);
+  assert.match(manager, /Primary manager actions/);
+  assert.match(manager, /Start sending/);
+  assert.match(manager, /Kitchen brief/);
+  assert.doesNotMatch(manager, /Replies close on \$\{dateLabel/);
+  assert.match(styles, /\.manager-bottom-nav/);
+  assert.match(styles, /\.household-sheet/);
+  assert.match(styles, /body\[data-printing\] \.print-letterhead/);
+});
+
 test("does not leak secrets into the repository", async () => {
   const env = await read(".env.example");
   // The service-account JSON and Cloudinary secret must never be filled in here.
