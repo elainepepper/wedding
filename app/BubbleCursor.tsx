@@ -10,36 +10,101 @@ interface BubbleCursorProps {
   environmentPointer?: boolean;
 }
 
-class Bubble {
+class GradientParticle {
   age = 0;
-  readonly duration = 650 + Math.random() * 130;
-  readonly radius = 4 + Math.random() * 4;
-  readonly drift = (Math.random() - 0.5) * 6;
+  readonly duration = 1500;
 
   constructor(
     readonly x: number,
     readonly y: number,
-    readonly fill: string,
-    readonly stroke: string,
+    readonly size: number,
+    readonly intensity: number,
+    readonly hue: number,
   ) {}
 
   draw(context: CanvasRenderingContext2D, delta: number) {
     this.age += delta;
     const progress = Math.min(1, this.age / this.duration);
     const ease = 1 - Math.pow(1 - progress, 3);
-    const x = this.x + this.drift * ease;
-    const y = this.y - 18 * ease;
-    const radius = this.radius * (0.72 + ease * 0.52);
+    const radius = Math.max(0.1, this.size * 2 * this.size * ease);
+    const lightness = 84 + this.intensity * 10;
 
     context.save();
-    context.globalAlpha = Math.sin(progress * Math.PI) * 0.7;
-    context.strokeStyle = this.stroke;
-    context.fillStyle = this.fill;
-    context.lineWidth = 0.8;
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = this.intensity * (1 - progress) * 0.84;
+    const glow = context.createRadialGradient(
+      this.x,
+      this.y,
+      0,
+      this.x,
+      this.y,
+      radius,
+    );
+    glow.addColorStop(0, `hsl(${this.hue} 55% ${lightness}%)`);
+    glow.addColorStop(0.46, `hsl(${this.hue} 48% ${lightness}% / 0.82)`);
+    glow.addColorStop(1, `hsl(${this.hue} 42% ${lightness}% / 0)`);
+    context.fillStyle = glow;
+    context.shadowColor = `hsl(${this.hue} 48% 76% / ${this.intensity * 0.42})`;
+    context.shadowBlur = this.size * 3;
     context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.arc(this.x, this.y, radius, 0, Math.PI * 2);
     context.fill();
-    context.stroke();
+    context.restore();
+    return progress < 1;
+  }
+}
+
+class TrailSparkle {
+  age = 0;
+  readonly duration = 720 + Math.random() * 330;
+  readonly radius = 1.3 + Math.random() * 1.5;
+
+  constructor(
+    readonly x: number,
+    readonly y: number,
+    readonly hue: number,
+  ) {}
+
+  draw(context: CanvasRenderingContext2D, delta: number) {
+    this.age += delta;
+    const progress = Math.min(1, this.age / this.duration);
+    const pulse = Math.sin(progress * Math.PI);
+    const radius = this.radius * (0.72 + pulse * 0.48);
+
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = pulse * 0.72;
+    context.fillStyle = `hsl(${this.hue} 46% 96%)`;
+    context.shadowColor = `hsl(${this.hue} 48% 84% / 0.42)`;
+    context.shadowBlur = 3.2;
+
+    // A tapered, irregular sliver reads as a fleeting glint rather than a cross.
+    context.beginPath();
+    context.moveTo(this.x, this.y - radius * 2.4);
+    context.quadraticCurveTo(
+      this.x + radius * 0.42,
+      this.y - radius * 0.25,
+      this.x + radius * 0.12,
+      this.y + radius * 2.1,
+    );
+    context.quadraticCurveTo(
+      this.x - radius * 0.34,
+      this.y + radius * 0.18,
+      this.x,
+      this.y - radius * 2.4,
+    );
+    context.fill();
+
+    context.globalAlpha = pulse * 0.42;
+    context.beginPath();
+    context.arc(
+      this.x + radius * 1.25,
+      this.y - radius * 0.35,
+      Math.max(0.35, radius * 0.24),
+      0,
+      Math.PI * 2,
+    );
+    context.fill();
     context.restore();
     return progress < 1;
   }
@@ -155,8 +220,38 @@ const BubbleCursor = ({
     const pointer = { x: 0, y: 0 };
     const worldTarget = { x: 0, y: 0 };
     const worldCurrent = { x: 0, y: 0 };
-    const bubbles: Bubble[] = [];
+    const particles: GradientParticle[] = [];
+    const sparkles: TrailSparkle[] = [];
     const ripples: WaterRipple[] = [];
+
+    const trailHues = [346, 338, 330, 322, 314, 304, 294, 284, 276];
+    let trailColourIndex = 0;
+
+    const addParticles = (x: number, y: number) => {
+      for (let index = 0; index < 3; index++) {
+        particles.push(
+          new GradientParticle(
+            x + (Math.random() - 0.5) * 20,
+            y + (Math.random() - 0.5) * 20,
+            Math.random() * 3 + 2,
+            Math.random() * 0.5 + 0.5,
+            trailHues[(trailColourIndex + index) % trailHues.length],
+          ),
+        );
+      }
+      trailColourIndex = (trailColourIndex + 1) % trailHues.length;
+      if (particles.length > 30) particles.splice(0, particles.length - 30);
+      if (Math.random() > 0.45) {
+        sparkles.push(
+          new TrailSparkle(
+            x + (Math.random() - 0.5) * 24,
+            y + (Math.random() - 0.5) * 24,
+            trailHues[trailColourIndex],
+          ),
+        );
+        if (sparkles.length > 10) sparkles.shift();
+      }
+    };
 
     const resize = () => {
       const rect = wrapperElement?.getBoundingClientRect();
@@ -179,8 +274,11 @@ const BubbleCursor = ({
       lastFrame = time;
       context.clearRect(0, 0, width, height);
 
-      for (let index = bubbles.length - 1; index >= 0; index--) {
-        if (!bubbles[index].draw(context, delta)) bubbles.splice(index, 1);
+      for (let index = particles.length - 1; index >= 0; index--) {
+        if (!particles[index].draw(context, delta)) particles.splice(index, 1);
+      }
+      for (let index = sparkles.length - 1; index >= 0; index--) {
+        if (!sparkles[index].draw(context, delta)) sparkles.splice(index, 1);
       }
       for (let index = ripples.length - 1; index >= 0; index--) {
         if (!ripples[index].draw(context, delta)) ripples.splice(index, 1);
@@ -203,7 +301,8 @@ const BubbleCursor = ({
 
       dirty = false;
       if (
-        bubbles.length ||
+        particles.length ||
+        sparkles.length ||
         ripples.length ||
         (environmentPointer &&
           (Math.abs(worldTarget.x - worldCurrent.x) > 0.002 ||
@@ -243,8 +342,7 @@ const BubbleCursor = ({
       }
       const distance = Math.hypot(point.x - lastBubbleX, point.y - lastBubbleY);
       if (distance > 18 && performance.now() - lastBubbleTime > 72) {
-        bubbles.push(new Bubble(point.x, point.y, fill, stroke));
-        if (bubbles.length > 26) bubbles.shift();
+        addParticles(point.x, point.y);
         lastBubbleX = point.x;
         lastBubbleY = point.y;
         lastBubbleTime = performance.now();
@@ -273,6 +371,7 @@ const BubbleCursor = ({
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
       if (
+        event.pointerType !== "touch" &&
         !target?.closest(
           "[data-ripple], [data-ripple-zone], .choice-card, .segmented-control button, .editorial-guide__heading",
         )
@@ -280,6 +379,9 @@ const BubbleCursor = ({
         return;
       const point = localPoint(event);
       ripples.push(new WaterRipple(point.x, point.y, stroke));
+      if (event.pointerType === "touch") {
+        addParticles(point.x, point.y);
+      }
       if (ripples.length > 4) ripples.shift();
       ensureLoop();
     };
@@ -298,7 +400,7 @@ const BubbleCursor = ({
         frame = 0;
       } else if (
         !document.hidden &&
-        (dirty || bubbles.length || ripples.length)
+        (dirty || particles.length || sparkles.length || ripples.length)
       ) {
         ensureLoop();
       }

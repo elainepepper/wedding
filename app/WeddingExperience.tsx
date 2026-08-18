@@ -2621,26 +2621,41 @@ export function WeddingExperience({
               <div className="arrival-grid">
                 <article>
                   <h3>MRT</h3>
-                  <p>
-                    Take the Putrajaya Line to Conlay station. Leave via
-                    Entrance A and follow Jalan Kia Peng towards the Convention
-                    Centre. Grand Hyatt will be on your right.
-                  </p>
+                  <a
+                    href="https://www.google.com/maps/dir/?api=1&destination=Conlay+MRT+Station,+Kuala+Lumpur&travelmode=transit"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Directions to Conlay station <span aria-hidden="true">↗</span>
+                  </a>
                 </article>
                 <article>
                   <h3>Car</h3>
-                  <p>
-                    Make your way to the hotel entrance on Jalan Pinang, where
-                    the doormen will greet you. Guest parking is in the
-                    hotel&rsquo;s basement.
-                  </p>
+                  <div className="transport-links">
+                    <a
+                      href="https://www.google.com/maps/dir/?api=1&destination=Grand+Hyatt+Kuala+Lumpur,+12+Jalan+Pinang,+50450+Kuala+Lumpur&travelmode=driving"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Google Maps <span aria-hidden="true">↗</span>
+                    </a>
+                    <a
+                      href="https://www.waze.com/ul?q=Grand%20Hyatt%20Kuala%20Lumpur&navigate=yes"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Waze <span aria-hidden="true">↗</span>
+                    </a>
+                  </div>
                 </article>
                 <article>
                   <h3>Grab</h3>
-                  <p>
-                    Set your destination to Grand Hyatt Kuala Lumpur and ask to
-                    be dropped at the main lobby.
-                  </p>
+                  <a
+                    href="grab://open?screenType=BOOKING&vertical=Car&dropOffLatitude=3.1537274&dropOffLongitude=101.7122685&dropOffAddress=Grand%20Hyatt%20Kuala%20Lumpur&dropOffKeywords=Grand%20Hyatt%20Kuala%20Lumpur"
+                    aria-label="Open Grab with Grand Hyatt Kuala Lumpur as the destination"
+                  >
+                    Open in Grab <span aria-hidden="true">↗</span>
+                  </a>
                 </article>
               </div>
               <a

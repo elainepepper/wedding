@@ -41,6 +41,7 @@ const smoothstep = (edge0: number, edge1: number, value: number) => {
 
 export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const filmsRef = useRef<Array<HTMLVideoElement | null>>([]);
   const [motion, setMotion] = useState(true);
   const announced = useRef(false);
 
@@ -95,6 +96,45 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     onReady?.();
   };
 
+  // iOS may decline muted autoplay while Low Power Mode is active or while a
+  // page is being restored from the back-forward cache. Retry the currently
+  // visible film after the guest's first interaction and when Safari restores
+  // the page. The painting remains underneath until playback genuinely starts.
+  useEffect(() => {
+    if (!motion) return;
+    const resumeVisibleFilm = () => {
+      if (document.hidden) return;
+      filmsRef.current.forEach((film) => {
+        if (!film) return;
+        film.playbackRate = 0.4;
+        const layer = film.closest<HTMLElement>(".dream-sky");
+        if (Number.parseFloat(layer?.style.opacity || "0") > 0.02) {
+          film.muted = true;
+          film.defaultMuted = true;
+          film.play().catch(() => undefined);
+        }
+      });
+    };
+    window.addEventListener("pageshow", resumeVisibleFilm);
+    document.addEventListener("pointerdown", resumeVisibleFilm, {
+      passive: true,
+      once: true,
+    });
+    document.addEventListener("touchstart", resumeVisibleFilm, {
+      passive: true,
+      once: true,
+    });
+    document.addEventListener("visibilitychange", resumeVisibleFilm);
+    const timer = window.setTimeout(resumeVisibleFilm, 180);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pageshow", resumeVisibleFilm);
+      document.removeEventListener("pointerdown", resumeVisibleFilm);
+      document.removeEventListener("touchstart", resumeVisibleFilm);
+      document.removeEventListener("visibilitychange", resumeVisibleFilm);
+    };
+  }, [motion]);
+
   useEffect(() => {
     const box = boxRef.current;
     if (!box) return;
@@ -110,7 +150,10 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     const syncFilm = (layer: HTMLElement, show: boolean) => {
       const film = layer.querySelector<HTMLVideoElement>("video");
       if (!film || show !== film.paused) return;
-      if (show) film.play().catch(() => undefined);
+      if (show) {
+        film.playbackRate = 0.4;
+        film.play().catch(() => undefined);
+      }
       else film.pause();
     };
 
@@ -202,9 +245,14 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
               // first HTML, and iPhones refuse to autoplay a film they are
               // not certain is silent. Set it on the element directly.
               ref={(el) => {
+                filmsRef.current[index] = el;
                 if (el) {
                   el.muted = true;
                   el.defaultMuted = true;
+                  el.playbackRate = 0.4;
+                  el.playsInline = true;
+                  el.setAttribute("playsinline", "");
+                  el.setAttribute("webkit-playsinline", "");
                 }
               }}
               src={asset(`videos/${name}.mp4`)}
@@ -213,6 +261,7 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
               autoPlay
               loop
               muted
+              disablePictureInPicture
               preload={index === 0 ? "auto" : "metadata"}
               onCanPlayThrough={index === 0 ? filmReady : undefined}
               onLoadedData={index === 0 ? filmReady : undefined}

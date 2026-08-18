@@ -48,13 +48,18 @@ export function HeroPortal() {
     }
     film.muted = true;
     film.defaultMuted = true;
+    film.playbackRate = 0.4;
+    film.playsInline = true;
+    film.setAttribute("playsinline", "");
+    film.setAttribute("webkit-playsinline", "");
     const start = () => {
+      film.playbackRate = 0.4;
       film
         .play()
         .then(detach)
         .catch(() => undefined);
     };
-    const events = ["touchend", "click"] as const;
+    const events = ["touchstart", "pointerdown", "pageshow"] as const;
     const detach = () =>
       events.forEach((name) => window.removeEventListener(name, start));
     start();
@@ -100,6 +105,7 @@ export function HeroPortal() {
           autoPlay
           loop
           muted
+          disablePictureInPicture
           preload="auto"
           onError={(event) => {
             (event.currentTarget as HTMLVideoElement).style.display = "none";

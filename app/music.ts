@@ -10,7 +10,7 @@
  */
 
 let element: HTMLAudioElement | null = null;
-const WEDDING_MUSIC_VOLUME = 0.15;
+const WEDDING_MUSIC_VOLUME = 0.075;
 
 export function musicElement(): HTMLAudioElement {
   if (!element) {

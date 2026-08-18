@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { MotionEngine } from "./MotionEngine";
 
 const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
@@ -229,6 +230,7 @@ export function CinematicMotion({ confirmed }: CinematicMotionProps) {
   return (
     <div className="cinematic-overlays" ref={layerRef} aria-hidden="true">
       <div className="cinematic-veil" />
+      <MotionEngine />
     </div>
   );
 }

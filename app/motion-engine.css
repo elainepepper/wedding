@@ -1,0 +1,60 @@
+/* Isolated GSAP/Lenis hooks. No structural or visual-layout rules live here. */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.invitation-scroll.is-motion-engine-ready {
+  --motion-camera-scale: 1;
+}
+
+.invitation-scroll.is-motion-engine-ready .dream-sky {
+  scale: var(--motion-camera-scale);
+  transform-origin: 50% 48%;
+  will-change: scale;
+}
+
+.invitation-scroll.is-motion-engine-ready .motion-dissolve-card {
+  opacity: var(--motion-card-opacity, 1) !important;
+  filter: blur(var(--motion-card-blur, 0px)) !important;
+  transform: translate3d(0, var(--motion-card-y, 0px), 0) !important;
+  will-change: transform, filter, opacity;
+}
+
+.invitation-scroll.is-motion-engine-ready .motion-shimmer-accent {
+  will-change: filter;
+}
+
+/* Native date/select controls must never gain a transformed ancestor on touch. */
+@media (pointer: coarse), (max-width: 620px) {
+  .invitation-scroll.is-motion-engine-ready
+    #travel
+    :where(.motion-dissolve-card, .motion-shimmer-accent) {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    will-change: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-scroll .dream-sky {
+    scale: 1 !important;
+  }
+
+  .invitation-scroll :where(.motion-dissolve-card, .motion-shimmer-accent) {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    will-change: auto !important;
+  }
+}

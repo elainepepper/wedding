@@ -8,11 +8,14 @@
  */
 
 :root {
-  --invitation-ink: #3f3033;
-  --invitation-wine: #8e4258;
-  --invitation-wine-soft: rgba(142, 66, 88, 0.32);
+  --invitation-ink: #302623;
+  --invitation-wine: #73394a;
+  --invitation-secondary: #594743;
+  --invitation-wine-soft: rgba(115, 57, 74, 0.38);
   --invitation-hairline: rgba(112, 73, 82, 0.18);
   --invitation-paper: rgba(255, 250, 247, 0.15);
+  --invitation-reading-shadow:
+    0 1px 1px rgba(255, 250, 247, 0.34), 0 1px 2px rgba(48, 38, 35, 0.1);
   --invitation-serif: "Cormorant Garamond", Georgia, serif;
   --invitation-display: "Bodoni Moda", "Playfair Display", Georgia, serif;
   --invitation-script: "Hilberta Austine", "Pinyon Script", cursive;
@@ -289,7 +292,7 @@ body {
   width: var(--invitation-prose);
   max-width: 100%;
   margin-inline: auto !important;
-  color: rgba(63, 48, 51, 0.86) !important;
+  color: var(--invitation-secondary) !important;
   font: 400 clamp(16px, 4.45vw, 18px) / 1.62 var(--invitation-serif) !important;
   text-align: center !important;
 }
@@ -315,7 +318,7 @@ body {
 
 .invitation-scroll .scroll-on {
   margin: 72px auto 0 !important;
-  color: rgba(63, 48, 51, 0.46) !important;
+  color: var(--invitation-secondary) !important;
 }
 
 .invitation-scroll .scene-art {
@@ -389,7 +392,7 @@ body {
   width: min(100%, 322px);
   margin: 34px auto 0 !important;
   font: italic 400 18px/1.58 var(--invitation-serif) !important;
-  color: rgba(63, 48, 51, 0.92) !important;
+  color: var(--invitation-ink) !important;
   text-align: center !important;
 }
 
@@ -412,7 +415,7 @@ body {
 }
 
 .invitation-scroll .event-details :where(strong, span) {
-  color: rgba(63, 48, 51, 0.92) !important;
+  color: var(--invitation-ink) !important;
 }
 
 .invitation-scroll .event-details p {
@@ -553,7 +556,7 @@ body {
   min-width: 0 !important;
   min-height: 44px;
   padding: 10px 2px !important;
-  color: rgba(63, 48, 51, 0.62) !important;
+  color: var(--invitation-secondary) !important;
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -714,7 +717,7 @@ body {
 .invitation-scroll .dress-restriction {
   width: min(calc(100% - 56px), 316px);
   margin: 38px auto 0 !important;
-  color: rgba(63, 48, 51, 0.82) !important;
+  color: var(--invitation-secondary) !important;
   font: italic 500 15px/1.58 var(--invitation-serif) !important;
   text-align: center !important;
 }
@@ -768,7 +771,7 @@ body {
 
 .invitation-scroll .choice-card small {
   width: min(100%, 292px);
-  color: rgba(63, 48, 51, 0.76) !important;
+  color: var(--invitation-secondary) !important;
   font: 400 15px/1.48 var(--invitation-serif) !important;
   text-align: center !important;
 }
@@ -779,7 +782,7 @@ body {
   width: auto !important;
   height: auto !important;
   margin-top: 4px;
-  color: rgba(63, 48, 51, 0.42) !important;
+  color: var(--invitation-secondary) !important;
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -830,7 +833,7 @@ body {
 
 .invitation-scroll .answer-trail button {
   padding: 8px 2px !important;
-  color: rgba(63, 48, 51, 0.58) !important;
+  color: var(--invitation-secondary) !important;
   background: transparent !important;
   border: 0 !important;
   font-family: var(--invitation-utility) !important;
@@ -952,7 +955,7 @@ body {
 }
 
 .invitation-scroll .hotel-list > li > a > span {
-  color: rgba(63, 48, 51, 0.76) !important;
+  color: var(--invitation-secondary) !important;
   font: 400 15px/1.48 var(--invitation-serif) !important;
 }
 
@@ -1075,7 +1078,7 @@ body {
 
 .invitation-scroll .guide-group li span,
 .invitation-scroll .guide-app > span {
-  color: rgba(63, 48, 51, 0.78) !important;
+  color: var(--invitation-secondary) !important;
   font: 400 15px/1.48 var(--invitation-serif) !important;
   text-align: center !important;
 }
@@ -1113,7 +1116,7 @@ body {
 
 .invitation-scroll .venue-note {
   margin-top: 28px !important;
-  color: rgba(63, 48, 51, 0.62) !important;
+  color: var(--invitation-secondary) !important;
 }
 
 .invitation-scroll .arrival-grid {
@@ -1160,6 +1163,30 @@ body {
   color: var(--invitation-ink) !important;
   font: 400 17px/1.62 var(--invitation-serif) !important;
   text-align: center !important;
+}
+
+.invitation-scroll .arrival-grid article > a,
+.invitation-scroll .transport-links a {
+  color: var(--invitation-wine) !important;
+  font: 600 12px/1.45 var(--invitation-utility) !important;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  text-transform: uppercase;
+  text-underline-offset: 7px;
+}
+
+.invitation-scroll .arrival-grid article > a:hover,
+.invitation-scroll .arrival-grid article > a:focus-visible,
+.invitation-scroll .transport-links a:hover,
+.invitation-scroll .transport-links a:focus-visible {
+  text-decoration: underline;
+}
+
+.invitation-scroll .transport-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 24px;
 }
 
 .invitation-scroll .map-button {
@@ -1215,7 +1242,7 @@ body {
 
 .invitation-scroll #wishes .help-note {
   margin-top: 14px !important;
-  color: rgba(63, 48, 51, 0.58) !important;
+  color: var(--invitation-secondary) !important;
   font-size: 14px !important;
 }
 
@@ -1229,7 +1256,7 @@ body {
   display: block;
   width: min(100%, 310px);
   margin: 24px auto 0 !important;
-  color: rgba(63, 48, 51, 0.58) !important;
+  color: var(--invitation-secondary) !important;
   font: 400 12px/1.5 var(--invitation-serif) !important;
   text-align: center !important;
 }
@@ -1329,7 +1356,7 @@ body {
 }
 
 .invitation-scroll .countdown span {
-  color: rgba(63, 48, 51, 0.55) !important;
+  color: var(--invitation-secondary) !important;
   font: 600 9px/1.2 var(--invitation-utility) !important;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1386,7 +1413,10 @@ body {
   transition: transform 500ms ease;
 }
 
-.invitation-scroll #afterparty .afterparty-enter:is(:hover, :focus-visible) img {
+.invitation-scroll
+  #afterparty
+  .afterparty-enter:is(:hover, :focus-visible)
+  img {
   transform: scale(1.035);
 }
 
@@ -1641,7 +1671,7 @@ body {
   display: grid;
   gap: 3px;
   margin: 0 !important;
-  color: rgba(63, 48, 51, 0.72) !important;
+  color: var(--invitation-secondary) !important;
   text-align: center !important;
 }
 
@@ -1847,7 +1877,7 @@ body {
 
 .invitation-scroll .meal-details-toggle span,
 .invitation-scroll .meal-select-button {
-  color: rgba(63, 48, 51, 0.5);
+  color: var(--invitation-secondary);
   font: 600 10px/1.2 var(--invitation-utility);
   letter-spacing: 0.17em;
   text-transform: uppercase;
@@ -1873,7 +1903,7 @@ body {
   min-height: 0;
   margin: 0 !important;
   overflow: hidden;
-  color: rgba(63, 48, 51, 0.76);
+  color: var(--invitation-secondary);
   font: 400 15px/1.5 var(--invitation-serif);
   text-align: center;
 }
@@ -1947,7 +1977,7 @@ body {
   min-height: 0;
   margin: 0 !important;
   overflow: hidden;
-  color: rgba(63, 48, 51, 0.76);
+  color: var(--invitation-secondary);
   font: 400 15px/1.5 var(--invitation-serif);
   text-align: center;
 }
@@ -2076,4 +2106,197 @@ body {
     0 0 8px rgba(255, 229, 235, 0.76),
     0 0 2px rgba(116, 52, 72, 0.55);
   transform: translate(-50%, -50%);
+}
+
+/* ========================================================================== */
+/* OLDER-GUEST READABILITY PASS                                                */
+/* ========================================================================== */
+
+/* The painted world remains fully visible. Readability comes from opaque,
+   high-contrast Espresso Rose inks, slightly larger type and a quiet printed
+   edge—not from panels or text boxes. */
+.invitation-scroll .scene-content,
+.invitation-scroll .return-to-start {
+  text-shadow: var(--invitation-reading-shadow);
+}
+
+.invitation-scroll
+  :where(
+    .section-intro,
+    .rsvp-deadline-note,
+    .help-note,
+    .field-hint,
+    .venue-address,
+    .venue-note
+  ) {
+  font-size: clamp(19px, 5vw, 21px) !important;
+  line-height: 1.68 !important;
+  letter-spacing: 0.012em !important;
+}
+
+.invitation-scroll :where(.step-label, .eyebrow) {
+  font-size: 13px !important;
+  letter-spacing: 0.3em !important;
+}
+
+.invitation-scroll .invitation-line {
+  font-size: 21px !important;
+  line-height: 1.66 !important;
+  letter-spacing: 0.008em !important;
+}
+
+.invitation-scroll .event-details strong {
+  font-size: 20px !important;
+}
+
+.invitation-scroll .event-details span {
+  font-size: 13px !important;
+  letter-spacing: 0.16em !important;
+}
+
+.invitation-scroll .timeline-time {
+  font-size: 22px !important;
+}
+
+.invitation-scroll .evening-timeline h3 {
+  font-size: 29px !important;
+  line-height: 1.22 !important;
+}
+
+.invitation-scroll legend {
+  font-size: 25px !important;
+  line-height: 1.28 !important;
+}
+
+.invitation-scroll .segmented-control button {
+  color: var(--invitation-secondary) !important;
+  font-size: 21px !important;
+  line-height: 1.3 !important;
+}
+
+.invitation-scroll .reply-contact .reply-contact-title {
+  font-size: 20px !important;
+  line-height: 1.55 !important;
+  letter-spacing: 0.006em !important;
+}
+
+.invitation-scroll
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  font-size: 20px !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.invitation-scroll :where(input, textarea)::placeholder {
+  color: var(--invitation-secondary) !important;
+  opacity: 1 !important;
+}
+
+.invitation-scroll .dress-note,
+.invitation-scroll .arrival-grid p,
+.invitation-scroll .confirmation-card > p {
+  font-size: 20px !important;
+  line-height: 1.68 !important;
+  letter-spacing: 0.012em !important;
+}
+
+.invitation-scroll .dress-restriction,
+.invitation-scroll .choice-card small,
+.invitation-scroll .hotel-list > li > a > span,
+.invitation-scroll .guide-group li span,
+.invitation-scroll .guide-app > span,
+.invitation-scroll .meal-description > p,
+.invitation-scroll .hotel-description > p {
+  color: var(--invitation-secondary) !important;
+  font-size: 18px !important;
+  line-height: 1.58 !important;
+  letter-spacing: 0.012em !important;
+}
+
+.invitation-scroll :where(.choice-card strong, .meal-details-toggle strong) {
+  font-size: 29px !important;
+  line-height: 1.12 !important;
+}
+
+.invitation-scroll
+  :where(
+    .field-grid--single label > span,
+    .accessibility-field > span,
+    #wishes label > span
+  ) {
+  font-size: 20px !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.invitation-scroll .room-offer b {
+  font-size: 20px !important;
+}
+
+.invitation-scroll .room-offer span {
+  font-size: 19px !important;
+  line-height: 1.62 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.invitation-scroll
+  :where(.hotel-list strong, .guide-group li strong, .guide-app strong) {
+  font-size: 25px !important;
+  line-height: 1.2 !important;
+}
+
+.invitation-scroll :where(.editorial-guide__heading, .guide-group > button) {
+  font-size: 13px !important;
+  letter-spacing: 0.18em !important;
+}
+
+.invitation-scroll #wishes .help-note {
+  font-size: 17px !important;
+}
+
+.invitation-scroll .privacy-note {
+  color: var(--invitation-secondary) !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.invitation-scroll .confirmation-details {
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+  letter-spacing: 0.14em !important;
+}
+
+.invitation-scroll .countdown span {
+  color: var(--invitation-secondary) !important;
+  font-size: 11px !important;
+}
+
+.invitation-scroll
+  :where(
+    .reply-continue,
+    .chapter-continue,
+    .text-button,
+    .primary-button,
+    .calendar-button,
+    .map-button,
+    .afterparty-enter,
+    .meal-details-toggle span,
+    .meal-select-button,
+    .hotel-disclosure-toggle > span,
+    .hotel-distance-link
+  ) {
+  font-size: 12px !important;
+  letter-spacing: 0.19em !important;
+}
+
+/* Script letterforms rely on connected strokes, so tracking stays neutral;
+   a fractionally stronger stroke improves legibility without changing font. */
+.invitation-scroll h2.script-heading,
+.portal .portal-words h1 {
+  -webkit-text-stroke: 0.25px currentColor;
+  /* Selected typography study: script option 3 — Soft Cinematic. */
+  text-shadow:
+    0 2px 3px rgba(48, 38, 35, 0.24),
+    0 8px 18px rgba(70, 43, 52, 0.13);
 }
