@@ -15,7 +15,6 @@ import { LockedInvitation } from "./LockedInvitation";
 import { readToken } from "./invite-token";
 import { musicElement } from "./music";
 import { PhotoRail } from "./PhotoRail";
-import { DreamBackdrop } from "./DreamBackdrop";
 import { removeBrokenImage } from "./image-fallback";
 import { CinematicMotion } from "./CinematicMotion";
 import BubbleCursor from "./BubbleCursor";
@@ -1695,8 +1694,6 @@ export function WeddingExperience({
       className={`wedding-shell wedding-shell--storybook invitation-scroll ${designClasses}${submitted ? " invitation-scroll--confirmed" : ""}`}
       style={typography}
     >
-      <DreamBackdrop />
-
       {personalised && !submitted ? (
         <div
           ref={progressRef}
