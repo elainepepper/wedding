@@ -164,6 +164,42 @@ const initialRsvp: RsvpState = {
   advice: "",
 };
 
+type RsvpDraft = {
+  version: 1;
+  token: string;
+  rsvp: RsvpState;
+  guestResponses: GuestResponse[];
+  replyPhase: "attendance" | "contact";
+  arrivalStepConfirmed: boolean;
+};
+
+const draftKey = (token: string) => `elaine-haykal-rsvp-draft:${token}`;
+
+function readRsvpDraft(token: string, guestIds: number[]): RsvpDraft | null {
+  try {
+    const raw = window.sessionStorage.getItem(draftKey(token));
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as Partial<RsvpDraft>;
+    const draftIds = Array.isArray(draft.guestResponses)
+      ? draft.guestResponses.map((guest) => guest.id)
+      : [];
+    if (
+      draft.version !== 1 ||
+      draft.token !== token ||
+      !draft.rsvp ||
+      draftIds.length !== guestIds.length ||
+      draftIds.some((id, index) => id !== guestIds[index])
+    ) {
+      window.sessionStorage.removeItem(draftKey(token));
+      return null;
+    }
+    return draft as RsvpDraft;
+  } catch {
+    window.sessionStorage.removeItem(draftKey(token));
+    return null;
+  }
+}
+
 // Short forms, so the selector stays narrow enough to sit beside the number
 const countryCodes = [
   ["MY", "+60"],
@@ -907,7 +943,6 @@ export function WeddingExperience({
       })
       .then((result) => {
         if (cancelled) return;
-        setInviteData(result);
         const names = joinGuestNames(
           result.guests.map(
             (guest) => guest.preferred_name || guest.first_name,
@@ -933,7 +968,7 @@ export function WeddingExperience({
         const requestedHyatt = confirmedGuests.some((guest) =>
           Boolean(guest.accommodation_required),
         );
-        setRsvp({
+        const savedRsvp: RsvpState = {
           ...initialRsvp,
           guestName: names || result.household.name,
           ...phone,
@@ -975,9 +1010,9 @@ export function WeddingExperience({
             confirmedGuests
               .map((guest) => guest.room_nights)
               .find((value) => typeof value === "number") ?? null,
-        });
-        setGuestResponses(
-          result.guests.map((guest) => ({
+        };
+        const savedGuestResponses: GuestResponse[] = result.guests.map(
+          (guest) => ({
             id: guest.id,
             name:
               guest.preferred_name ||
@@ -1020,8 +1055,21 @@ export function WeddingExperience({
             advice: guest.marriage_advice || "",
             isChild: guest.age_group === "Child",
             childMeal: Boolean(guest.child_meal),
-          })),
+          }),
         );
+        const draft = readRsvpDraft(
+          token,
+          savedGuestResponses.map((guest) => guest.id),
+        );
+        setRsvp(draft?.rsvp ?? savedRsvp);
+        setGuestResponses(draft?.guestResponses ?? savedGuestResponses);
+        if (draft) {
+          setReplyPhase(draft.replyPhase);
+          setArrivalStepConfirmed(draft.arrivalStepConfirmed);
+        }
+        // Set this last: it enables draft persistence, after the authoritative
+        // response (or a validated recovery draft) has populated the form.
+        setInviteData(result);
       })
       .catch((loadError) => {
         if (!cancelled)
@@ -1038,6 +1086,35 @@ export function WeddingExperience({
       cancelled = true;
     };
   }, [token]);
+
+  // iOS Safari may reload a long, media-rich tab when memory is tight. Keep a
+  // recovery copy in this tab only, isolated by invitation token, so a guest's
+  // unfinished answers return after an involuntary refresh. The database is
+  // still authoritative and this draft disappears after a successful save.
+  useEffect(() => {
+    if (!token || !inviteData || submitted) return;
+    const draft: RsvpDraft = {
+      version: 1,
+      token,
+      rsvp,
+      guestResponses,
+      replyPhase,
+      arrivalStepConfirmed,
+    };
+    try {
+      window.sessionStorage.setItem(draftKey(token), JSON.stringify(draft));
+    } catch {
+      // Private browsing/storage pressure must never stop the RSVP itself.
+    }
+  }, [
+    token,
+    inviteData,
+    submitted,
+    rsvp,
+    guestResponses,
+    replyPhase,
+    arrivalStepConfirmed,
+  ]);
 
   const hiddenScenes = useMemo(
     () => new Set(siteDesign.hiddenScenes),
@@ -1625,6 +1702,7 @@ export function WeddingExperience({
       );
       if (!response.ok)
         throw new Error(result.error || "Unable to save your RSVP.");
+      window.sessionStorage.removeItem(draftKey(token));
       setSubmitted(true);
     } catch (submitError) {
       setError(
@@ -2440,8 +2518,7 @@ export function WeddingExperience({
                           disabled={!rsvp.arrivalDate}
                           onClick={(event) => {
                             event.stopPropagation();
-                            if (rsvp.arrivalDate)
-                              setArrivalStepConfirmed(true);
+                            if (rsvp.arrivalDate) setArrivalStepConfirmed(true);
                           }}
                         >
                           Continue <span aria-hidden="true">&rarr;</span>
@@ -2623,7 +2700,8 @@ export function WeddingExperience({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Directions to Conlay station <span aria-hidden="true">↗</span>
+                    Directions to Conlay station{" "}
+                    <span aria-hidden="true">↗</span>
                   </a>
                 </article>
                 <article>

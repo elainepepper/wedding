@@ -47,6 +47,14 @@ test("renders the finished wedding invitation content", async () => {
   assert.match(dreamscape, /middle < rect\.top/);
   assert.match(dreamscape, /middle > rect\.bottom/);
   assert.doesNotMatch(dreamscape, /Math\.abs\(centre - middle\)/);
+  // A memory-pressure reload on mobile must not erase an unfinished RSVP,
+  // and only one full-screen film may decode/play as scenes crossfade.
+  assert.match(experience, /elaine-haykal-rsvp-draft:/);
+  assert.match(experience, /window\.sessionStorage\.setItem/);
+  assert.match(experience, /window\.sessionStorage\.removeItem/);
+  assert.match(dreamscape, /index === strongestIndex/);
+  assert.match(dreamscape, /autoPlay=\{index === 0\}/);
+  assert.match(dreamscape, /preload=\{index === 0 \? "auto" : "none"\}/);
   const confirmationIndex = experience.indexOf('id="confirmation"');
   const recapIndex = experience.indexOf(
     "<EveningRecap guests={guestResponses} />",
