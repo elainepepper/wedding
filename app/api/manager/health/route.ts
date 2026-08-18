@@ -21,6 +21,7 @@ type Check = { name: string; ok: boolean; detail: string; affected?: string[] };
 export async function GET(request: Request) {
   const admin = await requireAdmin(request);
   if (!admin) return Response.json({ error: "Not signed in." }, { status: 401 });
+  if (admin.role === "planner") return Response.json({ error: "This check is reserved for Elaine and Haykal." }, { status: 403 });
 
   try {
     assertFirebaseAdminConfigured();

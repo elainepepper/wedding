@@ -118,6 +118,23 @@ test("includes the complete manager and locked-down Firestore rules", async () =
   await exists("firestore.indexes.json");
 });
 
+test("enforces the wedding planner's crew-only boundary", async () => {
+  const [manager, route, health] = await Promise.all([
+    read("app/manager/ManagerApp.tsx"),
+    read("app/api/manager/route.ts"),
+    read("app/api/manager/health/route.ts"),
+  ]);
+  assert.match(route, /PLANNER_ALLOWED_ACTIONS/);
+  assert.match(route, /String\(guestDoc\.data\(\)\.category \?\? ""\) !== "Crew"/);
+  assert.match(route, /field !== "tableId"/);
+  assert.match(route, /invitation_token: null/);
+  assert.match(route, /marriage_advice: null/);
+  assert.match(manager, /plannerTabs/);
+  assert.match(manager, /Add crew member/);
+  assert.match(manager, /guest\.category === "Crew"/);
+  assert.match(health, /admin\.role === "planner"/);
+});
+
 test("keeps the full-screen invitation menu keyboard-contained", async () => {
   const menu = await read("app/SiteMenu.tsx");
   assert.match(menu, /aria-controls="invitation-site-menu"/);

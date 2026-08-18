@@ -61,6 +61,7 @@ const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
 ];
 
 const tabs = navGroups.flatMap((group) => group.items);
+const plannerTabs = new Set<Tab>(["overview", "guests", "rsvps", "seating", "exports"]);
 
 const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name ?? ""} ${guest.last_name ?? ""}`.trim() || "Unnamed guest";
 // The wedding evening begins 6:00pm in Kuala Lumpur; fall back to the known date if settings are blank.
@@ -255,7 +256,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   };
 
   const stats = useMemo(() => {
-    const guests = data?.guests ?? [];
+    const guests = (data?.guests ?? []).filter((guest) => guest.category !== "Crew");
     const confirmed = guests.filter((g) => g.rsvp_status === "Confirmed");
     const confirmedHouseholds = (predicate: (guest: Guest) => boolean) =>
       new Set(
@@ -320,28 +321,33 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   if (loading) return <ManagerLoading />;
   if (loadError || !data) return <div className="manager-fatal"><span>✦</span><h1>We couldn’t open the guest book.</h1><p>{loadError}</p>{signedInEmail ? <small>Currently signed in as <strong>{signedInEmail}</strong></small> : null}<div className="manager-fatal-actions"><button onClick={() => load()}>Try again</button><button className="secondary-button" onClick={() => void onSignOut()}>Sign out and choose another account</button></div></div>;
 
+  const isPlanner = data.admin.role === "planner";
+  const visibleNavGroups = isPlanner
+    ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => plannerTabs.has(item.id)) })).filter((group) => group.items.length)
+    : navGroups;
+
   return (
     <div className="manager-shell">
       <a className="skip-link" href="#manager-main">Skip to manager content</a>
       <aside className={`manager-sidebar${mobileNav ? " is-open" : ""}`}>
         <div className="manager-brand"><span>E <i>&amp;</i> H</span><small>Guest Manager</small></div>
         <nav aria-label="Guest manager">
-          {navGroups.map((group) => <div className="manager-nav-group" key={group.label}>
+          {visibleNavGroups.map((group) => <div className="manager-nav-group" key={group.label}>
             <p>{group.label}</p>
             {group.items.map((item) => <button key={item.id} className={tab === item.id ? "is-active" : ""} onClick={() => { setTab(item.id); setSelected([]); setMobileNav(false); }}><b>{item.index}</b><span>{item.label}</span>{item.id === "rsvps" && stats.pending ? <em>{stats.pending}</em> : null}</button>)}
           </div>)}
         </nav>
-        <div className="manager-profile"><div>{initialAdminName.slice(0, 1).toUpperCase()}</div><p><strong>{initialAdminName}</strong><span>Administrator</span></p><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></div>
+        <div className="manager-profile"><div>{initialAdminName.slice(0, 1).toUpperCase()}</div><p><strong>{initialAdminName}</strong><span>{isPlanner ? "Wedding planner" : "Administrator"}</span></p><a href="/">View invitation ↗</a><button type="button" onClick={() => void onSignOut()}>Sign out</button></div>
       </aside>
 
       <main id="manager-main" className="manager-main">
         <header className="manager-topbar">
           <button className="mobile-menu" onClick={() => setMobileNav((value) => !value)} aria-label="Open navigation">☰</button>
           <div><p className="manager-kicker">Elaine &amp; Haykal · 7 November 2026</p><h1>{tabs.find((item) => item.id === tab)?.label}</h1></div>
-          <div className="topbar-actions"><span className={`save-state save-state--${saveState}`} aria-live="polite"><i />{saveState === "preview" ? "Preview mode" : saveState === "saving" ? "Saving changes" : saveState === "error" ? "Save needs attention" : "All changes saved"}</span><button onClick={() => setGuestModal("new")}>＋ Add guest</button></div>
+          <div className="topbar-actions"><span className={`save-state save-state--${saveState}`} aria-live="polite"><i />{saveState === "preview" ? "Preview mode" : saveState === "saving" ? "Saving changes" : saveState === "error" ? "Save needs attention" : "All changes saved"}</span><button onClick={() => setGuestModal("new")}>＋ {isPlanner ? "Add crew member" : "Add guest"}</button></div>
         </header>
 
-        {tab === "overview" ? <Overview data={data} stats={stats} jump={jumpToGuests} setTab={setTab} /> : null}
+        {tab === "overview" ? <Overview data={data} stats={stats} jump={jumpToGuests} setTab={setTab} adminRole={data.admin.role} /> : null}
         {tab === "guests" || tab === "rsvps" ? (
           <GuestList
             guests={filteredGuests} tables={data.tables} selected={selected} setSelected={setSelected}
@@ -357,7 +363,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "dayof" ? <ForTheDay guests={data.guests} tables={data.tables} /> : null}
         {tab === "chase" ? <Chasing households={data.households} guests={data.guests} settings={data.settings} act={act} notify={notify} /> : null}
         {tab === "health" ? <HealthCheck authToken={authToken} /> : null}
-        {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} /> : null}
+        {tab === "exports" ? <Exports guests={data.guests} tables={data.tables} adminRole={data.admin.role} /> : null}
 
         {tab === "settings" ? <SettingsPanel settings={data.settings} managers={data.managers} adminRole={data.admin.role} activities={data.activities} act={act} guests={data.guests} /> : null}
       </main>
@@ -366,7 +372,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         <span>{undo.label}</span>
         <button type="button" onClick={async () => { const action = undo.restore; setUndo(null); await action(); notify("Restored"); }}>Undo</button>
       </div> : null}
-      {guestModal ? <GuestModal guest={guestModal} households={data.households} allGuests={data.guests} setUndo={setUndo} presetHouseholdId={newGuestHousehold} close={() => { setGuestModal(null); setNewGuestHousehold(null); }} act={act} /> : null}
+      {guestModal ? <GuestModal guest={guestModal} households={data.households} allGuests={data.guests} setUndo={setUndo} presetHouseholdId={newGuestHousehold} adminRole={data.admin.role} close={() => { setGuestModal(null); setNewGuestHousehold(null); }} act={act} /> : null}
       {toast ? <div className="manager-toast" role="status"><span>✓</span>{toast}</div> : null}
     </div>
   );
@@ -376,13 +382,14 @@ function ManagerLoading() {
   return <div className="manager-loading" role="status"><div className="manager-brand"><span>E <i>&amp;</i> H</span><small>Guest Manager</small></div><p>Opening the guest book…</p><i /></div>;
 }
 
-function Overview({ data, stats, jump, setTab }: { data: ManagerData; stats: Record<string, number>; jump: (filter: string) => void; setTab: (tab: Tab) => void }) {
-  const cards = [
+function Overview({ data, stats, jump, setTab, adminRole }: { data: ManagerData; stats: Record<string, number>; jump: (filter: string) => void; setTab: (tab: Tab) => void; adminRole: "owner" | "partner" | "planner" }) {
+  const allCards = [
     ["Total guests", stats.total, "All invited guests", "All"], ["Attending", stats.confirmed, "Confirmed places", "Confirmed"],
     ["Awaiting reply", stats.pending, "A gentle nudge", "Pending"], ["Declined", stats.declined, "Celebrating from afar", "Declined"],
     ["Dietary notes", stats.dietary, "Chef attention", "All"], ["After-party", stats.afterParty, "Night owls confirmed", "After-party"],
     ["Need a room", stats.accommodation, "Accommodation requests", "All"], ["Unassigned", stats.unassigned, "Confirmed without a table", "Confirmed"],
   ];
+  const cards = adminRole === "planner" ? allCards.filter(([label]) => label !== "After-party") : allCards;
   const confirmedPercent = stats.total ? (stats.confirmed / stats.total) * 100 : 0;
   const pendingPercent = stats.total ? (stats.pending / stats.total) * 100 : 0;
   const declinedPercent = Math.max(0, 100 - confirmedPercent - pendingPercent);
@@ -436,12 +443,14 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
     </th>
   );
   const allSelected = sortedGuests.length > 0 && sortedGuests.every((guest) => selected.includes(guest.id));
+  const isPlanner = adminRole === "planner";
+  const canEdit = (guest: Guest) => !isPlanner || guest.category === "Crew";
   return <div className="manager-page">
     {rsvpMode ? <section className="rsvp-banner"><div><span>Latest reply</span><h2>{guests.find((g) => g.rsvp_submitted_at)?.household_name ?? "The guest list"}</h2><p>Updated {dateLabel(guests.find((g) => g.rsvp_submitted_at)?.rsvp_submitted_at)}</p></div><strong>{guests.filter((g) => g.rsvp_status === "Confirmed").length}<small> attending</small></strong></section> : null}
     <section className="manager-panel guest-table-panel">
-      <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone or household" aria-label="Search guests" /></label>
+      <div className="table-toolbar"><label className="search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isPlanner ? "Search name or household" : "Search name, phone or household"} aria-label="Search guests" /></label>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter by RSVP status"><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select>
-        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>After-party</option><option>Possible duplicates</option></select>
+        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Filter by guest group"><option>All</option><option>Bride</option><option>Groom</option><option>Shared</option><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>Crew</option>{!isPlanner ? <><option>After-party</option><option>Possible duplicates</option></> : null}</select>
         <select value={`${sortKey}:${sortDir}`} onChange={(event) => { const [key, dir] = event.target.value.split(":"); setSortKey(key as typeof sortKey); setSortDir(Number(dir) as 1 | -1); }} aria-label="Sort guests">
           <option value="recent:1">Sort · Latest activity</option>
           <option value="recent:-1">Sort · Oldest activity</option>
@@ -453,7 +462,7 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
           <option value="table:1">Sort · Table</option>
         </select>
       </div>
-      {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" hidden={adminRole === "planner"} onClick={async () => {
+      {selected.length ? <div className="bulk-bar"><strong>{selected.length} selected</strong><button className="bulk-delete" hidden={isPlanner} onClick={async () => {
         if (!window.confirm(`Remove ${selected.length} guest${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
         const count = selected.length;
         for (const id of selected) {
@@ -461,9 +470,9 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
           if (!result) return;
         }
         setSelected([]);
-      }}>Delete</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button><select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
+      }}>Delete</button>{!isPlanner ? <><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button></> : null}<select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
       <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : sortedGuests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><SortHead id="name" label="Guest" /><SortHead id="household" label="Household" /><SortHead id="group" label="Group" /><SortHead id="rsvp" label="RSVP" /><th>Meal &amp; dietary</th><SortHead id="table" label="Table" /><SortHead id="recent" label="Invitation" /><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
-        {sortedGuests.map((guest) => <tr key={guest.id} className="is-openable"><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" onClick={() => edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong><small>{guest.email || guest.mobile || "No contact details"}</small></p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.child_meal ? "Children's meal" : guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</td><td><button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button></td></tr>)}
+        {sortedGuests.map((guest) => <tr key={guest.id} className={canEdit(guest) ? "is-openable" : ""}><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" disabled={!canEdit(guest)} onClick={() => canEdit(guest) && edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong>{!isPlanner ? <small>{guest.email || guest.mobile || "No contact details"}</small> : null}</p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.child_meal ? "Children's meal" : guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{isPlanner ? <span className="muted-cell">Restricted</span> : <>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</>}</td><td>{canEdit(guest) ? <button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button> : null}</td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
       <footer className="table-footer"><span>{guests.length} guests shown</span><span>Updates use Australia/Perth time</span></footer>
     </section>
@@ -1260,9 +1269,9 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
   </>;
 }
 
-function Exports({ guests, tables }: { guests: Guest[]; tables: SeatingTable[] }) {
+function Exports({ guests, tables, adminRole }: { guests: Guest[]; tables: SeatingTable[]; adminRole: "owner" | "partner" | "planner" }) {
   const [filter, setFilter] = useState("Confirmed");
-  const exportRows = guests.filter((guest) => filter === "All" || guest.rsvp_status === filter);
+  const exportRows = guests.filter((guest) => (adminRole !== "planner" || guest.category === "Crew") && (filter === "All" || guest.rsvp_status === filter));
   const exportCsv = (preset: "venue" | "chef" | "afterparty" | "complete") => {
     const maps = {
       venue: [["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["RSVP", (g: Guest) => g.rsvp_status], ["Ceremony", (g: Guest) => g.ceremony_attending], ["Reception", (g: Guest) => g.reception_attending], ["Table", (g: Guest) => g.table_name], ["Seat", (g: Guest) => g.seat_number], ["Accessibility", (g: Guest) => g.accessibility], ["Transport", (g: Guest) => g.transport_required ? "Yes" : "No"]],
@@ -1273,7 +1282,8 @@ function Exports({ guests, tables }: { guests: Guest[]; tables: SeatingTable[] }
     const columns = maps[preset]; const content = [`Report,${csvValue(`${preset[0].toUpperCase()}${preset.slice(1)} export`)}`, `Export date,${csvValue(new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth" }))}`, `Wedding,${csvValue("Elaine & Haykal")}`, `Applied filter,${csvValue(filter)}`, "", columns.map(([label]) => csvValue(label)).join(","), ...exportRows.filter((g) => preset !== "afterparty" || g.after_party_invited).map((guest) => columns.map(([, getter]) => csvValue(getter(guest) as unknown)).join(","))].join("\r\n");
     downloadFile(`elaine-haykal-${preset}-${new Date().toISOString().slice(0, 10)}.csv`, content);
   };
-  const presets = [{ id: "venue", title: "Venue pack", note: "Attendance, seating, access and transport", glyph: "⌂" }, { id: "chef", title: "Chef & catering", note: "Meals, dietary needs and allergies", glyph: "◇" }, { id: "afterparty", title: "After-party list", note: "Private invitations and late-night RSVPs", glyph: "✦" }, { id: "complete", title: "Complete guest archive", note: "All administrator guest fields", glyph: "▦" }] as const;
+  const allPresets = [{ id: "venue", title: "Venue pack", note: "Attendance, seating, access and transport", glyph: "⌂" }, { id: "chef", title: "Chef & catering", note: "Meals, dietary needs and allergies", glyph: "◇" }, { id: "afterparty", title: "After-party list", note: "Private invitations and late-night RSVPs", glyph: "✦" }, { id: "complete", title: "Complete guest archive", note: "All administrator guest fields", glyph: "▦" }] as const;
+  const presets = adminRole === "planner" ? allPresets.filter((preset) => preset.id === "chef") : allPresets;
   return <div className="manager-page"><div className="section-intro-row"><div><p className="panel-kicker">Reports</p><h2>Export centre</h2><span>Purpose-built files with private fields excluded where appropriate.</span></div><select value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select></div><section className="export-grid">{presets.map((preset) => <article key={preset.id}><span>{preset.glyph}</span><h3>{preset.title}</h3><p>{preset.note}</p><dl><div><dt>Guests</dt><dd>{preset.id === "afterparty" ? exportRows.filter((g) => g.after_party_invited).length : exportRows.length}</dd></div>{preset.id === "venue" ? <div><dt>Tables</dt><dd>{tables.length}</dd></div> : null}</dl><button onClick={() => exportCsv(preset.id)}>Download CSV <i>↓</i></button></article>)}</section></div>;
 }
 
@@ -1377,7 +1387,7 @@ function SettingsPanel({ settings, managers, adminRole, activities, act, guests 
   </div>;
 }
 
-function GuestModal({ guest, households, close, act, allGuests, setUndo, presetHouseholdId }: { guest: Guest | "new"; households: Household[]; allGuests?: Guest[]; setUndo?: (u: { label: string; restore: () => Promise<void> } | null) => void; presetHouseholdId?: number | null; close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
+function GuestModal({ guest, households, close, act, allGuests, setUndo, presetHouseholdId, adminRole }: { guest: Guest | "new"; households: Household[]; allGuests?: Guest[]; setUndo?: (u: { label: string; restore: () => Promise<void> } | null) => void; presetHouseholdId?: number | null; adminRole: "owner" | "partner" | "planner"; close: () => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const isNew = guest === "new";
   const current = isNew ? null : guest;
   const [form, setForm] = useState({
@@ -1412,6 +1422,25 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
       setSaveError(error instanceof Error ? error.message : "The guest could not be saved.");
     } finally { setSaving(false); }
   };
+  if (adminRole === "planner" && current && current.category !== "Crew") {
+    return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><div className="small-modal"><header><h2>Guest details are read-only</h2><button type="button" onClick={close} aria-label="Close">×</button></header><p>The planner account can edit only crew members and their meal details.</p><footer><button type="button" onClick={close}>Close</button></footer></div></div>;
+  }
+  if (adminRole === "planner") {
+    return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form className="guest-modal" onSubmit={submit}>
+      <header><div><p className="panel-kicker">Crew management</p><h2>{isNew ? "Add a crew member" : displayName(current!)}</h2></div><button type="button" onClick={close} aria-label="Close">×</button></header>
+      <div className="modal-body">
+        <section><h3>Crew member</h3><div className="modal-grid">
+          <label><span>First name *</span><input required value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} /></label>
+          <label><span>Last name</span><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} /></label>
+          <label><span>Preferred name</span><input value={form.preferredName} onChange={(event) => setForm({ ...form, preferredName: event.target.value })} /></label>
+          <label><span>Crew meal</span><select value={form.mealSelection} onChange={(event) => setForm({ ...form, mealSelection: event.target.value })}><option value="">Not selected</option><option value="Lamb">Almond dukkha-crusted lamb</option><option value="Salmon">Seared Alaskan salmon</option></select></label>
+          <label><span>Dietary requirements</span><textarea value={form.dietaryRequirements} onChange={(event) => setForm({ ...form, dietaryRequirements: event.target.value })} /></label>
+          <label><span>Allergies</span><textarea value={form.allergies} onChange={(event) => setForm({ ...form, allergies: event.target.value })} /></label>
+        </div><p className="security-note"><span>◇</span><strong>Crew only</strong> This record is not given a guest invitation and does not count toward the invited guest list.</p></section>
+      </div>
+      <footer>{saveError ? <p className="form-error" role="alert">{saveError}</p> : null}<span /><div><button type="button" className="secondary-button" onClick={close}>Cancel</button><button type="submit" disabled={saving}>{saving ? "Saving…" : isNew ? "Add crew member" : "Save crew member"}</button></div></footer>
+    </form></div>;
+  }
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form className="guest-modal" onSubmit={submit}>
     <header><div><p className="panel-kicker">{isNew ? "New invitation" : current?.household_name}</p><h2>{isNew ? "Add a guest" : displayName(current!)}</h2></div><button type="button" onClick={close} aria-label="Close">×</button></header>
     <div className="modal-body">
@@ -1420,7 +1449,7 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
         <label><span>Last name</span><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} /></label>
         <label><span>Preferred name</span><input value={form.preferredName} onChange={(event) => setForm({ ...form, preferredName: event.target.value })} /></label>
         <label><span>Guest age group</span><select value={form.ageGroup} onChange={(event) => setForm({ ...form, ageGroup: event.target.value, childMeal: event.target.value === "Child" })}><option>Adult</option><option>Child</option></select></label>
-        <label><span>Mobile with country code</span><input type="tel" pattern="\+[0-9][0-9\s()\-]{7,20}" value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value })} placeholder="+60 12 345 6789" /></label>
+        <label><span>Mobile with country code</span><input type="tel" inputMode="tel" value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value })} placeholder="+60 12 345 6789" /></label>
         <label><span>Invitation household</span><select value={form.householdId} onChange={(event) => setForm({ ...form, householdId: event.target.value })}><option value="">Create a new invitation just for them</option>{households.map((household) => {
           const members = (allGuests ?? []).filter((g) => g.household_id === household.id && g.id !== current?.id).map(displayName).join(" & ");
           return <option key={household.id} value={household.id}>{household.name}{members ? ` — with ${members}` : " — no one else"}</option>;
@@ -1428,7 +1457,7 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
         {!form.householdId ? <label className="wide"><span>Name this invitation</span><input value={form.householdName} onChange={(event) => setForm({ ...form, householdName: event.target.value })} /></label> : null}
       </div><p className="security-note"><span>◇</span><strong>Named invitation</strong> Only the people listed in this household can RSVP.</p></section>
       <section><h3>Invitation &amp; RSVP</h3><div className="modal-grid">
-        <label><span>Guest category</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option></select></label>
+        <label><span>Guest category</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Family</option><option>Friends</option><option>Work</option><option>VIP</option><option>Crew</option></select></label>
         <label><span>Side</span><select value={form.side} onChange={(event) => setForm({ ...form, side: event.target.value })}><option>Bride</option><option>Groom</option><option>Shared</option></select></label>
         <label><span>RSVP status</span><select value={form.rsvpStatus} onChange={(event) => setForm({ ...form, rsvpStatus: event.target.value })}><option>Pending</option><option>Confirmed</option><option>Declined</option></select></label>
         <label><span>Meal selection</span><select value={form.mealSelection} onChange={(event) => setForm({ ...form, mealSelection: event.target.value })}><option value="">Not selected</option><option value="Lamb">Almond dukkha-crusted lamb</option><option value="Salmon">Seared Alaskan salmon</option></select></label>

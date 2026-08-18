@@ -9,8 +9,23 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const clean = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
+// Mobile keyboards and copied contacts can insert non-breaking spaces or
+// invisible direction marks. They look correct on screen but used to fail the
+// country-code check. Store one clean international form instead.
+const normaliseMobile = (value: unknown) => {
+  const raw = clean(value, 80).normalize("NFKC");
+  if (!raw) return "";
+  const compact = raw
+    .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "")
+    .replace(/[\s\u00a0\u2007\u202f().-]/g, "");
+  return compact.startsWith("00") ? `+${compact.slice(2)}` : compact;
+};
+const validMobile = (value: string) => !value || /^\+[1-9][0-9]{7,14}$/.test(value);
 const integer = optionalInteger;
 const ids = (value: unknown) => Array.isArray(value) ? value.map(integer).filter((item): item is number => item !== null) : [];
+const PLANNER_ALLOWED_ACTIONS = new Set(["addGuest", "editGuest", "bulkUpdate", "createTable", "editTable", "deleteTable", "moveGuest"]);
+
+const plannerDenied = () => Response.json({ error: "This action is reserved for Elaine and Haykal." }, { status: 403 });
 
 async function docById(collection: string, id: number) {
   const snapshot = await weddingRef.collection(collection).where("id", "==", id).limit(1).get();
@@ -78,17 +93,55 @@ export async function GET(request: Request) {
     const tableRows: Array<Record<string, unknown>> = tables.map((table): Record<string, unknown> => ({ ...table, guest_count: guests.filter((guest) => guest.rsvp_status === "Confirmed" && Number(guest.table_id) === Number(table.id)).length })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
     const ownerEmail = (process.env.WEDDING_OWNER_EMAIL || "haykalelaine@gmail.com").toLowerCase();
     const managers = [{ id: 0, email: ownerEmail, name: "Wedding owner", role: "owner", active: 1, created_at: null }, ...managerSnapshot.docs.map(plainDoc)];
+    const plannerView = admin.role === "planner";
+    const visibleGuests = plannerView ? guests.map((guest) => ({
+      ...guest,
+      email: null,
+      mobile: null,
+      invitation_slug: null,
+      invitation_token: null,
+      invitation_sent: 0,
+      invitation_sent_at: null,
+      opened_at: null,
+      last_activity_at: null,
+      wishes: null,
+      marriage_advice: null,
+      internal_notes: null,
+      after_party_eligible: 0,
+      after_party_invited: 0,
+      after_party_attending: "Pending",
+      after_party_rsvp_updated_at: null,
+      after_party_discovered_at: null,
+    })) : guests;
+    const visibleHouseholds = plannerView ? householdRows.map((household) => ({
+      ...household,
+      email: null,
+      mobile: null,
+      invitation_slug: null,
+      invitation_token: null,
+      invitation_sent: 0,
+      opened_at: null,
+      last_activity_at: null,
+      table_seen_at: null,
+      notes: null,
+    })) : householdRows;
     return Response.json({
       admin: { displayName: admin.displayName, email: admin.email, role: admin.role },
-      guests,
-      households: householdRows,
+      guests: visibleGuests,
+      households: visibleHouseholds,
       tables: tableRows,
-      events: eventSnapshot.docs.map(plainDoc).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
-      activities: activitySnapshot.docs.map(plainDoc),
-      settings: settingsSnapshot.data() ?? {},
-      managers,
+      events: plannerView ? [] : eventSnapshot.docs.map(plainDoc).sort((a, b) => Number(a.sort_order) - Number(b.sort_order)),
+      activities: plannerView ? [] : activitySnapshot.docs.map(plainDoc),
+      settings: plannerView ? {
+        wedding_name: settingsSnapshot.data()?.wedding_name ?? "Elaine & Haykal",
+        couple_names: settingsSnapshot.data()?.couple_names ?? "Elaine and Haykal",
+        wedding_date: settingsSnapshot.data()?.wedding_date ?? "2026-11-07",
+        rsvp_deadline: settingsSnapshot.data()?.rsvp_deadline ?? "2026-09-15",
+        timezone: settingsSnapshot.data()?.timezone ?? "Australia/Perth",
+      } : settingsSnapshot.data() ?? {},
+      managers: plannerView ? [] : managers,
       // Enough to list and restore them; the full records stay in the database.
-      archivedHouseholds: archivedHouseholds.map((household) => ({
+      archivedHouseholds: plannerView ? [] : archivedHouseholds.map((household) => ({
         id: household.id,
         name: household.name,
         archived_at: household.archived_at ?? null,
@@ -107,6 +160,7 @@ export async function POST(request: Request) {
     assertFirebaseAdminConfigured();
     const payload = await request.json() as Record<string, unknown>;
     const action = clean(payload.action, 60);
+    if (admin.role === "planner" && !PLANNER_ALLOWED_ACTIONS.has(action)) return plannerDenied();
 
     // One number per household: when a mobile is entered for any guest, it
     // becomes the household's number and fills every member. The invitation
@@ -149,25 +203,27 @@ export async function POST(request: Request) {
     if (action === "addGuest") {
       const firstName = clean(payload.firstName, 100);
       const lastName = clean(payload.lastName, 100);
-      const mobile = clean(payload.mobile, 60);
+      const mobile = normaliseMobile(payload.mobile);
       if (!firstName) return Response.json({ error: "First name is required." }, { status: 400 });
       // A number is welcome but not required — the import allows guests without
       // one, and a guest gives their own when they reply. Only the shape is checked.
-      if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) {
+      if (!validMobile(mobile)) {
         return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
       }
-      const ageGroup = canonicalAgeGroup(payload.ageGroup);
-      const rsvpStatus = canonicalRsvpStatus(payload.rsvpStatus);
+      const plannerCrew = admin.role === "planner";
+      const ageGroup = plannerCrew ? "Adult" : canonicalAgeGroup(payload.ageGroup);
+      const rsvpStatus = plannerCrew ? "Confirmed" : canonicalRsvpStatus(payload.rsvpStatus);
       let householdId = integer(payload.householdId);
+      if (plannerCrew) householdId = null;
       if (!householdId) {
         householdId = await nextId("households");
         const householdName = clean(payload.householdName, 180) || `${firstName} ${lastName}`.trim();
-        await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: householdName, mobile: mobile || null, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: true, opened_at: null, last_activity_at: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+        await weddingRef.collection("households").doc(String(householdId)).set({ id: householdId, name: plannerCrew ? `Crew · ${householdName}` : householdName, mobile: plannerCrew ? null : mobile || null, max_guests: 1, invitation_slug: householdName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80), invitation_token: randomToken(), invitation_enabled: plannerCrew ? false : true, opened_at: null, last_activity_at: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       }
       const guestId = await nextId("guests");
-      await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile, category: clean(payload.category, 80) || "Friends", side: clean(payload.side, 40) || "Shared", age_group: ageGroup, child_meal: ageGroup === "Child" && payload.childMeal !== false ? 1 : 0, relationship: null, rsvp_status: rsvpStatus, ceremony_invited: payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: payload.afterPartyEligible ? 1 : 0, after_party_invited: payload.afterPartyInvited ? 1 : 0, after_party_attending: "Pending", meal_selection: null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: clean(payload.accessibility, 800) || null, transport_required: payload.transportRequired ? 1 : 0, accommodation_required: payload.accommodationRequired ? 1 : 0, travel_arrival: clean(payload.travelArrival, 20) || null, travel_departure: clean(payload.travelDeparture, 20) || null, accommodation_name: clean(payload.accommodationName, 240) || null, bed_preference: payload.bedPreference === "King" || payload.bedPreference === "Twin" ? payload.bedPreference : null, room_nights: [1, 2, 3].includes(Number(payload.roomNights)) ? Number(payload.roomNights) : null, wishes: clean(payload.wishes, 1500) || null, marriage_advice: clean(payload.marriageAdvice, 1500) || null, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: clean(payload.internalNotes, 1500) || null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+      await weddingRef.collection("guests").doc(String(guestId)).set({ id: guestId, household_id: householdId, first_name: firstName, last_name: lastName, preferred_name: clean(payload.preferredName, 100) || null, mobile: plannerCrew ? null : mobile, category: plannerCrew ? "Crew" : clean(payload.category, 80) || "Friends", side: plannerCrew ? "Shared" : clean(payload.side, 40) || "Shared", age_group: ageGroup, child_meal: 0, relationship: null, rsvp_status: rsvpStatus, ceremony_invited: plannerCrew ? 0 : payload.ceremonyInvited === false ? 0 : 1, ceremony_attending: null, reception_invited: plannerCrew ? 0 : payload.receptionInvited === false ? 0 : 1, reception_attending: null, after_party_eligible: 0, after_party_invited: 0, after_party_attending: "Pending", meal_selection: payload.mealSelection === "Lamb" || payload.mealSelection === "Salmon" ? payload.mealSelection : null, dietary_requirements: clean(payload.dietaryRequirements, 800) || null, allergies: clean(payload.allergies, 800) || null, accessibility: plannerCrew ? null : clean(payload.accessibility, 800) || null, transport_required: 0, accommodation_required: 0, travel_arrival: null, travel_departure: null, accommodation_name: null, bed_preference: null, room_nights: null, wishes: null, marriage_advice: null, table_id: null, seat_number: null, invitation_sent: 0, internal_notes: null, archived: 0, created_at: serverTimestamp(), updated_at: serverTimestamp() });
       await addActivity(admin.displayName, "Guest added", "guest", guestId, `${firstName} ${lastName}`.trim());
-      if (mobile) await shareMobileAcrossHousehold(householdId, mobile);
+      if (mobile && !plannerCrew) await shareMobileAcrossHousehold(householdId, mobile);
       else {
         // The new arrival inherits the household's number, if there is one.
         const householdDoc = await docById("households", householdId);
@@ -182,8 +238,21 @@ export async function POST(request: Request) {
       if (!guestId) return Response.json({ error: "Guest not found." }, { status: 400 });
       const guestDoc = await docById("guests", guestId);
       if (!guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
-      const editMobile = clean(payload.mobile, 60);
-      if ("mobile" in payload && editMobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(editMobile)) {
+      if (admin.role === "planner") {
+        if (String(guestDoc.data().category ?? "") !== "Crew") return plannerDenied();
+        const update: Record<string, unknown> = { updated_at: serverTimestamp() };
+        if ("firstName" in payload) update.first_name = clean(payload.firstName, 100) || String(guestDoc.data().first_name ?? "Crew");
+        if ("lastName" in payload) update.last_name = clean(payload.lastName, 100) || null;
+        if ("preferredName" in payload) update.preferred_name = clean(payload.preferredName, 100) || null;
+        if ("mealSelection" in payload) update.meal_selection = payload.mealSelection === "Lamb" || payload.mealSelection === "Salmon" ? payload.mealSelection : null;
+        if ("dietaryRequirements" in payload) update.dietary_requirements = clean(payload.dietaryRequirements, 800) || null;
+        if ("allergies" in payload) update.allergies = clean(payload.allergies, 800) || null;
+        await guestDoc.ref.set(update, { merge: true });
+        await addActivity(admin.displayName, "Crew member edited", "guest", guestId, "Crew name or meal details updated");
+        return Response.json({ ok: true });
+      }
+      const editMobile = normaliseMobile(payload.mobile);
+      if ("mobile" in payload && !validMobile(editMobile)) {
         return Response.json({ error: "That mobile number needs its country code, like +60 12 345 6789." }, { status: 400 });
       }
       const fields: Record<string, string> = { firstName: "first_name", lastName: "last_name", preferredName: "preferred_name", mobile: "mobile", category: "category", side: "side", dietaryRequirements: "dietary_requirements", allergies: "allergies", accessibility: "accessibility", internalNotes: "internal_notes", accommodationName: "accommodation_name", travelArrival: "travel_arrival", travelDeparture: "travel_departure", wishes: "wishes", marriageAdvice: "marriage_advice" };
@@ -263,6 +332,7 @@ export async function POST(request: Request) {
       const guestIds = ids(payload.guestIds);
       const fieldMap: Record<string, string> = { category: "category", side: "side", rsvpStatus: "rsvp_status", tableId: "table_id", afterPartyEligible: "after_party_eligible", afterPartyInvited: "after_party_invited" };
       const field = clean(payload.field, 50);
+      if (admin.role === "planner" && field !== "tableId") return plannerDenied();
       const targetField = fieldMap[field];
       if (!guestIds.length || !targetField) return Response.json({ error: "Choose guests and a valid update." }, { status: 400 });
       let value: unknown = payload.value;
@@ -540,9 +610,9 @@ export async function POST(request: Request) {
         const row = rows[index];
         const firstName = clean(row.firstName, 100);
         const lastName = clean(row.lastName, 100);
-        const mobile = clean(row.mobile, 60);
+        const mobile = normaliseMobile(row.mobile);
         if (!firstName) { errors.push(`Row ${index + 1}: a first name is needed`); continue; }
-        if (mobile && !/^\+[0-9][0-9\s()-]{7,20}$/.test(mobile)) {
+        if (!validMobile(mobile)) {
           errors.push(`Row ${index + 1}: ${firstName} has a number missing its country code`);
           continue;
         }
