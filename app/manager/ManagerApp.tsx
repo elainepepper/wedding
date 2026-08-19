@@ -41,7 +41,7 @@ type Settings = Record<string, unknown> & {
 };
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
 export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "travel" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 type ManagerTab = { id: Tab; label: string };
 
 const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
@@ -51,7 +51,7 @@ const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
   ] },
   { label: "Plan the day", items: [
     { id: "seating", label: "Seating plan" }, { id: "afterparty", label: "After-party" },
-    { id: "wishes", label: "Wishes" }, { id: "chase", label: "Follow-up" },
+    { id: "wishes", label: "Messages & wishes" }, { id: "travel", label: "Travel & rooms" }, { id: "chase", label: "Follow-up" },
     { id: "dayof", label: "Day-of briefs" },
   ] },
   { label: "Files & admin", items: [
@@ -400,6 +400,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
+        {tab === "travel" ? <TravelAndRooms guests={data.guests} /> : null}
         {tab === "imports" ? <Imports act={act} notify={notify} /> : null}
         {tab === "dayof" ? <ForTheDay guests={data.guests} tables={data.tables} /> : null}
         {tab === "chase" ? <Chasing households={data.households} guests={data.guests} settings={data.settings} act={act} notify={notify} /> : null}
@@ -450,8 +451,17 @@ function Overview({ data, stats, jump, setTab, adminRole }: { data: ManagerData;
   const confirmedPercent = stats.total ? (stats.confirmed / stats.total) * 100 : 0;
   const pendingPercent = stats.total ? (stats.pending / stats.total) * 100 : 0;
   const declinedPercent = Math.max(0, 100 - confirmedPercent - pendingPercent);
+  const messageHouseholds = new Set(
+    data.guests
+      .filter((guest) => (guest.wishes || "").trim() || (guest.marriage_advice || "").trim())
+      .map((guest) => guest.household_id ?? `guest-${guest.id}`),
+  ).size;
   return <div className="manager-page overview-page">
     <section className="welcome-strip"><div><p>{greetingForNow()}</p><h2>Your celebration is taking shape.</h2><span>{stats.confirmed} of {stats.total} guests are confirmed · {stats.meals} meals selected</span></div><div className="countdown"><strong>{daysUntilWedding(data.settings.wedding_date)}</strong><span>days to go</span></div></section>
+    {adminRole !== "planner" ? <section className="overview-shortcuts" aria-label="Guest details">
+      <button type="button" onClick={() => setTab("wishes")}><span>Messages &amp; wishes</span><strong>{messageHouseholds}</strong><small>household{messageHouseholds === 1 ? "" : "s"} left a message</small><b aria-hidden="true">→</b></button>
+      <button type="button" onClick={() => setTab("travel")}><span>Travel &amp; rooms</span><strong>{stats.transport}</strong><small>household{stats.transport === 1 ? "" : "s"} travelling to KL</small><b aria-hidden="true">→</b></button>
+    </section> : null}
     <section className="stat-grid" aria-label="Guest overview">{cards.map(([label, value, note, filter], index) => <button className={Number(value) === 0 ? "is-zero" : ""} key={String(label)} onClick={() => jump(String(filter))}><i>{String(index + 1).padStart(2, "0")}</i><span>{label}</span><strong>{value}</strong><small>{note}</small></button>)}</section>
     <div className="overview-grid">
       <section className="manager-panel response-panel"><div className="panel-head"><div><p className="panel-kicker">Response ledger</p><h3>RSVP progress</h3></div><button onClick={() => setTab("rsvps")}>View RSVPs</button></div>
@@ -1268,6 +1278,58 @@ function Imports({ act, notify }: { act: (payload: Record<string, unknown>, succ
     }}>{importing ? "Importing…" : "Confirm import"}</button></footer></div> : null}</section><section className="import-help"><article><span>01</span><h3>Export from Sheets</h3><p>File → Download → Comma-separated values.</p></article><article><span>02</span><h3>Check phone numbers</h3><p>Use international format, such as +60, +61 or +65.</p></article><article><span>03</span><h3>Only know them as a couple?</h3><p>Write two rows sharing one Household: “Mr” and “Mrs”, both with the surname. They each get their own meal choice, and the invitation reads “Mr &amp; Mrs Tan”.</p></article></section></div>;
 }
 
+function TravelAndRooms({ guests }: { guests: Guest[] }) {
+  type TravelHousehold = { key: string; name: string; guests: Guest[] };
+  const grouped = new Map<string, TravelHousehold>();
+  guests
+    .filter((guest) => guest.category !== "Crew" && guest.rsvp_status === "Confirmed" && guest.rsvp_submitted_at)
+    .forEach((guest) => {
+      const key = String(guest.household_id ?? `guest-${guest.id}`);
+      const current = grouped.get(key) ?? { key, name: guest.household_name || displayName(guest), guests: [] };
+      current.guests.push(guest);
+      grouped.set(key, current);
+    });
+  const households = [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const travelling = households.filter((household) => household.guests.some((guest) => Boolean(guest.transport_required)));
+  const notTravelling = households.filter((household) => !household.guests.some((guest) => Boolean(guest.transport_required)));
+  const roomRequests = travelling.filter((household) => household.guests.some((guest) => Boolean(guest.accommodation_required)));
+  const detailFor = (household: TravelHousehold) => {
+    const firstValue = (field: "travel_arrival" | "travel_departure" | "accommodation_name" | "bed_preference" | "room_nights") =>
+      household.guests.map((guest) => guest[field]).find((value) => value != null && String(value).trim()) ?? null;
+    return {
+      arrival: firstValue("travel_arrival"), departure: firstValue("travel_departure"),
+      accommodation: firstValue("accommodation_name"), bed: firstValue("bed_preference"), nights: firstValue("room_nights"),
+      grandHyatt: household.guests.some((guest) => Boolean(guest.accommodation_required)),
+    };
+  };
+
+  return <div className="manager-page travel-page">
+    <div className="section-intro-row"><div><p className="panel-kicker">Guest travel</p><h2>Travel &amp; rooms</h2><span>Household answers from submitted RSVPs. Dates and room choices appear here when supplied.</span></div></div>
+    <section className="travel-summary" aria-label="Travel response summary">
+      <article><strong>{travelling.length}</strong><span>Travelling to KL</span></article>
+      <article><strong>{notTravelling.length}</strong><span>Not travelling</span></article>
+      <article><strong>{roomRequests.length}</strong><span>Grand Hyatt rooms</span></article>
+    </section>
+
+    <section className="manager-panel travel-response-panel">
+      <div className="panel-head"><div><p className="panel-kicker">Coming from out of town</p><h3>Travelling to Kuala Lumpur ({travelling.length})</h3></div></div>
+      {travelling.length ? <div className="travel-household-list">{travelling.map((household) => {
+        const detail = detailFor(household);
+        return <article key={household.key}><header><div><strong>{household.name}</strong><small>{household.guests.map(displayName).join(" & ")}</small></div><span>{detail.grandHyatt ? "Grand Hyatt requested" : "Making own arrangements"}</span></header><dl>
+          <div><dt>Arrival</dt><dd>{detail.arrival ? dateLabel(String(detail.arrival)) : "Not provided"}</dd></div>
+          <div><dt>Departure</dt><dd>{detail.departure ? dateLabel(String(detail.departure)) : "Not provided"}</dd></div>
+          <div><dt>Stay</dt><dd>{detail.grandHyatt ? `Grand Hyatt${detail.nights ? ` · ${detail.nights} night${Number(detail.nights) === 1 ? "" : "s"}` : ""}${detail.bed ? ` · ${detail.bed}` : ""}` : detail.accommodation || "Not provided"}</dd></div>
+        </dl></article>;
+      })}</div> : <p className="empty-note">No guests have said they are travelling to Kuala Lumpur yet.</p>}
+    </section>
+
+    <section className="manager-panel travel-response-panel">
+      <div className="panel-head"><div><p className="panel-kicker">Local or already in town</p><h3>Not travelling to Kuala Lumpur ({notTravelling.length})</h3></div></div>
+      {notTravelling.length ? <div className="travel-name-list">{notTravelling.map((household) => <span key={household.key}>{household.name}</span>)}</div> : <p className="empty-note">No submitted replies in this group yet.</p>}
+    </section>
+  </div>;
+}
+
 function WishesAndAdvice({ guests }: { guests: Guest[] }) {
   const named = (guest: Guest) => guest.preferred_name || `${guest.first_name} ${guest.last_name}`.trim();
   type Message = { key: string; text: string; names: string; submittedAt: string | null };
@@ -1304,7 +1366,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
     const text = items.map((message) => `${message.names}\n${message.text}`).join("\n\n");
     navigator.clipboard.writeText(text).catch(() => undefined);
   };
-  return <>
+  return <div className="manager-page wishes-page">
     <div className="panel-head">
       <div><p className="panel-kicker">Shared on the night</p><h3>Warm wishes ({wishes.length})</h3></div>
       {wishes.length ? <button className="secondary-button" onClick={() => copyAll(wishes)}>Copy all</button> : null}
@@ -1325,7 +1387,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
     {rooms.length
       ? <div className="wish-list">{rooms.map((guest) => <blockquote key={`room-${guest.household_id ?? guest.id}`}><p>{guest.bed_preference === "Twin" ? "Two singles" : guest.bed_preference === "King" ? "One king" : "Bed not stated"}{guest.room_nights ? ` · ${guest.room_nights} night${guest.room_nights > 1 ? "s" : ""}` : ""}</p><cite>{guest.household_name || named(guest)}</cite></blockquote>)}</div>
       : <p className="empty-note">No rooms have been requested yet.</p>}
-  </>;
+  </div>;
 }
 
 function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; tables: SeatingTable[]; adminRole: "owner" | "partner" | "planner"; setTab: (tab: Tab) => void }) {

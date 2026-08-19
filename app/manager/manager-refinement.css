@@ -426,7 +426,7 @@
   .manager-preview-banner { padding-inline: 0.55rem; font-size: 0.55rem; }
   .manager-topbar { min-height: 80px; }
   .manager-topbar > div:nth-child(2) { min-width: 0; }
-  .manager-topbar h1 { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .manager-topbar h1 { max-width: none; overflow: visible; text-overflow: clip; white-space: normal; font-size: 1.2rem; line-height: 1.05; }
   .topbar-actions > button { font-size: 0.62rem; white-space: nowrap; }
   .welcome-strip { gap: 0.8rem; }
   .welcome-strip h2 { font-size: clamp(2rem, 10vw, 2.8rem); }

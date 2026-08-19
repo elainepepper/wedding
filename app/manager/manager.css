@@ -1266,6 +1266,34 @@
 .send-sheet { width: min(590px, 100vw); }
 .send-sheet .send-deck { max-width: none; }
 
+/* The two guest details Elaine checks most often should never be buried. */
+.overview-shortcuts { margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.overview-shortcuts button { min-width: 0; min-height: 94px; padding: 1rem 1.1rem; border: 1px solid rgba(155,49,96,.2); border-radius: 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .18rem .8rem; background: rgba(255,253,249,.92); color: var(--m-ink); text-align: left; }
+.overview-shortcuts button > span { color: var(--m-wine); font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.overview-shortcuts button > strong { grid-row: 1 / 3; grid-column: 2; color: var(--m-wine); font: 400 2rem/1 Georgia, serif; }
+.overview-shortcuts button > small { color: var(--m-muted); font-size: .68rem; }
+.overview-shortcuts button > b { grid-column: 2; color: var(--m-rose); font-size: .85rem; }
+
+.travel-summary { margin: 1rem 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
+.travel-summary article { min-height: 108px; padding: 1rem; border: 1px solid var(--m-line); border-radius: 14px; display: grid; place-items: center; align-content: center; gap: .35rem; background: var(--m-paper); text-align: center; }
+.travel-summary strong { color: var(--m-wine); font: 400 2rem/1 Georgia, serif; }
+.travel-summary span { color: var(--m-muted); font-size: .66rem; font-weight: 750; }
+.travel-response-panel { margin-top: 1rem; }
+.travel-household-list { display: grid; gap: .7rem; }
+.travel-household-list > article { padding: 1rem 0; border-top: 1px solid var(--m-line); }
+.travel-household-list > article:first-child { border-top: 0; }
+.travel-household-list header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.travel-household-list header > div { min-width: 0; display: grid; gap: .15rem; }
+.travel-household-list header strong { font: 400 1.08rem Georgia, serif; }
+.travel-household-list header small { overflow: hidden; color: var(--m-muted); font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.travel-household-list header > span { flex: 0 0 auto; padding: .3rem .5rem; border-radius: 999px; background: #f4e7e8; color: var(--m-wine); font-size: .58rem; font-weight: 750; }
+.travel-household-list dl { margin: .8rem 0 0; display: grid; grid-template-columns: .8fr .8fr 1.4fr; gap: .8rem; }
+.travel-household-list dl div { min-width: 0; }
+.travel-household-list dt { color: var(--m-muted); font-size: .55rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.travel-household-list dd { margin: .25rem 0 0; color: var(--m-ink); font-size: .7rem; line-height: 1.45; }
+.travel-name-list { display: flex; flex-wrap: wrap; gap: .45rem; }
+.travel-name-list span { padding: .52rem .7rem; border: 1px solid var(--m-line); border-radius: 999px; background: #fff; color: var(--m-ink); font-size: .68rem; }
+
 /* Manager navigation: keep daily actions close and make files unmistakable. */
 .topbar-export { display: inline-flex !important; align-items: center; justify-content: center; gap: .38rem; background: #fff !important; color: var(--m-wine) !important; }
 .topbar-export > span:first-child { font-size: 1rem; line-height: 1; }
@@ -1320,6 +1348,16 @@
   .manager-more-sheet > footer { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--m-line); display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
   .manager-more-sheet > footer a,
   .manager-more-sheet > footer button { min-height: 44px; border: 0; padding: .5rem; background: transparent; color: var(--m-wine); font-size: .66rem; font-weight: 700; text-decoration: none; }
+  .overview-shortcuts { grid-template-columns: 1fr; }
+  .overview-shortcuts button { min-height: 82px; }
+  .travel-summary { gap: .45rem; }
+  .travel-summary article { min-height: 92px; padding: .7rem .4rem; }
+  .travel-summary strong { font-size: 1.65rem; }
+  .travel-summary span { max-width: 80px; line-height: 1.3; }
+  .travel-household-list header { display: grid; gap: .5rem; }
+  .travel-household-list header > span { justify-self: start; }
+  .travel-household-list dl { grid-template-columns: 1fr 1fr; }
+  .travel-household-list dl div:last-child { grid-column: 1 / -1; }
 }
 
 @media (max-width: 390px) {
