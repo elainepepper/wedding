@@ -2,6 +2,7 @@ import { serverTimestamp, weddingRef } from "../../../../lib/firebase-admin";
 import {
   canonicalAgeGroup,
   canonicalRsvpStatus,
+  compareInvitationGuests,
   isChildAgeGroup,
   isEnabledFlag,
   isValidInternationalMobile,
@@ -122,7 +123,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     // children. Age changes which dinner question applies; it must never make
     // an invited person disappear from their own household.
     .filter((guest) => !isEnabledFlag(guest.archived))
-    .sort((a, b) => Number(a.id) - Number(b.id));
+    .sort(compareInvitationGuests);
   // The seating plan lives in its own collection; guests only ever learn the
   // name of their own table, and only once it has been assigned.
   const tableIds = [...new Set(guests.map((guest) => Number(guest.table_id)).filter((id) => Number.isFinite(id) && id > 0))];

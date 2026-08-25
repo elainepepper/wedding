@@ -1064,7 +1064,11 @@ export function WeddingExperience({
           savedGuestResponses.map((guest) => guest.id),
         );
         setRsvp(draft?.rsvp ?? savedRsvp);
-        setGuestResponses(draft?.guestResponses ?? savedGuestResponses);
+        setGuestResponses(draft
+          ? [...draft.guestResponses].sort((a, b) =>
+              savedGuestResponses.findIndex((guest) => guest.id === a.id) -
+              savedGuestResponses.findIndex((guest) => guest.id === b.id))
+          : savedGuestResponses);
         if (draft) {
           setReplyPhase(draft.replyPhase);
           setArrivalStepConfirmed(draft.arrivalStepConfirmed);

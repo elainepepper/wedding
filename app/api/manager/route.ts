@@ -517,7 +517,11 @@ export async function POST(request: Request) {
       const householdId = integer(payload.householdId);
       const householdDoc = householdId ? await docById("households", householdId) : null;
       if (!householdId || !householdDoc) return Response.json({ error: "Household not found." }, { status: 404 });
-      if (action === "regenerateLink") await householdDoc.ref.set({ invitation_token: randomToken(), invitation_enabled: true, updated_at: serverTimestamp() }, { merge: true });
+      let invitationToken: string | undefined;
+      if (action === "regenerateLink") {
+        invitationToken = randomToken();
+        await householdDoc.ref.set({ invitation_token: invitationToken, invitation_enabled: true, updated_at: serverTimestamp() }, { merge: true });
+      }
       else {
         // Match the id as a number OR as text: imported guests store it either
         // way, and the strict comparison here silently matched nothing, so
@@ -533,7 +537,7 @@ export async function POST(request: Request) {
         await batch.commit();
       }
       await addActivity(admin.displayName, action === "regenerateLink" ? "Invitation link regenerated" : "Invitation marked sent", "household", householdId, "Invitation status updated");
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, ...(invitationToken ? { invitationToken } : {}) });
     }
 
     if (action === "saveWebsiteDesign") {

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   canonicalAgeGroup,
   canonicalRsvpStatus,
+  compareInvitationGuests,
   isChildAgeGroup,
   isEnabledFlag,
   isValidInternationalMobile,
@@ -52,4 +53,19 @@ test("does not turn an empty optional id into a real zero id", () => {
   assert.equal(optionalInteger("12"), 12);
   assert.equal(optionalInteger(12), 12);
   assert.equal(optionalInteger("12.5"), null);
+});
+
+test("orders titled couples husband first without disturbing other guests", () => {
+  const guests = [
+    { id: 11, first_name: "Datin Elaine" },
+    { id: 12, first_name: "Child" },
+    { id: 10, first_name: "Dato' Haykal" },
+  ].sort(compareInvitationGuests);
+  assert.deepEqual(guests.map((guest) => guest.id), [10, 11, 12]);
+
+  const mrAndMrs = [
+    { id: 2, first_name: "Mrs. Tan" },
+    { id: 1, first_name: "Mr Tan" },
+  ].sort(compareInvitationGuests);
+  assert.deepEqual(mrAndMrs.map((guest) => guest.id), [1, 2]);
 });

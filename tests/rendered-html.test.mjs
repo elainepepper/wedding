@@ -162,9 +162,10 @@ test("keeps the full-screen invitation menu keyboard-contained", async () => {
 });
 
 test("keeps manager invitation states and mobile actions consistent", async () => {
-  const [manager, styles] = await Promise.all([
+  const [manager, styles, managerRoute] = await Promise.all([
     read("app/manager/ManagerApp.tsx"),
     read("app/manager/manager.css"),
+    read("app/api/manager/route.ts"),
   ]);
   assert.match(
     manager,
@@ -174,6 +175,8 @@ test("keeps manager invitation states and mobile actions consistent", async () =
   assert.match(manager, /Primary manager actions/);
   assert.match(manager, /Start sending/);
   assert.match(manager, /Kitchen brief/);
+  assert.match(manager, /payload\.action === "regenerateLink" && result\.invitationToken/);
+  assert.match(managerRoute, /\{ invitationToken \}/);
   assert.doesNotMatch(manager, /Replies close on \$\{dateLabel/);
   assert.match(styles, /\.manager-bottom-nav/);
   assert.match(styles, /\.household-sheet/);

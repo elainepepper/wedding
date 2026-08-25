@@ -1,5 +1,6 @@
 "use client";
 
+import { compareInvitationGuests } from "../../lib/rsvp-data.mjs";
 import { rsvpDeadlineLabel, rsvpDeadlinePassed } from "../../lib/rsvp-window";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -64,6 +65,9 @@ const tabs = navGroups.flatMap((group) => group.items);
 const plannerTabs = new Set<Tab>(["overview", "guests", "rsvps", "seating", "exports"]);
 
 const displayName = (guest: Guest) => guest.preferred_name || `${guest.first_name ?? ""} ${guest.last_name ?? ""}`.trim() || "Unnamed guest";
+const invitationMembers = (guests: Guest[], householdId: number) => guests
+  .filter((guest) => Number(guest.household_id) === Number(householdId))
+  .sort(compareInvitationGuests);
 // The wedding evening begins 6:00pm in Kuala Lumpur; fall back to the known date if settings are blank.
 const daysUntilWedding = (weddingDate: string | null | undefined) => {
   const target = Date.parse(`${/^\d{4}-\d{2}-\d{2}$/.test(weddingDate || "") ? weddingDate : "2026-11-07"}T18:00:00+08:00`);
@@ -256,8 +260,20 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
     }
     try {
       const response = await fetch("/api/manager", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(payload) });
-      const result = await readApiResponse<{ summary?: { added: number; updated: number; skipped: number; errors: string[] } }>(response);
+      const result = await readApiResponse<{ summary?: { added: number; updated: number; skipped: number; errors: string[] }; invitationToken?: string }>(response);
       if (!response.ok) throw new Error(result.error || "The change could not be saved.");
+      // Regenerating invalidates the old token immediately. Put the returned
+      // token into the open sheet before showing success so Copy/WhatsApp can
+      // never capture the now-dead link while the background refresh runs.
+      if (payload.action === "regenerateLink" && result.invitationToken) {
+        const householdId = Number(payload.householdId);
+        setData((current) => current ? {
+          ...current,
+          households: current.households.map((household) => household.id === householdId
+            ? { ...household, invitation_token: result.invitationToken! }
+            : household),
+        } : current);
+      }
       setSaveState("saved");
       notify(result.summary ? `${result.summary.added} added · ${result.summary.updated} updated · ${result.summary.skipped} skipped` : success);
       // The screen used to wait for a full reload of every guest, household,
@@ -624,7 +640,7 @@ function SendDeck({ households, guests, replyBy, act, notify, setUndo, edit, add
   const [sentThisSession, setSentThisSession] = useState<number[]>([]);
   const touch = useRef<{ x: number; y: number } | null>(null);
 
-  const membersOf = (household: Household) => guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+  const membersOf = (household: Household) => invitationMembers(guests, household.id);
   // Whose card is it? An explicit choice wins; otherwise the guests decide,
   // and anything mixed or unmarked belongs to the shared pile.
   const sideOf = (household: Household) => {
@@ -863,7 +879,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     notify(afterParty ? "Private after-party link copied" : "Invitation link copied");
   };
   const copyInvitationMessage = async (household: Household) => {
-    const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+    const members = invitationMembers(guests, household.id);
     const names = members.map(displayName).join(" & ") || household.name;
     const link = inviteLink(window.location.origin, household.invitation_token, names);
     await navigator.clipboard.writeText(invitationMessage(names, link, replyBy));
@@ -885,7 +901,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     { id: "replied" as const, title: "Replied", rows: visible.filter((h) => invitationState(h, guests) === "replied") },
   ].filter((group) => group.rows.length);
   const detail = households.find((household) => household.id === detailId) ?? null;
-  const detailMembers = detail ? guests.filter((guest) => Number(guest.household_id) === Number(detail.id)) : [];
+  const detailMembers = detail ? invitationMembers(guests, detail.id) : [];
   const detailNames = detailMembers.map(displayName).join(" & ") || detail?.name || "";
   const detailLink = detail ? inviteLink(typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin, detail.invitation_token, detailNames) : "";
   const detailAfterParty = detailMembers.some((guest) => guest.after_party_invited);
@@ -933,7 +949,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     </div> : null}
     {groups.map((group) => <div key={group.id} className="household-group"><h3 className={`household-group-title is-${group.id}`}>{group.title} · {group.rows.length}</h3>
     <section className="household-grid">{group.rows.map((household) => {
-    const members = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+    const members = invitationMembers(guests, household.id);
     const state = invitationState(household, guests);
     const overdue = deadlinePassed && state === "sent";
     return <article className={`household-card is-${state}${overdue ? " is-overdue" : ""}${picked.includes(household.id) ? " is-picked" : ""}`} key={household.id}>
@@ -957,7 +973,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
 function InvitationLinks({ households, guests, replyBy, notify, act }: { households: Household[]; guests: Guest[]; replyBy: string; notify: (message: string) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<number | null>(households[0]?.id ?? null);
   const selected = households.find((household) => household.id === selectedId) ?? households[0] ?? null;
-  const members = selected ? guests.filter((guest) => guest.household_id === selected.id) : [];
+  const members = selected ? invitationMembers(guests, selected.id) : [];
   const memberNames = members.map(displayName).join(" & ");
   const origin = typeof window === "undefined" ? "https://haykalelaine.com" : window.location.origin;
   const invitationUrl = selected ? inviteLink(origin, selected.invitation_token, memberNames || selected.name) : "";
@@ -969,7 +985,7 @@ function InvitationLinks({ households, guests, replyBy, notify, act }: { househo
   };
   const copyAll = async () => {
     const lines = households.map((household) => {
-      const names = guests.filter((guest) => guest.household_id === household.id).map(displayName).join(" & ") || household.name;
+      const names = invitationMembers(guests, household.id).map(displayName).join(" & ") || household.name;
       return `${names} — ${inviteLink(origin, household.invitation_token, names)}`;
     });
     await navigator.clipboard.writeText(lines.join("\n"));
@@ -989,7 +1005,7 @@ function InvitationLinks({ households, guests, replyBy, notify, act }: { househo
               // households that did have guests, and kept ones that did not.
               .filter((household) => guests.some((guest) => Number(guest.household_id) === Number(household.id)))
               .map((household) => {
-              const people = guests.filter((guest) => Number(guest.household_id) === Number(household.id));
+              const people = invitationMembers(guests, household.id);
               const names = people.map(displayName).join(" & ") || household.name;
               const link = inviteLink(origin, household.invitation_token, household.name);
               return (
@@ -1315,7 +1331,7 @@ function TravelAndRooms({ guests }: { guests: Guest[] }) {
       <div className="panel-head"><div><p className="panel-kicker">Coming from out of town</p><h3>Travelling to Kuala Lumpur ({travelling.length})</h3></div></div>
       {travelling.length ? <div className="travel-household-list">{travelling.map((household) => {
         const detail = detailFor(household);
-        return <article key={household.key}><header><div><strong>{household.name}</strong><small>{household.guests.map(displayName).join(" & ")}</small></div><span>{detail.grandHyatt ? "Grand Hyatt requested" : "Making own arrangements"}</span></header><dl>
+        return <article key={household.key}><header><div><strong>{household.name}</strong><small>{[...household.guests].sort(compareInvitationGuests).map(displayName).join(" & ")}</small></div><span>{detail.grandHyatt ? "Grand Hyatt requested" : "Making own arrangements"}</span></header><dl>
           <div><dt>Arrival</dt><dd>{detail.arrival ? dateLabel(String(detail.arrival)) : "Not provided"}</dd></div>
           <div><dt>Departure</dt><dd>{detail.departure ? dateLabel(String(detail.departure)) : "Not provided"}</dd></div>
           <div><dt>Stay</dt><dd>{detail.grandHyatt ? `Grand Hyatt${detail.nights ? ` · ${detail.nights} night${Number(detail.nights) === 1 ? "" : "s"}` : ""}${detail.bed ? ` · ${detail.bed}` : ""}` : detail.accommodation || "Not provided"}</dd></div>
@@ -1572,7 +1588,7 @@ function GuestModal({ guest, households, close, act, allGuests, setUndo, presetH
         <label><span>Guest age group</span><select value={form.ageGroup} onChange={(event) => setForm({ ...form, ageGroup: event.target.value, childMeal: event.target.value === "Child" })}><option>Adult</option><option>Child</option></select></label>
         <label><span>Mobile with country code</span><input type="tel" inputMode="tel" value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value })} placeholder="+60 12 345 6789" /></label>
         <label><span>Invitation household</span><select value={form.householdId} onChange={(event) => setForm({ ...form, householdId: event.target.value })}><option value="">Create a new invitation just for them</option>{households.map((household) => {
-          const members = (allGuests ?? []).filter((g) => g.household_id === household.id && g.id !== current?.id).map(displayName).join(" & ");
+          const members = (allGuests ?? []).filter((g) => g.household_id === household.id && g.id !== current?.id).sort(compareInvitationGuests).map(displayName).join(" & ");
           return <option key={household.id} value={household.id}>{household.name}{members ? ` — with ${members}` : " — no one else"}</option>;
         })}</select></label>
         {!form.householdId ? <label className="wide"><span>Name this invitation</span><input value={form.householdName} onChange={(event) => setForm({ ...form, householdName: event.target.value })} /></label> : null}
@@ -1694,7 +1710,7 @@ function Chasing({ households, guests, settings, act, notify }: {
       && members.some((guest) => guest.rsvp_status !== "Pending"));
 
   const card = (entry: { household: Household; members: Guest[] }, partial: boolean) => {
-    const names = entry.members.map(displayName).join(" & ");
+    const names = [...entry.members].sort(compareInvitationGuests).map(displayName).join(" & ");
     const link = inviteLink(origin, entry.household.invitation_token, entry.household.name);
     const sentAt = entry.members.find((guest) => guest.invitation_sent_at)?.invitation_sent_at;
     return (

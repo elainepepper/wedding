@@ -65,10 +65,13 @@ export function Dreamscape({ onReady }: { onReady?: () => void } = {}) {
     let frame = 0;
     const render = () => {
       frame = 0;
-      box.style.setProperty(
-        "--parallax",
-        `${Math.round(window.scrollY * -0.06)}px`,
-      );
+      // A fixed full-screen painting only has a small amount of overscan.
+      // Translating it by a fraction of the *entire document* eventually
+      // moved it hundreds of pixels off-screen near the venue and exposed its
+      // bottom edge as a duplicated strip above bare blush. Keep the depth
+      // cue, but bound it safely inside that overscan at every scroll depth.
+      const boundedDrift = Math.max(-14, window.scrollY * -0.004);
+      box.style.setProperty("--parallax", `${boundedDrift.toFixed(2)}px`);
     };
     const request = () => {
       if (!frame) frame = requestAnimationFrame(render);
