@@ -183,6 +183,23 @@ test("keeps manager invitation states and mobile actions consistent", async () =
   assert.match(styles, /body\[data-printing\] \.print-letterhead/);
 });
 
+test("orders wishes and provides safe sent-invitation reminders", async () => {
+  const [manager, managerRoute, experience, preview] = await Promise.all([
+    read("app/manager/ManagerApp.tsx"),
+    read("app/api/manager/route.ts"),
+    read("app/WeddingExperience.tsx"),
+    read("app/manager-preview/ManagerPreview.tsx"),
+  ]);
+  assert.match(manager, /String\(b\.submittedAt \?\? ""\)\.localeCompare/);
+  assert.match(manager, /invitationState\(household, guests\) === "sent"/);
+  assert.match(manager, /members\.every\(\(guest\) => guest\.rsvp_status === "Pending"\)/);
+  assert.match(manager, /Copy reminder/);
+  assert.match(manager, /Nothing is sent automatically/);
+  assert.match(managerRoute, /rsvp_deadline: settingsSnapshot\.data\(\)\?\.rsvp_deadline \?\? "2026-09-23"/);
+  assert.match(experience, /"23 September 2026"/);
+  assert.match(preview, /rsvp_deadline: "2026-09-23"/);
+});
+
 test("does not leak secrets into the repository", async () => {
   const env = await read(".env.example");
   // The service-account JSON and Cloudinary secret must never be filled in here.

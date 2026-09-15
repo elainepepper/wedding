@@ -372,7 +372,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
     : navGroups;
   const primaryMobileTabs: Array<[Tab, string]> = isPlanner
     ? [["guests", "Guests"], ["seating", "Seat"], ["exports", "Export"], ["overview", "Check"]]
-    : [["households", "Send"], ["chase", "Chase"], ["seating", "Seat"], ["overview", "Check"]];
+    : [["households", "Send"], ["chase", "Remind"], ["seating", "Seat"], ["overview", "Check"]];
   const primaryMobileIds = new Set(primaryMobileTabs.map(([id]) => id));
   const secondaryNavGroups = visibleNavGroups
     .map((group) => ({ ...group, items: group.items.filter((item) => item.id !== "exports" && !primaryMobileIds.has(item.id)) }))
@@ -1363,12 +1363,16 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
       group.guests.push(guest);
       grouped.set(key, group);
     });
-    return [...grouped.entries()].map(([key, group]): Message => ({
-      key,
-      text: group.text,
-      names: [...new Set(group.guests.map(named))].join(" & "),
-      submittedAt: group.guests.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() ?? null,
-    }));
+    return [...grouped.entries()]
+      .map(([key, group]): Message => ({
+        key,
+        text: group.text,
+        names: [...new Set(group.guests.map(named))].join(" & "),
+        submittedAt: group.guests.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() ?? null,
+      }))
+      // Firestore document iteration is not chronological. Keep the latest
+      // message first and place legacy messages without timestamps at the end.
+      .sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")) || a.key.localeCompare(b.key));
   };
   const wishes = messagesFor("wishes");
   const advice = messagesFor("marriage_advice");
@@ -1724,8 +1728,8 @@ function Chasing({ households, guests, settings, act, notify }: {
           </p>
         </div>
         <div className="chase-actions">
-          <button type="button" onClick={async () => { await navigator.clipboard.writeText(nudgeMessage(names, link, deadline)); notify("Nudge copied"); }}>Copy nudge</button>
-          <a href={waLink(entry.household.mobile, nudgeMessage(names, link, deadline))} target="_blank" rel="noreferrer">WhatsApp</a>
+          <button type="button" onClick={async () => { await navigator.clipboard.writeText(nudgeMessage(names, link, deadline)); notify("Reminder copied"); }}>Copy reminder</button>
+          <a href={waLink(entry.household.mobile, nudgeMessage(names, link, deadline))} target="_blank" rel="noreferrer">WhatsApp reminder</a>
         </div>
       </article>
     );
@@ -1734,9 +1738,9 @@ function Chasing({ households, guests, settings, act, notify }: {
   return <div className="manager-page">
     <div className="section-intro-row">
       <div>
-        <p className="panel-kicker">Chase</p>
+        <p className="panel-kicker">Reminder messages</p>
         <h2>{waiting.length} sent invitation{waiting.length === 1 ? "" : "s"}</h2>
-        <span>{deadline ? `Replies close on ${deadline}. ` : ""}Each nudge is written for that household and carries their own link.</span>
+        <span>{deadline ? `Replies close on ${deadline}. ` : ""}Each reminder is written for that household and carries their own link. Nothing is sent automatically.</span>
       </div>
     </div>
     {waiting.length ? <section className="manager-panel"><h3>Sent · awaiting reply</h3><div className="chase-list">{waiting.map((entry) => card(entry, false))}</div></section> : <section className="manager-panel"><p className="import-help">No sent invitations are waiting for a reply.</p></section>}

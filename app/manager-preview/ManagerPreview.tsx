@@ -121,7 +121,7 @@ const demoData: ManagerData = {
     wedding_name: "Elaine & Haykal",
     couple_names: "Elaine & Haykal",
     wedding_date: "2026-11-07",
-    rsvp_deadline: "2026-09-15",
+    rsvp_deadline: "2026-09-23",
     timezone: "Asia/Kuala_Lumpur",
     website_url: "https://haykalelaine.com",
     room_block_size: 15,
