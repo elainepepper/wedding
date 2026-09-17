@@ -1,6 +1,7 @@
 import { assertFirebaseAdminConfigured, nextId, plainDoc, randomToken, serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { requireAdmin } from "../../../lib/manager-auth";
 import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag, optionalInteger } from "../../../lib/rsvp-data.mjs";
+import { effectiveRsvpDeadline } from "../../../lib/rsvp-window";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 
 // Never serve a cached copy: the manager must see a change the instant it is
@@ -136,9 +137,12 @@ export async function GET(request: Request) {
         wedding_name: settingsSnapshot.data()?.wedding_name ?? "Elaine & Haykal",
         couple_names: settingsSnapshot.data()?.couple_names ?? "Elaine and Haykal",
         wedding_date: settingsSnapshot.data()?.wedding_date ?? "2026-11-07",
-        rsvp_deadline: settingsSnapshot.data()?.rsvp_deadline ?? "2026-09-23",
+        rsvp_deadline: effectiveRsvpDeadline(settingsSnapshot.data()?.rsvp_deadline) as string,
         timezone: settingsSnapshot.data()?.timezone ?? "Australia/Perth",
-      } : settingsSnapshot.data() ?? {},
+      } : {
+        ...(settingsSnapshot.data() ?? {}),
+        rsvp_deadline: effectiveRsvpDeadline(settingsSnapshot.data()?.rsvp_deadline),
+      },
       managers: plannerView ? [] : managers,
       // Enough to list and restore them; the full records stay in the database.
       archivedHouseholds: plannerView ? [] : archivedHouseholds.map((household) => ({

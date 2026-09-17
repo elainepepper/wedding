@@ -7,7 +7,7 @@ import {
   isEnabledFlag,
   isValidInternationalMobile,
 } from "../../../../lib/rsvp-data.mjs";
-import { rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
+import { effectiveRsvpDeadline, rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -148,7 +148,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     guests: guests.map((guest) => publicGuest(guest, afterHoursGuestIds.has(Number(guest.id)))),
     events,
     settings: {
-      rsvp_deadline: settings.rsvp_deadline ?? null,
+      rsvp_deadline: effectiveRsvpDeadline(settings.rsvp_deadline),
       confirmation_message: settings.confirmation_message ?? null,
       music_url: settings.music_url ?? null,
       music_title: settings.music_title ?? null,
@@ -192,7 +192,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return Response.json({ error: "A valid mobile number with country code is required." }, { status: 400 });
   }
   const settingsBefore = (await weddingRef.get()).data() ?? {};
-  if (rsvpDeadlinePassed(settingsBefore.rsvp_deadline)) {
+  if (rsvpDeadlinePassed(effectiveRsvpDeadline(settingsBefore.rsvp_deadline))) {
     return Response.json({ error: "The RSVP window has now closed. Please message Elaine and Haykal directly and they will happily take care of you." }, { status: 403 });
   }
   // A page opened before the last room went could still ask for one. Judge the

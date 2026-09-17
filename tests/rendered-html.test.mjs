@@ -195,9 +195,19 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /members\.every\(\(guest\) => guest\.rsvp_status === "Pending"\)/);
   assert.match(manager, /Copy reminder/);
   assert.match(manager, /Nothing is sent automatically/);
-  assert.match(managerRoute, /rsvp_deadline: settingsSnapshot\.data\(\)\?\.rsvp_deadline \?\? "2026-09-23"/);
+  assert.match(managerRoute, /rsvp_deadline: effectiveRsvpDeadline\(settingsSnapshot\.data\(\)\?\.rsvp_deadline\)/);
   assert.match(experience, /"23 September 2026"/);
   assert.match(preview, /rsvp_deadline: "2026-09-23"/);
+});
+
+test("the superseded live RSVP deadline is migrated without overriding later Manager edits", async () => {
+  const [windowLogic, inviteRoute] = await Promise.all([
+    read("lib/rsvp-window.ts"),
+    read("app/api/invite/[token]/route.ts"),
+  ]);
+  assert.match(windowLogic, /deadline === "2026-09-15"/);
+  assert.match(windowLogic, /return "2026-09-23"/);
+  assert.match(inviteRoute, /rsvpDeadlinePassed\(effectiveRsvpDeadline\(settingsBefore\.rsvp_deadline\)\)/);
 });
 
 test("does not leak secrets into the repository", async () => {

@@ -1,6 +1,15 @@
 // The RSVP window stays open until the end of the deadline day in Kuala
 // Lumpur (UTC+8), so an Australian guest replying on the evening of the
 // deadline is never turned away early.
+export function effectiveRsvpDeadline(deadline: unknown) {
+  // The live wedding record originally closed on 15 September. Preserve any
+  // future Manager edits, but migrate that exact superseded value (and an
+  // empty value) to the couple's extended deadline while cached invitations
+  // and the live settings record catch up.
+  if (deadline == null || deadline === "" || deadline === "2026-09-15") return "2026-09-23";
+  return deadline;
+}
+
 export function rsvpDeadlinePassed(deadline: unknown, now = Date.now()) {
   if (typeof deadline !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return false;
   const closesAt = Date.parse(`${deadline}T23:59:59+08:00`);
