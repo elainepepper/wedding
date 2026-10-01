@@ -183,6 +183,20 @@ test("keeps manager invitation states and mobile actions consistent", async () =
   assert.match(styles, /body\[data-printing\] \.print-letterhead/);
 });
 
+test("offers polished PDF-ready exports and table-specific meal lists", async () => {
+  const [manager, styles] = await Promise.all([
+    read("app/manager/ManagerApp.tsx"),
+    read("app/manager/manager.css"),
+  ]);
+  assert.match(manager, /Every report can be saved as a polished PDF/);
+  assert.match(manager, /Save table PDF/);
+  assert.match(manager, /Main course/);
+  assert.match(manager, /Dietary requirements/);
+  assert.match(manager, /print-export-complete/);
+  assert.match(styles, /body\[data-printing="export-table"\] #print-export-table/);
+  assert.match(styles, /\.complete-print-grid/);
+});
+
 test("orders wishes and provides safe sent-invitation reminders", async () => {
   const [manager, managerRoute, experience, preview] = await Promise.all([
     read("app/manager/ManagerApp.tsx"),
