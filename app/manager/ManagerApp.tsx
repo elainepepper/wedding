@@ -5,6 +5,7 @@ import { rsvpDeadlineLabel, rsvpDeadlinePassed } from "../../lib/rsvp-window";
 import { createTablePdf, savePdfOnDevice, type PdfColumn } from "../../lib/simple-pdf";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { MemoriesManager } from "./MemoriesManager";
 
 type Guest = {
   id: number; household_id: number | null; first_name: string; last_name: string; preferred_name: string | null;
@@ -43,7 +44,7 @@ type Settings = Record<string, unknown> & {
 };
 type ArchivedHousehold = { id: number; name: string; archived_at: string | null; guest_count: number };
 export type ManagerData = { guests: Guest[]; households: Household[]; tables: SeatingTable[]; activities: Activity[]; events: Array<Record<string, unknown>>; settings: Settings; managers: ManagerUser[]; archivedHouseholds?: ArchivedHousehold[]; admin: { displayName: string; email: string; role: "owner" | "partner" | "planner" } };
-type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "travel" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
+type Tab = "overview" | "guests" | "households" | "links" | "rsvps" | "seating" | "afterparty" | "wishes" | "travel" | "memories" | "imports" | "exports" | "settings" | "health" | "chase" | "dayof";
 type ManagerTab = { id: Tab; label: string };
 
 const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
@@ -53,7 +54,7 @@ const navGroups: Array<{ label: string; items: ManagerTab[] }> = [
   ] },
   { label: "Plan the day", items: [
     { id: "seating", label: "Seating plan" }, { id: "afterparty", label: "After-party" },
-    { id: "wishes", label: "Messages & wishes" }, { id: "travel", label: "Travel & rooms" }, { id: "chase", label: "Follow-up" },
+    { id: "wishes", label: "Messages & wishes" }, { id: "travel", label: "Travel & rooms" }, { id: "memories", label: "Memories" }, { id: "chase", label: "Follow-up" },
     { id: "dayof", label: "Day-of briefs" },
   ] },
   { label: "Files & admin", items: [
@@ -416,6 +417,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "travel" ? <TravelAndRooms guests={data.guests} /> : null}
+        {tab === "memories" ? <MemoriesManager authToken={authToken} /> : null}
         {tab === "imports" ? <Imports act={act} notify={notify} /> : null}
         {tab === "dayof" ? <ForTheDay guests={data.guests} tables={data.tables} /> : null}
         {tab === "chase" ? <Chasing households={data.households} guests={data.guests} settings={data.settings} act={act} notify={notify} /> : null}
@@ -486,6 +488,7 @@ function Overview({ data, stats, jump, setTab, adminRole }: { data: ManagerData;
       ["seating", "Seating", "Tables and seat assignments"],
       ["wishes", "Messages", "Wishes and private notes"],
       ["travel", "Travel", "KL journeys and hotel rooms"],
+      ["memories", "Memories", "Live gallery and wedding QR"],
       ["exports", "Exports", "PDF and spreadsheet reports"],
     ];
   return <div className="manager-page overview-page">

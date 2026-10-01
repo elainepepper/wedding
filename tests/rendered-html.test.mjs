@@ -246,10 +246,41 @@ test("the superseded live RSVP deadline is migrated without overriding later Man
   assert.match(inviteRoute, /rsvpDeadlinePassed\(effectiveRsvpDeadline\(settingsBefore\.rsvp_deadline\)\)/);
 });
 
+test("provides a named-guest Memories gallery with verified uploads and owner moderation", async () => {
+  const [experience, publicRoute, manageRoute, manager, qrRoute, memoryLogic] = await Promise.all([
+    read("app/memories/MemoriesExperience.tsx"),
+    read("app/api/memories/route.ts"),
+    read("app/api/memories/manage/route.ts"),
+    read("app/manager/ManagerApp.tsx"),
+    read("app/api/memories/qr/route.ts"),
+    read("lib/memories.ts"),
+  ]);
+  assert.match(experience, /Guest name · required/);
+  assert.match(experience, /aria-required="true"/);
+  assert.match(experience, /Please enter your name before sharing a memory/);
+  assert.match(experience, /Surprise me/);
+  assert.match(experience, /Most loved/);
+  assert.match(publicRoute, /Please enter your name before uploading/);
+  assert.match(publicRoute, /timingSafeEqual/);
+  assert.match(publicRoute, /consumeUploadAllowance/);
+  assert.match(publicRoute, /memoryUploadOpen/);
+  assert.match(publicRoute, /overwrite=false&public_id=/);
+  assert.match(publicRoute, /allowed_formats=/);
+  assert.match(manageRoute, /admin\.role === "planner"/);
+  assert.match(manageRoute, /action === "visibility"/);
+  assert.match(manager, /MemoriesManager/);
+  assert.match(qrRoute, /Content-Disposition/);
+  assert.match(memoryLogic, /https:\/\/haykalelaine\.com\/memories/);
+  assert.match(memoryLogic, /MEMORIES_AFTER_DAYS = 30/);
+});
+
 test("does not leak secrets into the repository", async () => {
   const env = await read(".env.example");
   // The service-account JSON and Cloudinary secret must never be filled in here.
   assert.match(env, /^FIREBASE_SERVICE_ACCOUNT_JSON=\s*$/m);
+  assert.match(env, /^CLOUDINARY_URL=\s*$/m);
+  assert.match(env, /^CLOUDINARY_CLOUD_NAME=\s*$/m);
+  assert.match(env, /^CLOUDINARY_API_KEY=\s*$/m);
   assert.match(env, /^CLOUDINARY_API_SECRET=\s*$/m);
   const privateKeyMarker = new RegExp(["BEGIN", "PRIVATE", "KEY"].join(" "));
   assert.doesNotMatch(env, privateKeyMarker);
