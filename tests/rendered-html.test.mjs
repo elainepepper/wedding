@@ -194,6 +194,10 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /invitationState\(household, guests\) === "sent"/);
   assert.match(manager, /members\.every\(\(guest\) => guest\.rsvp_status === "Pending"\)/);
   assert.match(manager, /Copy reminder/);
+  assert.match(manager, /WhatsApp follow-up/);
+  assert.match(manager, /Copy follow-up/);
+  assert.match(manager, /deadlineHasPassed/);
+  assert.match(manager, /latest link/);
   assert.match(manager, /Nothing is sent automatically/);
   assert.match(managerRoute, /rsvp_deadline: effectiveRsvpDeadline\(settingsSnapshot\.data\(\)\?\.rsvp_deadline\)/);
   assert.match(experience, /"23 September 2026"/);

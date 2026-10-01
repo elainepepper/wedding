@@ -601,8 +601,11 @@ function waLink(mobile: string | null, message: string) {
 function tableMessage(names: string, tables: string, link: string) {
   return `Dear ${names},\n\nElaine and Haykal have assigned your seat for 7 November — you are at ${tables}.\n\nYou can see it on your invitation here:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
-function nudgeMessage(names: string, link: string, deadline: string) {
-  return `Hello ${names},\n\nJust a gentle nudge — we are gathering final numbers for our wedding on 7 November${deadline ? `, and replies close on ${deadline}` : ""}. If you have a moment, your invitation is here:\n\n${link}\n\nWith love,\nElaine & Haykal`;
+function nudgeMessage(names: string, link: string, deadline: string, deadlinePassed = false) {
+  const timing = deadline && !deadlinePassed
+    ? `, and replies close on ${deadline}`
+    : ". We are finalising our guest arrangements and would be grateful for your reply";
+  return `Hello ${names},\n\nJust a gentle follow-up — we are gathering final numbers for our wedding on 7 November${timing}. If you have a moment, your invitation is here:\n\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 
 // The reply-by date travels with the invitation itself, so nobody has to be
@@ -885,6 +888,13 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     await navigator.clipboard.writeText(invitationMessage(names, link, replyBy));
     notify(`Full invitation message copied for ${names}`);
   };
+  const copyReminderMessage = async (household: Household) => {
+    const members = invitationMembers(guests, household.id);
+    const names = members.map(displayName).join(" & ") || household.name;
+    const link = inviteLink(window.location.origin, household.invitation_token, names);
+    await navigator.clipboard.writeText(nudgeMessage(names, link, replyBy, deadlinePassed));
+    notify(`Follow-up copied for ${names}`);
+  };
   // Search reaches both the invitation's name and everyone on it, and the
   // grid groups by where each invitation stands: replied, sent and waiting,
   // or not yet sent — so a scan shows exactly what still needs doing.
@@ -964,7 +974,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     {detail ? <div className="modal-backdrop household-sheet-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setDetailId(null); }}><section className="household-sheet" role="dialog" aria-modal="true" aria-labelledby="household-detail-title"><header><div><p className="panel-kicker">{invitationState(detail, guests) === "not-sent" ? "Not sent" : invitationState(detail, guests) === "sent" ? "Sent" : "Replied"}</p><h2 id="household-detail-title">{detail.name}</h2></div><button type="button" onClick={() => setDetailId(null)} aria-label="Close">×</button></header><div className="household-sheet-body">
       <div className="member-stack">{detailMembers.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(detail.id)}>＋ Add a guest to this invitation</button></div>
       <dl className="household-detail-facts"><div><dt>Primary contact</dt><dd>{detail.email || detail.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{detail.opened_at ? `Opened ${dateLabel(detail.opened_at)}` : "Not opened"}</dd></div><div><dt>Reply</dt><dd>{detailMembers.some((guest) => guest.rsvp_submitted_at) ? dateLabel(detailMembers.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string) : "Not received"}</dd></div><div><dt>Table</dt><dd>{[...new Set(detailMembers.map((guest) => guest.table_name).filter(Boolean))].join(" and ") || "Not assigned"}</dd></div></dl>
-      <div className="household-sheet-actions"><a className="wa-button" href={waLink(detail.mobile, invitationMessage(detailNames, detailLink, replyBy))} target="_blank" rel="noreferrer">WhatsApp</a><button type="button" onClick={() => copyInvitationMessage(detail)}>Copy message</button><button type="button" onClick={() => copyLink(detail)}>Copy link</button>{invitationState(detail, guests) === "not-sent" ? <button type="button" onClick={() => void act({ action: "markInvitationSent", householdId: detail.id }, "Invitation marked as sent")}>Mark sent</button> : <button type="button" onClick={() => void act({ action: "markInvitationUnsent", householdId: detail.id }, `${detail.name} marked not sent`)}>Mark not sent</button>}{detailMembers.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(detail.mobile, tableMessage(detailNames, [...new Set(detailMembers.map((guest) => guest.table_name).filter(Boolean))].join(" and "), detailLink))} target="_blank" rel="noreferrer">Send table</a> : null}{detailAfterParty ? <button type="button" onClick={() => copyLink(detail, true)}>Copy after-party</button> : null}<button type="button" onClick={() => void act({ action: "regenerateLink", householdId: detail.id }, "A new secure link was created")}>Regenerate link</button></div>
+      <div className="household-sheet-actions"><a className="wa-button" href={waLink(detail.mobile, invitationMessage(detailNames, detailLink, replyBy))} target="_blank" rel="noreferrer">WhatsApp</a><button type="button" onClick={() => copyInvitationMessage(detail)}>Copy message</button>{invitationState(detail, guests) === "sent" ? <><a className="wa-button" href={waLink(detail.mobile, nudgeMessage(detailNames, detailLink, replyBy, deadlinePassed))} target="_blank" rel="noreferrer">WhatsApp follow-up</a><button type="button" onClick={() => copyReminderMessage(detail)}>Copy follow-up</button></> : null}<button type="button" onClick={() => copyLink(detail)}>Copy link</button>{invitationState(detail, guests) === "not-sent" ? <button type="button" onClick={() => void act({ action: "markInvitationSent", householdId: detail.id }, "Invitation marked as sent")}>Mark sent</button> : <button type="button" onClick={() => void act({ action: "markInvitationUnsent", householdId: detail.id }, `${detail.name} marked not sent`)}>Mark not sent</button>}{detailMembers.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(detail.mobile, tableMessage(detailNames, [...new Set(detailMembers.map((guest) => guest.table_name).filter(Boolean))].join(" and "), detailLink))} target="_blank" rel="noreferrer">Send table</a> : null}{detailAfterParty ? <button type="button" onClick={() => copyLink(detail, true)}>Copy after-party</button> : null}<button type="button" onClick={() => void act({ action: "regenerateLink", householdId: detail.id }, "A new secure link was created")}>Regenerate link</button></div>
       {adminRole !== "planner" ? <button type="button" className="danger-link household-archive" onClick={() => { if (!window.confirm(`Archive ${detail.name}? Their invitation link will stop working until restored.`)) return; void act({ action: "archiveHousehold", householdId: detail.id }, "Household archived").then((result) => { if (!result) return; setDetailId(null); setUndo({ label: `${detail.name} archived`, restore: async () => { await act({ action: "restoreHousehold", householdId: detail.id }, "Household restored"); } }); }); }}>Archive household</button> : null}
     </div></section></div> : null}
   </div>;
@@ -1694,6 +1704,7 @@ function Chasing({ households, guests, settings, act, notify }: {
   const [origin, setOrigin] = useState("");
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const deadline = rsvpDeadlineLabel(settings?.rsvp_deadline) ?? "";
+  const deadlineHasPassed = rsvpDeadlinePassed(settings?.rsvp_deadline);
 
   const waiting = households
     .map((household) => ({
@@ -1728,8 +1739,8 @@ function Chasing({ households, guests, settings, act, notify }: {
           </p>
         </div>
         <div className="chase-actions">
-          <button type="button" onClick={async () => { await navigator.clipboard.writeText(nudgeMessage(names, link, deadline)); notify("Reminder copied"); }}>Copy reminder</button>
-          <a href={waLink(entry.household.mobile, nudgeMessage(names, link, deadline))} target="_blank" rel="noreferrer">WhatsApp reminder</a>
+          <button type="button" onClick={async () => { await navigator.clipboard.writeText(nudgeMessage(names, link, deadline, deadlineHasPassed)); notify("Reminder copied"); }}>Copy reminder</button>
+          <a href={waLink(entry.household.mobile, nudgeMessage(names, link, deadline, deadlineHasPassed))} target="_blank" rel="noreferrer">WhatsApp reminder</a>
         </div>
       </article>
     );
@@ -1740,7 +1751,7 @@ function Chasing({ households, guests, settings, act, notify }: {
       <div>
         <p className="panel-kicker">Reminder messages</p>
         <h2>{waiting.length} sent invitation{waiting.length === 1 ? "" : "s"}</h2>
-        <span>{deadline ? `Replies close on ${deadline}. ` : ""}Each reminder is written for that household and carries their own link. Nothing is sent automatically.</span>
+        <span>{deadline && !deadlineHasPassed ? `Replies close on ${deadline}. ` : ""}Each reminder is written for that household and carries their own latest link. Nothing is sent automatically.</span>
       </div>
     </div>
     {waiting.length ? <section className="manager-panel"><h3>Sent · awaiting reply</h3><div className="chase-list">{waiting.map((entry) => card(entry, false))}</div></section> : <section className="manager-panel"><p className="import-help">No sent invitations are waiting for a reply.</p></section>}
