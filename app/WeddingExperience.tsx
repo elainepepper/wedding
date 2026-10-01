@@ -1808,7 +1808,7 @@ export function WeddingExperience({
     invitationCaseName(rsvp.guestName) || "dear guest";
   const deadlineLabel =
     rsvpDeadlineLabel(inviteData?.settings?.rsvp_deadline) ||
-    "23 September 2026";
+    "7 October 2026";
   const typography = {
     "--font-header": selectedFont.headerFamily,
     "--font-body": selectedFont.bodyFamily,

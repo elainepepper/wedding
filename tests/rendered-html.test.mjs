@@ -200,8 +200,8 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /latest link/);
   assert.match(manager, /Nothing is sent automatically/);
   assert.match(managerRoute, /rsvp_deadline: effectiveRsvpDeadline\(settingsSnapshot\.data\(\)\?\.rsvp_deadline\)/);
-  assert.match(experience, /"23 September 2026"/);
-  assert.match(preview, /rsvp_deadline: "2026-09-23"/);
+  assert.match(experience, /"7 October 2026"/);
+  assert.match(preview, /rsvp_deadline: "2026-10-07"/);
 });
 
 test("the superseded live RSVP deadline is migrated without overriding later Manager edits", async () => {
@@ -210,7 +210,8 @@ test("the superseded live RSVP deadline is migrated without overriding later Man
     read("app/api/invite/[token]/route.ts"),
   ]);
   assert.match(windowLogic, /deadline === "2026-09-15"/);
-  assert.match(windowLogic, /return "2026-09-23"/);
+  assert.match(windowLogic, /deadline === "2026-09-23"/);
+  assert.match(windowLogic, /return "2026-10-07"/);
   assert.match(inviteRoute, /rsvpDeadlinePassed\(effectiveRsvpDeadline\(settingsBefore\.rsvp_deadline\)\)/);
 });
 

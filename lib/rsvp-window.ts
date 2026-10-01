@@ -2,11 +2,10 @@
 // Lumpur (UTC+8), so an Australian guest replying on the evening of the
 // deadline is never turned away early.
 export function effectiveRsvpDeadline(deadline: unknown) {
-  // The live wedding record originally closed on 15 September. Preserve any
-  // future Manager edits, but migrate that exact superseded value (and an
-  // empty value) to the couple's extended deadline while cached invitations
-  // and the live settings record catch up.
-  if (deadline == null || deadline === "" || deadline === "2026-09-15") return "2026-09-23";
+  // Preserve future Manager edits, but migrate both superseded September
+  // deadlines (and an empty value) to the couple's final extended deadline
+  // while cached invitations and the live settings record catch up.
+  if (deadline == null || deadline === "" || deadline === "2026-09-15" || deadline === "2026-09-23") return "2026-10-07";
   return deadline;
 }
 
