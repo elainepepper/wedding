@@ -2,6 +2,7 @@
 
 import { compareInvitationGuests } from "../../lib/rsvp-data.mjs";
 import { rsvpDeadlineLabel, rsvpDeadlinePassed } from "../../lib/rsvp-window";
+import { createTablePdf, savePdfOnDevice, type PdfColumn } from "../../lib/simple-pdf";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
@@ -370,9 +371,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const visibleNavGroups = isPlanner
     ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => plannerTabs.has(item.id)) })).filter((group) => group.items.length)
     : navGroups;
-  const primaryMobileTabs: Array<[Tab, string]> = isPlanner
-    ? [["guests", "Guests"], ["seating", "Seat"], ["exports", "Export"], ["overview", "Check"]]
-    : [["households", "Send"], ["chase", "Remind"], ["seating", "Seat"], ["overview", "Check"]];
+  const primaryMobileTabs: Array<[Tab, string]> = [["overview", "Home"]];
   const primaryMobileIds = new Set(primaryMobileTabs.map(([id]) => id));
   const secondaryNavGroups = visibleNavGroups
     .map((group) => ({ ...group, items: group.items.filter((item) => item.id !== "exports" && !primaryMobileIds.has(item.id)) }))
@@ -472,8 +471,29 @@ function Overview({ data, stats, jump, setTab, adminRole }: { data: ManagerData;
       .filter((guest) => (guest.wishes || "").trim() || (guest.marriage_advice || "").trim())
       .map((guest) => guest.household_id ?? `guest-${guest.id}`),
   ).size;
+  const mobileTasks: Array<[Tab, string, string]> = adminRole === "planner"
+    ? [
+      ["guests", "Guests", "Search and update crew"],
+      ["rsvps", "Replies", "Attendance and meal choices"],
+      ["seating", "Seating", "Tables and seat assignments"],
+      ["exports", "Exports", "Chef and table PDFs"],
+    ]
+    : [
+      ["rsvps", "Replies", "Recent replies and meal choices"],
+      ["guests", "Guests", "Search every invited guest"],
+      ["households", "Invitations", "Send personalised links"],
+      ["chase", "Follow-up", "Remind guests who have not replied"],
+      ["seating", "Seating", "Tables and seat assignments"],
+      ["wishes", "Messages", "Wishes and private notes"],
+      ["travel", "Travel", "KL journeys and hotel rooms"],
+      ["exports", "Exports", "PDF and spreadsheet reports"],
+    ];
   return <div className="manager-page overview-page">
     <section className="welcome-strip"><div><p>{greetingForNow()}</p><h2>Your celebration is taking shape.</h2><span>{stats.confirmed} of {stats.total} guests are confirmed · {stats.meals} meals selected</span></div><div className="countdown"><strong>{daysUntilWedding(data.settings.wedding_date)}</strong><span>days to go</span></div></section>
+    <section className="mobile-task-hub" aria-label="Manager tasks">
+      <div><p className="panel-kicker">What would you like to do?</p><h3>Manager home</h3></div>
+      <nav>{mobileTasks.map(([id, label, note]) => <button type="button" key={id} onClick={() => { setTab(id); window.scrollTo({ top: 0, behavior: "smooth" }); }}><span><strong>{label}</strong><small>{note}</small></span><b aria-hidden="true">→</b></button>)}</nav>
+    </section>
     {adminRole !== "planner" ? <section className="overview-shortcuts" aria-label="Guest details">
       <button type="button" onClick={() => setTab("wishes")}><span>Messages &amp; wishes</span><strong>{messageHouseholds}</strong><small>household{messageHouseholds === 1 ? "" : "s"} left a message</small><b aria-hidden="true">→</b></button>
       <button type="button" onClick={() => setTab("travel")}><span>Travel &amp; rooms</span><strong>{stats.transport}</strong><small>household{stats.transport === 1 ? "" : "s"} travelling to KL</small><b aria-hidden="true">→</b></button>
@@ -554,9 +574,34 @@ function GuestList({ guests, tables, selected, setSelected, search, setSearch, s
         }
         setSelected([]);
       }}>Delete</button>{!isPlanner ? <><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "rsvpStatus", value: "Confirmed" }, "Guests confirmed")}>Confirm</button><button onClick={() => void act({ action: "bulkUpdate", guestIds: selected, field: "afterPartyInvited", value: true }, "After-party access enabled")}>Invite after-party</button></> : null}<select defaultValue="" onChange={(event) => { if (event.target.value) void act({ action: "bulkUpdate", guestIds: selected, field: "tableId", value: Number(event.target.value) }, "Table assignments saved"); }}><option value="">Assign table…</option>{tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}</select><button className="textual" onClick={() => setSelected([])}>Clear</button></div> : null}
-      <div className="table-scroll"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : sortedGuests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><SortHead id="name" label="Guest" /><SortHead id="household" label="Household" /><SortHead id="group" label="Group" /><SortHead id="rsvp" label="RSVP" /><th>Meal &amp; dietary</th><SortHead id="table" label="Table" /><SortHead id="recent" label="Invitation" /><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+      <div className="table-scroll guest-desktop-table"><table className="guest-table"><thead><tr><th><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : sortedGuests.map((guest) => guest.id))} aria-label="Select all visible guests" /></th><SortHead id="name" label="Guest" /><SortHead id="household" label="Household" /><SortHead id="group" label="Group" /><SortHead id="rsvp" label="RSVP" /><th>Meal &amp; dietary</th><SortHead id="table" label="Table" /><SortHead id="recent" label="Invitation" /><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
         {sortedGuests.map((guest) => <tr key={guest.id} className={canEdit(guest) ? "is-openable" : ""}><td><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} aria-label={`Select ${displayName(guest)}`} /></td><td><button className="guest-identity" disabled={!canEdit(guest)} onClick={() => canEdit(guest) && edit(guest)}><span>{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span><p><strong>{displayName(guest)}</strong>{!isPlanner ? <small>{guest.email || guest.mobile || "No contact details"}</small> : null}</p></button></td><td>{guest.household_name ?? "—"}</td><td><span className="group-chip">{guest.side}</span><small className="muted-cell">{guest.category}</small></td><td><Status value={guest.rsvp_status} />{guest.rsvp_submitted_at ? <small className="muted-cell">{dateLabel(guest.rsvp_submitted_at)}</small> : null}</td><td><span>{guest.child_meal ? "Children's meal" : guest.meal_selection || "Not selected"}</span>{guest.dietary_requirements || guest.allergies ? <small className="diet-note">◈ {guest.dietary_requirements || guest.allergies}</small> : null}</td><td>{guest.table_name ? <><span>{guest.table_name}</span><small className="muted-cell">Seat {guest.seat_number || "—"}</small></> : <span className="unassigned">Unassigned</span>}</td><td>{isPlanner ? <span className="muted-cell">Restricted</span> : <>{guest.invitation_sent ? <span className="sent-label">✓ Sent</span> : <span className="not-sent">Not sent</span>}{guest.opened_at ? <small className="muted-cell">Opened {dateLabel(guest.opened_at)}</small> : null}</>}</td><td>{canEdit(guest) ? <button className="row-action" onClick={() => edit(guest)} aria-label={`Edit ${displayName(guest)}`}>•••</button> : null}</td></tr>)}
       </tbody></table>{!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}</div>
+      <div className="guest-mobile-list">
+        {sortedGuests.map((guest) => <details key={guest.id} className="guest-mobile-row">
+          <summary>
+            <span className="guest-mobile-avatar" aria-hidden="true">{guest.preferred_name?.slice(0, 1) || guest.first_name.slice(0, 1)}{guest.last_name.slice(0, 1)}</span>
+            <span className="guest-mobile-title"><strong>{displayName(guest)}</strong><small>{guest.household_name || "No household"}</small></span>
+            <span className="guest-mobile-state"><Status value={guest.rsvp_status} /><small>{guest.table_name || "Unassigned"}</small></span>
+          </summary>
+          <div className="guest-mobile-details">
+            <dl>
+              <div><dt>RSVP</dt><dd>{guest.rsvp_status}{guest.rsvp_submitted_at ? ` · ${dateLabel(guest.rsvp_submitted_at)}` : ""}</dd></div>
+              <div><dt>Meal</dt><dd>{guest.child_meal ? "Children's meal" : guest.meal_selection || "Not selected"}</dd></div>
+              {(guest.dietary_requirements || guest.allergies) ? <div><dt>Dietary</dt><dd>{[guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ")}</dd></div> : null}
+              <div><dt>Table</dt><dd>{guest.table_name ? `${guest.table_name}${guest.seat_number ? ` · Seat ${guest.seat_number}` : ""}` : "Unassigned"}</dd></div>
+              <div><dt>Group</dt><dd>{[guest.side, guest.category].filter(Boolean).join(" · ")}</dd></div>
+              {!isPlanner ? <div><dt>Contact</dt><dd>{guest.mobile || guest.email || "No contact details"}</dd></div> : null}
+              {!isPlanner ? <div><dt>Invitation</dt><dd>{guest.invitation_sent ? `Sent${guest.opened_at ? ` · opened ${dateLabel(guest.opened_at)}` : ""}` : "Not sent"}</dd></div> : null}
+            </dl>
+            <div className="guest-mobile-actions">
+              <label><input type="checkbox" checked={selected.includes(guest.id)} onChange={() => setSelected(selected.includes(guest.id) ? selected.filter((id) => id !== guest.id) : [...selected, guest.id])} /> Select</label>
+              {canEdit(guest) ? <button type="button" onClick={() => edit(guest)}>Open guest</button> : null}
+            </div>
+          </div>
+        </details>)}
+        {!guests.length ? <div className="empty-state"><span>♡</span><h3>No guests found</h3><p>Try another search or filter.</p></div> : null}
+      </div>
       <footer className="table-footer"><span>{guests.length} guests shown</span><span>Updates use Australia/Perth time</span></footer>
     </section>
   </div>;
@@ -1422,6 +1467,7 @@ function WishesAndAdvice({ guests }: { guests: Guest[] }) {
 
 function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; tables: SeatingTable[]; adminRole: "owner" | "partner" | "planner"; setTab: (tab: Tab) => void }) {
   const [filter, setFilter] = useState("Confirmed");
+  const [pdfStatus, setPdfStatus] = useState("");
   const availableRows = guests.filter((guest) => adminRole !== "planner" || guest.category === "Crew");
   const exportRows = availableRows.filter((guest) => filter === "All" || guest.rsvp_status === filter);
   const [selectedTable, setSelectedTable] = useState(tables[0]?.name ?? "");
@@ -1443,35 +1489,63 @@ function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; table
     const columns = maps[preset]; const content = [`Report,${csvValue(`${preset[0].toUpperCase()}${preset.slice(1)} export`)}`, `Export date,${csvValue(new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth" }))}`, `Wedding,${csvValue("Elaine & Haykal")}`, `Applied filter,${csvValue(filter)}`, "", columns.map(([label]) => csvValue(label)).join(","), ...rowsFor(preset).map((guest) => columns.map(([, getter]) => csvValue(getter(guest) as unknown)).join(","))].join("\r\n");
     downloadFile(`elaine-haykal-${preset}-${new Date().toISOString().slice(0, 10)}.csv`, content);
   };
-  const printPdf = (report: string, title: string) => {
-    const originalTitle = document.title;
-    const cleanup = () => {
-      delete document.body.dataset.printing;
-      document.title = originalTitle;
-    };
-    document.body.dataset.printing = `export-${report}`;
-    document.title = `Elaine & Haykal - ${title}`;
-    window.addEventListener("afterprint", cleanup, { once: true });
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      window.print();
-      window.setTimeout(cleanup, 60_000);
-    }));
-  };
-  const printTable = (preset: Exclude<ExportPreset, "complete">, title: string, rows: Guest[]) => <section id={`print-export-${preset}`} className="manager-panel export-print-report">
-    <div className="print-letterhead"><span>E <i>&amp;</i> H</span><div><b>{title}</b><small>Elaine &amp; Haykal · 7 November 2026 · Generated {new Date().toLocaleDateString("en-AU", { timeZone: "Australia/Perth" })}</small></div></div>
-    <header className="export-report-head"><h3>{title}</h3><p>{rows.length} guest{rows.length === 1 ? "" : "s"} · {filter} filter</p></header>
-    <table className="guest-table"><thead><tr>{maps[preset].map(([label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((guest) => <tr key={guest.id}>{maps[preset].map(([label, getter]) => <td key={label}>{String(getter(guest) ?? "—") || "—"}</td>)}</tr>)}</tbody></table>
-  </section>;
   const allPresets = [{ id: "venue", title: "Venue pack", note: "Attendance, seating, access and transport", glyph: "⌂" }, { id: "chef", title: "Chef & catering", note: "Meals, dietary needs and allergies", glyph: "◇" }, { id: "afterparty", title: "After-party list", note: "Private invitations and late-night RSVPs", glyph: "✦" }, { id: "complete", title: "Complete guest archive", note: "All administrator guest fields", glyph: "▦" }] as const;
   const presets = adminRole === "planner" ? allPresets.filter((preset) => preset.id === "chef") : allPresets;
-  return <div className="manager-page exports-page"><div className="section-intro-row"><div><p className="panel-kicker">Reports</p><h2>Export centre</h2><span>Every report can be saved as a polished PDF. CSV remains available for spreadsheets.</span></div><select value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select></div>
-    <section className="manager-panel table-export-panel"><div><p className="panel-kicker">Table-by-table banquet list</p><h3>Guests, meals &amp; dietary requirements</h3><span>Select a table to create the exact list needed by the banquet team.</span></div><label><span>Assigned table</span><select value={selectedTable} onChange={(event) => setSelectedTable(event.target.value)}>{tables.map((table) => <option key={table.id} value={table.name}>{table.name} · {availableRows.filter((guest) => guest.rsvp_status === "Confirmed" && guest.table_name === table.name).length} guests</option>)}</select></label><button type="button" disabled={!selectedTable || !tableRows.length} onClick={() => printPdf("table", `${selectedTable} guest and meal list`)}>Save table PDF <i>↓</i></button></section>
-    <section className="export-grid">{presets.map((preset) => <article key={preset.id}><span>{preset.glyph}</span><h3>{preset.title}</h3><p>{preset.note}</p><dl><div><dt>Guests</dt><dd>{rowsFor(preset.id).length}</dd></div>{preset.id === "venue" ? <div><dt>Tables</dt><dd>{tables.length}</dd></div> : null}</dl>{preset.id === "chef" ? <button className="export-print-link" onClick={() => setTab("dayof")}>Open polished kitchen brief <i>→</i></button> : null}<button type="button" onClick={() => printPdf(preset.id, preset.title)}>Save as PDF <i>↓</i></button><button type="button" className="secondary-button" onClick={() => exportCsv(preset.id)}>Download CSV <i>↓</i></button></article>)}</section>
-    {printTable("venue", "Venue pack", rowsFor("venue"))}
-    {printTable("chef", "Chef & catering", rowsFor("chef"))}
-    {printTable("afterparty", "After-party list", rowsFor("afterparty"))}
-    <section id="print-export-table" className="manager-panel export-print-report"><div className="print-letterhead"><span>E <i>&amp;</i> H</span><div><b>{selectedTable || "Table"}</b><small>Elaine &amp; Haykal · 7 November 2026 · The Grand Salon, Grand Hyatt Kuala Lumpur</small></div></div><header className="export-report-head"><h3>{selectedTable} guest and meal list</h3><p>{tableRows.length} confirmed guest{tableRows.length === 1 ? "" : "s"}</p></header><table className="guest-table"><thead><tr><th>Seat</th><th>Guest</th><th>Main course</th><th>Dietary requirements</th><th>Allergies</th></tr></thead><tbody>{tableRows.map((guest) => <tr key={guest.id}><td>{guest.seat_number ?? "—"}</td><td>{displayName(guest)}</td><td>{guest.child_meal ? "Children's meal" : guest.meal_selection || "—"}</td><td>{guest.dietary_requirements || "—"}</td><td>{guest.allergies || "—"}</td></tr>)}</tbody></table></section>
-    <section id="print-export-complete" className="manager-panel export-print-report"><div className="print-letterhead"><span>E <i>&amp;</i> H</span><div><b>Complete guest archive</b><small>Elaine &amp; Haykal · 7 November 2026 · Generated {new Date().toLocaleDateString("en-AU", { timeZone: "Australia/Perth" })}</small></div></div><header className="export-report-head"><h3>Complete guest archive</h3><p>{rowsFor("complete").length} guest records · {filter} filter</p></header><div className="complete-print-grid">{rowsFor("complete").map((guest) => <article key={guest.id}><h4>{displayName(guest)}<span>{guest.household_name || "No household"}</span></h4><dl>{maps.complete.map(([label, getter]) => <div key={label}><dt>{label}</dt><dd>{String(getter(guest) ?? "—") || "—"}</dd></div>)}</dl></article>)}</div></section>
+  const generatedOn = new Date().toLocaleDateString("en-AU", { timeZone: "Australia/Perth" });
+  const filenameDate = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Australia/Perth" }).format(new Date());
+  const pdfWidths: Record<Exclude<ExportPreset, "complete">, number[]> = {
+    venue: [150, 145, 70, 72, 72, 80, 42, 150, 65],
+    chef: [165, 85, 170, 215, 130],
+    afterparty: [155, 160, 55, 90, 90, 115],
+  };
+  const saveReportPdf = async (preset: ExportPreset, title: string) => {
+    setPdfStatus(`Preparing ${title}…`);
+    try {
+      let columns: PdfColumn[];
+      let rows: Array<Array<unknown>>;
+      if (preset === "complete") {
+        columns = [{ label: "Guest", width: 160 }, { label: "Field", width: 170 }, { label: "Saved value", width: 430 }];
+        rows = rowsFor("complete").flatMap((guest) => maps.complete.map(([label, getter]) => [displayName(guest), label, getter(guest) ?? "—"]));
+      } else {
+        columns = maps[preset].map(([label], index) => ({ label, width: pdfWidths[preset][index] ?? 100 }));
+        rows = rowsFor(preset).map((guest) => maps[preset].map(([, getter]) => getter(guest) ?? "—"));
+      }
+      const bytes = createTablePdf({
+        title,
+        subtitle: `${rowsFor(preset).length} guest${rowsFor(preset).length === 1 ? "" : "s"} · ${filter} · Generated ${generatedOn}`,
+        columns,
+        rows,
+      });
+      await savePdfOnDevice(`elaine-haykal-${preset}-${filenameDate}.pdf`, bytes);
+      setPdfStatus("PDF ready — on a phone, choose Save to Files in the share sheet.");
+    } catch {
+      setPdfStatus("The PDF could not be saved. Please try again.");
+    }
+  };
+  const saveTablePdf = async () => {
+    if (!selectedTable || !tableRows.length) return;
+    setPdfStatus(`Preparing ${selectedTable}…`);
+    try {
+      const bytes = createTablePdf({
+        title: `${selectedTable} guest and meal list`,
+        subtitle: `${tableRows.length} confirmed guest${tableRows.length === 1 ? "" : "s"} · Generated ${generatedOn}`,
+        columns: [
+          { label: "Seat", width: 50 }, { label: "Guest", width: 180 }, { label: "Main course", width: 200 },
+          { label: "Dietary requirements", width: 215 }, { label: "Allergies", width: 125 },
+        ],
+        rows: tableRows.map((guest) => [guest.seat_number ?? "—", displayName(guest), guest.child_meal ? "Children's meal" : guest.meal_selection || "—", guest.dietary_requirements || "—", guest.allergies || "—"]),
+      });
+      const safeTable = selectedTable.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "table";
+      await savePdfOnDevice(`elaine-haykal-${safeTable}-meals-${filenameDate}.pdf`, bytes);
+      setPdfStatus("PDF ready — on a phone, choose Save to Files in the share sheet.");
+    } catch {
+      setPdfStatus("The PDF could not be saved. Please try again.");
+    }
+  };
+  return <div className="manager-page exports-page"><div className="section-intro-row"><div><p className="panel-kicker">Reports</p><h2>Export centre</h2><span>Every report downloads as a real PDF. On a phone, choose Save to Files in the share sheet. CSV remains available for spreadsheets.</span></div><select value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Confirmed</option><option>Pending</option><option>Declined</option></select></div>
+    {pdfStatus ? <p className="export-status" role="status">{pdfStatus}</p> : null}
+    <section className="manager-panel table-export-panel"><div><p className="panel-kicker">Table-by-table banquet list</p><h3>Guests, meals &amp; dietary requirements</h3><span>Select a table to create the exact list needed by the banquet team.</span></div><label><span>Assigned table</span><select value={selectedTable} onChange={(event) => setSelectedTable(event.target.value)}>{tables.map((table) => <option key={table.id} value={table.name}>{table.name} · {availableRows.filter((guest) => guest.rsvp_status === "Confirmed" && guest.table_name === table.name).length} guests</option>)}</select></label><button type="button" disabled={!selectedTable || !tableRows.length} onClick={() => void saveTablePdf()}>Save table PDF <i>↓</i></button></section>
+    <section className="export-grid">{presets.map((preset) => <article key={preset.id}><span>{preset.glyph}</span><h3>{preset.title}</h3><p>{preset.note}</p><dl><div><dt>Guests</dt><dd>{rowsFor(preset.id).length}</dd></div>{preset.id === "venue" ? <div><dt>Tables</dt><dd>{tables.length}</dd></div> : null}</dl>{preset.id === "chef" ? <button className="export-print-link" onClick={() => setTab("dayof")}>Open polished kitchen brief <i>→</i></button> : null}<button type="button" onClick={() => void saveReportPdf(preset.id, preset.title)}>Save as PDF <i>↓</i></button><button type="button" className="secondary-button" onClick={() => exportCsv(preset.id)}>Download CSV <i>↓</i></button></article>)}</section>
   </div>;
 }
 

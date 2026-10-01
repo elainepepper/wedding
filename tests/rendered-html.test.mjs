@@ -184,17 +184,34 @@ test("keeps manager invitation states and mobile actions consistent", async () =
 });
 
 test("offers polished PDF-ready exports and table-specific meal lists", async () => {
+  const [manager, styles, pdf] = await Promise.all([
+    read("app/manager/ManagerApp.tsx"),
+    read("app/manager/manager.css"),
+    read("lib/simple-pdf.ts"),
+  ]);
+  assert.match(manager, /Every report downloads as a real PDF/);
+  assert.match(manager, /Save table PDF/);
+  assert.match(manager, /Main course/);
+  assert.match(manager, /Dietary requirements/);
+  assert.match(manager, /createTablePdf/);
+  assert.match(manager, /savePdfOnDevice/);
+  assert.match(manager, /Save to Files/);
+  assert.match(pdf, /navigator\.share/);
+  assert.match(pdf, /link\.download = filename/);
+  assert.match(styles, /\.export-status/);
+});
+
+test("uses a mobile task hub and expandable guest replies", async () => {
   const [manager, styles] = await Promise.all([
     read("app/manager/ManagerApp.tsx"),
     read("app/manager/manager.css"),
   ]);
-  assert.match(manager, /Every report can be saved as a polished PDF/);
-  assert.match(manager, /Save table PDF/);
-  assert.match(manager, /Main course/);
-  assert.match(manager, /Dietary requirements/);
-  assert.match(manager, /print-export-complete/);
-  assert.match(styles, /body\[data-printing="export-table"\] #print-export-table/);
-  assert.match(styles, /\.complete-print-grid/);
+  assert.match(manager, /mobile-task-hub/);
+  assert.match(manager, /guest-mobile-row/);
+  assert.match(manager, /Recent replies and meal choices/);
+  assert.match(styles, /\.guest-desktop-table \{ display: none; \}/);
+  assert.match(styles, /\.guest-mobile-list \{ display: grid; \}/);
+  assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
 test("orders wishes and provides safe sent-invitation reminders", async () => {

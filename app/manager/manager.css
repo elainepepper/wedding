@@ -67,6 +67,7 @@
 .guest-modal footer button[type="submit"],
 .small-modal footer button[type="submit"] { border: 1px solid var(--m-wine); border-radius: 999px; padding: .72rem 1rem; background: var(--m-wine); color: #fff; font-size: .72rem; font-weight: 700; }
 .mobile-menu, .manager-bottom-nav { display: none; }
+.mobile-task-hub, .guest-mobile-list { display: none; }
 
 .manager-page { padding-top: 2rem; animation: managerEnter .35s ease both; }
 @keyframes managerEnter { from { opacity: 0; transform: translateY(6px); } }
@@ -182,6 +183,7 @@
 .table-export-panel button { min-height: 44px; padding: 0 1.1rem; border: 1px solid var(--m-wine); border-radius: 999px; background: var(--m-wine); color: #fff; font-size: .68rem; font-weight: 750; }
 .table-export-panel button:disabled { opacity: .45; cursor: not-allowed; }
 .export-print-report { display: none; }
+.export-status { margin: 0; padding: .75rem 1rem; border: 1px solid rgba(155,49,96,.15); border-radius: 12px; background: #f8ecec; color: var(--m-wine); font-size: .7rem; line-height: 1.45; }
 
 .settings-page { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .6fr); gap: 1rem; }.settings-form { padding: 1.3rem; }.settings-grid { margin-top: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }.settings-grid label, .guest-modal label, .small-modal label { display: grid; gap: .38rem; }.settings-grid label span, .guest-modal label > span, .small-modal label > span { color: #7f6c73; font-size: .59rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }.settings-grid .wide { grid-column: 1 / -1; }.settings-grid textarea { resize: vertical; }.security-note { margin: 1rem 0 0; padding: .8rem; border-radius: 10px; display: grid; grid-template-columns: 1.6rem auto; gap: .1rem .6rem; background: #f4e5e1; color: var(--m-muted); font-size: .62rem; line-height: 1.5; }.security-note span { grid-row: 1 / 3; color: var(--m-rose); font-size: 1.15rem; }.security-note strong { color: var(--m-ink); }.audit-panel { padding: 1.2rem; }.audit-panel > div:not(.panel-head) { padding: .75rem 0; border-top: 1px solid var(--m-line); display: grid; grid-template-columns: 1.4rem 1fr; gap: .55rem; }.audit-panel > div:not(.panel-head) > span { width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center; background: #f1dcd9; color: var(--m-rose); font-size: .55rem; }.audit-panel p { margin: 0; display: grid; gap: .18rem; }.audit-panel strong { font-size: .66rem; }.audit-panel small, .audit-panel time { color: var(--m-muted); font-size: .56rem; }.audit-panel time { grid-column: 2; }
 
@@ -1393,4 +1395,46 @@
   .topbar-actions button.topbar-export { min-width: 66px; padding-inline: .58rem; }
   .manager-bottom-nav { inset-inline: .4rem; }
   .manager-bottom-nav button { font-size: .6rem; }
+}
+
+/* Mobile manager: one calm home hub, two persistent destinations, and guest
+   records that reveal their RSVP details without a sideways table. */
+@media (max-width: 760px) {
+  .manager-bottom-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mobile-task-hub { margin-top: 1rem; padding: 1rem; border: 1px solid var(--m-line); border-radius: 17px; display: grid; gap: .9rem; background: var(--m-paper); }
+  .mobile-task-hub h3 { margin: .2rem 0 0; font: 400 1.35rem/1.15 Georgia, serif; }
+  .mobile-task-hub nav { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+  .mobile-task-hub button { min-width: 0; min-height: 88px; padding: .85rem; border: 1px solid rgba(155,49,96,.15); border-radius: 13px; display: flex; align-items: center; justify-content: space-between; gap: .55rem; background: #fcf7f4; color: var(--m-ink); text-align: left; }
+  .mobile-task-hub button span { min-width: 0; display: grid; gap: .25rem; }
+  .mobile-task-hub button strong { color: var(--m-wine); font: 600 .78rem/1.2 inherit; }
+  .mobile-task-hub button small { color: var(--m-muted); font-size: .62rem; line-height: 1.35; }
+  .mobile-task-hub button b { flex: none; color: var(--m-rose); font-size: .9rem; }
+
+  .guest-desktop-table { display: none; }
+  .guest-mobile-list { display: grid; }
+  .guest-mobile-row { border-bottom: 1px solid var(--m-line); background: var(--m-paper); }
+  .guest-mobile-row:last-child { border-bottom: 0; }
+  .guest-mobile-row summary { position: relative; min-height: 76px; padding: .75rem .85rem; display: grid; grid-template-columns: 2.3rem minmax(0, 1fr) auto; align-items: center; gap: .65rem; cursor: pointer; list-style: none; }
+  .guest-mobile-row summary::-webkit-details-marker { display: none; }
+  .guest-mobile-row summary::after { content: "＋"; position: absolute; right: .75rem; top: 50%; color: var(--m-rose); font-size: .9rem; transform: translateY(-50%); }
+  .guest-mobile-row[open] summary::after { content: "−"; }
+  .guest-mobile-avatar { grid-row: 1; width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; background: #edcfcc; color: var(--m-wine); font: 400 .72rem/1 Georgia, serif; }
+  .guest-mobile-title { min-width: 0; grid-column: 2; grid-row: 1; display: grid; gap: .18rem; }
+  .guest-mobile-title strong { overflow: hidden; font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+  .guest-mobile-title small { overflow: hidden; color: var(--m-muted); font-size: .61rem; text-overflow: ellipsis; white-space: nowrap; }
+  .guest-mobile-state { grid-column: 3; grid-row: 1; padding-right: 1.15rem; display: grid; justify-items: end; gap: .22rem; }
+  .guest-mobile-state small { max-width: 90px; overflow: hidden; color: var(--m-muted); font-size: .58rem; text-overflow: ellipsis; white-space: nowrap; }
+  .guest-mobile-details { padding: 0 .85rem .9rem 3.8rem; }
+  .guest-mobile-details dl { margin: 0; padding-top: .7rem; border-top: 1px solid #eee4e0; display: grid; gap: .62rem; }
+  .guest-mobile-details dl div { min-width: 0; display: grid; grid-template-columns: 5.1rem minmax(0, 1fr); gap: .6rem; }
+  .guest-mobile-details dt { color: var(--m-muted); font-size: .56rem; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+  .guest-mobile-details dd { margin: 0; overflow-wrap: anywhere; color: var(--m-ink); font-size: .68rem; line-height: 1.4; }
+  .guest-mobile-actions { margin-top: .85rem; display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+  .guest-mobile-actions label { min-height: 44px; display: inline-flex; align-items: center; gap: .45rem; color: var(--m-muted); font-size: .65rem; }
+  .guest-mobile-actions input { accent-color: var(--m-wine); }
+  .guest-mobile-actions button { min-height: 44px; border: 1px solid var(--m-wine); border-radius: 999px; padding: .55rem .85rem; background: var(--m-wine); color: #fff; font-size: .65rem; font-weight: 750; }
+}
+
+@media (max-width: 390px) {
+  .guest-mobile-state { padding-right: .85rem; }
 }
