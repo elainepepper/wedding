@@ -24,7 +24,7 @@ const normaliseMobile = (value: unknown) => {
 const validMobile = (value: string) => !value || /^\+[1-9][0-9]{7,14}$/.test(value);
 const integer = optionalInteger;
 const ids = (value: unknown) => Array.isArray(value) ? value.map(integer).filter((item): item is number => item !== null) : [];
-const PLANNER_ALLOWED_ACTIONS = new Set(["addGuest", "editGuest", "bulkUpdate", "createTable", "editTable", "deleteTable", "moveGuest"]);
+const PLANNER_ALLOWED_ACTIONS = new Set(["addGuest", "editGuest", "bulkUpdate", "createTable", "editTable", "deleteTable", "moveGuest", "seatHousehold", "restoreSeating"]);
 
 const plannerDenied = () => Response.json({ error: "This action is reserved for Elaine and Haykal." }, { status: 403 });
 
@@ -356,8 +356,22 @@ export async function POST(request: Request) {
     if (action === "createTable") {
       const name = clean(payload.name, 100);
       if (!name) return Response.json({ error: "Table name is required." }, { status: 400 });
+      const shape = ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round";
+      const requestedCapacity = Math.max(1, Math.min(200, integer(payload.capacity) ?? 10));
+      const capacity = shape === "round" ? Math.min(10, requestedCapacity) : requestedCapacity;
       const id = await nextId("tables");
-      await weddingRef.collection("tables").doc(String(id)).set({ id, name, shape: ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round", capacity: Math.max(1, Math.min(200, integer(payload.capacity) ?? 10)), x: Number(payload.x) || 50, y: Number(payload.y) || 50, locked: 0, notes: null, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+      await weddingRef.collection("tables").doc(String(id)).set({
+        id,
+        name,
+        shape,
+        capacity,
+        x: Math.max(6, Math.min(94, Number(payload.x) || 50)),
+        y: Math.max(8, Math.min(92, Number(payload.y) || 50)),
+        locked: payload.locked ? 1 : 0,
+        notes: null,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
       await addActivity(admin.displayName, "Table created", "table", id, name);
       return Response.json({ ok: true });
     }
@@ -453,8 +467,18 @@ export async function POST(request: Request) {
       const patch: Record<string, unknown> = { updated_at: serverTimestamp() };
       const name = clean(payload.name, 100);
       if (name) patch.name = name;
-      if (payload.capacity !== undefined) patch.capacity = Math.max(1, Math.min(200, integer(payload.capacity) ?? 10));
-      if (payload.shape !== undefined) patch.shape = ["round", "rectangular", "banquet"].includes(clean(payload.shape, 30)) ? clean(payload.shape, 30) : "round";
+      const currentShape = clean(payload.shape, 30) || clean(tableDoc.data().shape, 30) || "round";
+      if (payload.capacity !== undefined) {
+        const requested = Math.max(1, Math.min(200, integer(payload.capacity) ?? 10));
+        patch.capacity = currentShape === "round" ? Math.min(10, requested) : requested;
+      }
+      if (payload.shape !== undefined) {
+        patch.shape = ["round", "rectangular", "banquet"].includes(currentShape) ? currentShape : "round";
+        if (patch.shape === "round" && payload.capacity === undefined && Number(tableDoc.data().capacity) > 10) patch.capacity = 10;
+      }
+      if (payload.x !== undefined) patch.x = Math.max(6, Math.min(94, Number(payload.x) || 50));
+      if (payload.y !== undefined) patch.y = Math.max(8, Math.min(92, Number(payload.y) || 50));
+      if (payload.locked !== undefined) patch.locked = payload.locked ? 1 : 0;
       await tableDoc.ref.set(patch, { merge: true });
       await addActivity(admin.displayName, "Table updated", "table", tableId as number, name || "");
       return Response.json({ ok: true });
@@ -479,15 +503,111 @@ export async function POST(request: Request) {
       const tableId = integer(payload.tableId);
       const guestDoc = guestId ? await docById("guests", guestId) : null;
       if (!guestId || !guestDoc) return Response.json({ error: "Guest not found." }, { status: 404 });
+      let targetSeat: number | null = null;
+      let occupant: Awaited<ReturnType<typeof docById>> = null;
       if (tableId) {
         const tableDoc = await docById("tables", tableId);
         if (!tableDoc) return Response.json({ error: "Table not found." }, { status: 404 });
-        const seated = await weddingRef.collection("guests").where("table_id", "==", tableId).where("archived", "==", 0).get();
-        if (seated.docs.filter((doc) => Number(doc.data().id) !== guestId).length >= Number(tableDoc.data().capacity)) return Response.json({ error: "That table is already at capacity." }, { status: 409 });
+        const seated = await weddingRef.collection("guests").where("table_id", "in", [tableId, String(tableId)]).get();
+        const currentGuests = seated.docs.filter((doc) => Number(doc.data().id) !== guestId && !isEnabledFlag(doc.data().archived));
+        const capacity = Math.max(1, Number(tableDoc.data().capacity) || 1);
+        targetSeat = integer(payload.seatNumber);
+        if (!targetSeat) {
+          const occupied = new Set(currentGuests.map((doc) => Number(doc.data().seat_number)).filter((seat) => seat > 0));
+          targetSeat = Array.from({ length: capacity }, (_, index) => index + 1).find((seat) => !occupied.has(seat)) ?? capacity + 1;
+        }
+        occupant = currentGuests.find((doc) => Number(doc.data().seat_number) === targetSeat) ?? null;
+        const wouldOverfill = currentGuests.length >= capacity || targetSeat > capacity;
+        if (wouldOverfill && !payload.allowOverCapacity) return Response.json({ error: "That table is full. Confirm the over-capacity assignment to continue.", code: "TABLE_FULL" }, { status: 409 });
+        if (occupant && !payload.swap) return Response.json({ error: `Seat ${targetSeat} is already occupied. Choose another seat or confirm a swap.`, code: "SEAT_OCCUPIED" }, { status: 409 });
       }
-      await guestDoc.ref.set({ table_id: tableId, seat_number: integer(payload.seatNumber), updated_at: serverTimestamp() }, { merge: true });
+      if (occupant && payload.swap) {
+        const batch = weddingRef.firestore.batch();
+        batch.set(occupant.ref, {
+          table_id: integer(guestDoc.data().table_id),
+          seat_number: integer(guestDoc.data().seat_number),
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+        batch.set(guestDoc.ref, { table_id: tableId, seat_number: targetSeat, updated_at: serverTimestamp() }, { merge: true });
+        await batch.commit();
+      } else {
+        await guestDoc.ref.set({ table_id: tableId, seat_number: tableId ? targetSeat : null, updated_at: serverTimestamp() }, { merge: true });
+      }
       await addActivity(admin.displayName, "Guest moved to table", "guest", guestId, tableId ? `Assigned to table ${tableId}` : "Returned to unassigned guests");
       return Response.json({ ok: true });
+    }
+
+    if (action === "seatHousehold") {
+      const householdId = integer(payload.householdId);
+      const tableId = integer(payload.tableId);
+      const tableDoc = tableId ? await docById("tables", tableId) : null;
+      if (!householdId || !tableId || !tableDoc) return Response.json({ error: "Choose a household and table." }, { status: 400 });
+      const [householdGuests, tableGuests] = await Promise.all([
+        weddingRef.collection("guests").where("household_id", "in", [householdId, String(householdId)]).get(),
+        weddingRef.collection("guests").where("table_id", "in", [tableId, String(tableId)]).get(),
+      ]);
+      const members = householdGuests.docs.filter((doc) => !isEnabledFlag(doc.data().archived) && canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
+      if (!members.length) return Response.json({ error: "That household has no confirmed guests to seat." }, { status: 400 });
+      const memberIds = new Set(members.map((doc) => Number(doc.data().id)));
+      const alreadyThere = tableGuests.docs.filter((doc) => !isEnabledFlag(doc.data().archived) && !memberIds.has(Number(doc.data().id)));
+      const capacity = Math.max(1, Number(tableDoc.data().capacity) || 1);
+      if (alreadyThere.length + members.length > capacity && !payload.allowOverCapacity) {
+        return Response.json({ error: "The whole household will exceed this table's capacity. Confirm the over-capacity assignment to continue.", code: "TABLE_FULL" }, { status: 409 });
+      }
+      const occupied = new Set(alreadyThere.map((doc) => Number(doc.data().seat_number)).filter((seat) => seat > 0));
+      let nextSeat = 1;
+      const batch = weddingRef.firestore.batch();
+      for (const member of members) {
+        while (occupied.has(nextSeat)) nextSeat += 1;
+        batch.set(member.ref, { table_id: tableId, seat_number: nextSeat, updated_at: serverTimestamp() }, { merge: true });
+        occupied.add(nextSeat);
+        nextSeat += 1;
+      }
+      await batch.commit();
+      await addActivity(admin.displayName, "Household seated together", "household", householdId, `${members.length} guests assigned to ${String(tableDoc.data().name ?? `table ${tableId}`)}`);
+      return Response.json({ ok: true, seated: members.length });
+    }
+
+    if (action === "restoreSeating") {
+      const rawAssignments = Array.isArray(payload.assignments) ? payload.assignments.slice(0, 20) : [];
+      if (!rawAssignments.length) return Response.json({ error: "No seating changes were supplied." }, { status: 400 });
+      const assignments = rawAssignments.map((item) => {
+        const value = item && typeof item === "object" ? item as Record<string, unknown> : {};
+        return {
+          guestId: integer(value.guestId),
+          tableId: integer(value.tableId),
+          seatNumber: integer(value.seatNumber),
+        };
+      });
+      if (assignments.some((item) => !item.guestId)) return Response.json({ error: "One or more guests could not be restored." }, { status: 400 });
+      const uniqueGuestIds = new Set(assignments.map((item) => item.guestId));
+      if (uniqueGuestIds.size !== assignments.length) return Response.json({ error: "A guest appeared more than once in the restore request." }, { status: 400 });
+      if (assignments.some((item) => item.tableId && !item.seatNumber)) return Response.json({ error: "Every restored table assignment needs a seat number." }, { status: 400 });
+      const targetSeats = assignments.filter((item) => item.tableId).map((item) => `${item.tableId}:${item.seatNumber}`);
+      if (new Set(targetSeats).size !== targetSeats.length) return Response.json({ error: "Two guests cannot be restored to the same chair." }, { status: 409 });
+      const guestDocs = await Promise.all(assignments.map((item) => docById("guests", item.guestId as number)));
+      if (guestDocs.some((doc) => !doc)) return Response.json({ error: "One or more guests no longer exist." }, { status: 404 });
+      const tableIds = [...new Set(assignments.map((item) => item.tableId).filter((id): id is number => Boolean(id)))];
+      const tableDocs = await Promise.all(tableIds.map((id) => docById("tables", id)));
+      if (tableDocs.some((doc) => !doc)) return Response.json({ error: "One or more tables no longer exist." }, { status: 404 });
+      const currentAtTargets = await Promise.all(tableIds.map((id) => weddingRef.collection("guests").where("table_id", "in", [id, String(id)]).get()));
+      const targetSeatSet = new Set(targetSeats);
+      const occupiedByAnotherGuest = currentAtTargets.some((snapshot) => snapshot.docs.some((doc) => {
+        if (uniqueGuestIds.has(Number(doc.data().id))) return false;
+        return targetSeatSet.has(`${Number(doc.data().table_id)}:${Number(doc.data().seat_number)}`);
+      }));
+      if (occupiedByAnotherGuest) return Response.json({ error: "A previous chair is now occupied by another guest, so Undo was stopped safely." }, { status: 409 });
+      const batch = weddingRef.firestore.batch();
+      assignments.forEach((item, index) => {
+        batch.set(guestDocs[index]!.ref, {
+          table_id: item.tableId,
+          seat_number: item.tableId ? item.seatNumber : null,
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+      });
+      await batch.commit();
+      await addActivity(admin.displayName, "Seating change undone", "seating", null, `${assignments.length} guest seat${assignments.length === 1 ? "" : "s"} restored`);
+      return Response.json({ ok: true, restored: assignments.length });
     }
 
     // Whose side of the family this invitation belongs to, so the couple can

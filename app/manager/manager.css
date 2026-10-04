@@ -1488,3 +1488,119 @@
   .memory-qr-panel p:not(.manager-kicker) { grid-column: 1 / -1; }
   .memory-manager-grid { grid-template-columns: 1fr; }
 }
+
+/* Grand Salon seating planner. */
+.seating-planner-page { display: grid; gap: 1rem; }
+.seating-view-toggle { padding: 3px; border: 1px solid var(--m-line); border-radius: 999px; display: flex; background: rgba(255,255,255,.72); }
+.seating-view-toggle button { min-height: 38px; border: 0; border-radius: 999px; padding: 0 .9rem; background: transparent; color: var(--m-muted); font-size: .64rem; font-weight: 700; }
+.seating-view-toggle button.is-active { background: var(--m-wine); color: #fff; }
+.seating-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--m-line); border-left: 1px solid var(--m-line); }
+.seating-summary article { min-height: 104px; padding: 1rem 1.1rem; border-right: 1px solid var(--m-line); border-bottom: 1px solid var(--m-line); display: grid; align-content: center; gap: .15rem; background: rgba(255,253,249,.65); }
+.seating-summary span { color: var(--m-muted); font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seating-summary strong { color: var(--m-ink); font: 400 2rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-summary small { color: var(--m-muted); font-size: .6rem; }
+.seating-summary article.needs-attention { background: rgba(184,110,91,.08); }
+.seating-summary article.needs-attention :is(strong,small) { color: #8e3f4d; }
+.seating-setup-bar { padding: .9rem 1rem; display: flex; align-items: center; gap: .55rem; }
+.seating-setup-bar > div { min-width: 220px; margin-right: auto; display: grid; gap: .18rem; }
+.seating-setup-bar > div strong { color: var(--m-ink); font: 500 1rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-setup-bar > div span { color: var(--m-muted); font-size: .6rem; line-height: 1.45; }
+.seating-setup-bar > button { min-height: 40px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 .85rem; background: var(--m-wine); color: #fff; font-size: .61rem; font-weight: 700; white-space: nowrap; }
+.seating-workspace { min-height: 680px; display: grid; grid-template-columns: minmax(240px,285px) minmax(0,1fr); gap: 1rem; }
+.seating-guest-bank { min-height: 0; padding: 1rem; align-self: stretch; overflow: hidden; }
+.seating-guest-bank > header { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+.seating-guest-bank h3 { margin: .12rem 0 0; font: 400 1.3rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-guest-bank > header > strong { min-width: 2.2rem; height: 2.2rem; border-radius: 50%; display: grid; place-items: center; background: #f0d8d5; color: var(--m-wine); font-size: .8rem; }
+.seating-search { position: relative; margin: .85rem 0; display: block; }
+.seating-search > span { position: absolute; z-index: 1; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--m-muted); }
+.seating-search input { width: 100%; min-height: 42px; padding-left: 1.9rem; }
+.seating-household-list { max-height: 585px; padding-right: .2rem; display: grid; align-content: start; gap: .6rem; overflow: auto; }
+.seating-household-card { border: 1px solid var(--m-line); border-radius: 12px; padding: .68rem; display: grid; gap: .38rem; background: #fff; }
+.seating-household-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.seating-household-card > header > div { display: grid; gap: .12rem; }
+.seating-household-card > header strong { color: var(--m-ink); font-size: .65rem; }
+.seating-household-card > header small { color: var(--m-muted); font-size: .53rem; }
+.seating-household-card > header > span { border-radius: 999px; padding: .22rem .42rem; background: #f4e5e1; color: var(--m-wine); font-size: .48rem; font-weight: 700; }
+.seating-household-card > button:not(.seat-together-button) { width: 100%; min-height: 42px; border: 0; border-top: 1px solid rgba(122,37,73,.1); padding: .45rem 0 0; display: grid; grid-template-columns: 1.6rem minmax(0,1fr); align-items: center; gap: .5rem; background: transparent; color: var(--m-ink); text-align: left; }
+.seating-household-card > button:not(.seat-together-button):disabled { opacity: .58; cursor: default; }
+.seating-household-card > button > i { width: 1.55rem; height: 1.55rem; border-radius: 50%; display: grid; place-items: center; background: #f3dedb; color: var(--m-wine); font-style: normal; font-size: .56rem; }
+.seating-household-card > button > span { min-width: 0; display: grid; gap: .1rem; font-size: .62rem; }
+.seating-household-card > button small { color: var(--m-muted); font-size: .5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seat-together-button { min-height: 36px; border: 1px solid var(--m-line); border-radius: 8px; padding: .4rem .55rem; background: #faf2ee; color: var(--m-wine); font-size: .54rem; font-weight: 700; }
+.salon-canvas { position: relative; width: 100%; aspect-ratio: 1000/620; min-height: 560px; border: 1px solid var(--m-line); overflow: hidden; background: linear-gradient(155deg,#fffdf9,#f4ebe5); box-shadow: inset 0 0 70px rgba(122,37,73,.035); }
+.salon-plan-art { position: absolute; inset: 2.5%; width: 95%; height: 95%; }
+.salon-plan-art :where(path,rect,line) { vector-effect: non-scaling-stroke; }
+.salon-outline { fill: rgba(255,255,255,.72); stroke: rgba(78,58,62,.43); stroke-width: 2; }
+.salon-upper-wall { fill: none; stroke: rgba(78,58,62,.28); stroke-width: 1.5; }
+.salon-stage { fill: #d9d5d2; stroke: rgba(78,58,62,.45); }
+.salon-aisle { fill: rgba(229,139,157,.32); stroke: rgba(160,67,94,.32); }
+.salon-dance { fill: rgba(229,139,157,.55); stroke: rgba(160,67,94,.32); }
+.salon-registration { fill: rgba(218,207,201,.76); stroke: rgba(78,58,62,.35); }
+.salon-door { fill: rgba(255,255,255,.7); stroke: rgba(78,58,62,.28); }
+.salon-plan-art text { fill: rgba(52,43,45,.62); font: 600 13px/1 Inter,sans-serif; letter-spacing: 1px; }
+.salon-plan-art .salon-aisle-label { fill: rgba(122,37,73,.68); font-size: 11px; }
+.salon-plan-art .salon-room-label { fill: rgba(52,43,45,.48); font-size: 12px; letter-spacing: 3px; }
+.salon-table { position: absolute; z-index: 3; width: 74px; min-height: 74px; transform: translate(-50%,-50%); border: 1px solid rgba(122,37,73,.24); border-radius: 50%; padding: .25rem; display: grid; place-items: center; align-content: center; gap: .05rem; background: rgba(255,253,249,.96); color: var(--m-ink); box-shadow: 0 7px 18px rgba(84,48,58,.1); transition: border-color .18s ease,box-shadow .18s ease; }
+.salon-table[draggable="true"] { cursor: grab; }
+.salon-table:hover,.salon-table.is-selected { z-index: 5; border-color: var(--m-wine); box-shadow: 0 0 0 4px rgba(122,37,73,.1),0 12px 24px rgba(84,48,58,.13); }
+.salon-table.is-over { border-color: #b1515c; background: #fff5f3; }
+.salon-table--banquet { width: 70px; min-height: 156px; border-radius: 50%/22%; }
+.salon-table--rectangular { width: 106px; min-height: 62px; border-radius: 10px; }
+.salon-table > strong { position: relative; z-index: 2; max-width: 86px; font: 500 .59rem/1.05 "Bodoni Moda",Georgia,serif; text-align: center; }
+.salon-table > small { position: relative; z-index: 2; color: var(--m-muted); font-size: .46rem; }
+.salon-table-seats { position: absolute; inset: 8px; pointer-events: none; }
+.salon-table-seats i { position: absolute; width: 7px; height: 7px; transform: translate(-50%,-50%); border: 1px solid rgba(122,37,73,.28); border-radius: 50%; background: #fff; }
+.salon-table-seats i.is-occupied { border-color: var(--m-wine); background: var(--m-wine); }
+.salon-empty { position: absolute; z-index: 2; inset: 39% 25% auto; display: grid; gap: .3rem; color: var(--m-muted); text-align: center; pointer-events: none; }
+.salon-empty strong { color: var(--m-ink); font: 400 1.2rem/1.1 "Bodoni Moda",Georgia,serif; }
+.salon-empty span,.seating-map-help { color: var(--m-muted); font-size: .58rem; line-height: 1.45; }
+.seating-map-help { margin: .45rem 0 0; text-align: center; }
+.seating-table-list { display: grid; align-content: start; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .7rem; }
+.seating-table-list > button { position: relative; min-height: 82px; border: 1px solid var(--m-line); border-radius: 12px; padding: .8rem 1rem; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--m-paper); color: var(--m-ink); text-align: left; }
+.seating-table-list > button.is-selected { border-color: var(--m-wine); box-shadow: 0 0 0 3px rgba(122,37,73,.08); }
+.seating-table-list > button > span { display: grid; gap: .2rem; }
+.seating-table-list strong { font: 500 .88rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-table-list small { color: var(--m-muted); font-size: .54rem; }
+.seating-table-list b { color: var(--m-wine); font: 500 1rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-table-list i { position: absolute; inset: auto auto 0 0; height: 3px; background: var(--m-rose); }
+.seating-table-editor { overflow: hidden; }
+.seating-table-editor > header { padding: 1rem 1.15rem; border-bottom: 1px solid var(--m-line); display: flex; justify-content: space-between; align-items: flex-start; }
+.seating-table-editor > header h3 { margin: .12rem 0; font: 400 1.55rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-table-editor > header span { color: var(--m-muted); font-size: .6rem; }
+.seating-table-editor > header > button { width: 40px; height: 40px; border: 0; background: transparent; color: var(--m-muted); font-size: 1.4rem; }
+.seating-table-tools { padding: .85rem 1rem; border-bottom: 1px solid var(--m-line); display: flex; align-items: end; gap: .75rem; }
+.seating-table-tools > label { min-width: 180px; display: grid; gap: .3rem; }
+.seating-table-tools > label > span,.seating-capacity > span,.seating-position-controls > span { color: var(--m-muted); font-size: .51rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.seating-table-tools input { min-height: 40px; }
+.seating-capacity,.seating-position-controls { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+.seating-capacity > span,.seating-position-controls > span { flex-basis: 100%; }
+.seating-capacity button,.seating-position-controls button { width: 38px; height: 38px; border: 1px solid var(--m-line); border-radius: 8px; background: #fff; color: var(--m-wine); font-weight: 800; }
+.seating-capacity strong { min-width: 32px; text-align: center; }.seating-capacity button:disabled { opacity: .35; }
+.seating-fixed-note { margin: 0 auto 0 0; color: var(--m-muted); font-size: .58rem; font-style: italic; }.seating-remove-table { margin-left: auto; min-height: 40px; }
+.seating-seat-grid { padding: 1rem; display: grid; grid-template-columns: repeat(auto-fill,minmax(112px,1fr)); gap: .5rem; }
+.seating-seat-grid > button { min-height: 64px; border: 1px solid var(--m-line); border-radius: 10px; padding: .55rem; display: grid; grid-template-columns: 1.75rem minmax(0,1fr); align-items: center; gap: .5rem; background: #fff; color: var(--m-ink); text-align: left; }
+.seating-seat-grid > button > b { width: 1.7rem; height: 1.7rem; border-radius: 50%; display: grid; place-items: center; background: #eee4df; color: var(--m-wine); font-size: .58rem; }
+.seating-seat-grid > button > span { min-width: 0; display: grid; gap: .1rem; overflow: hidden; font-size: .59rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-seat-grid > button small { color: var(--m-muted); font-size: .48rem; overflow: hidden; text-overflow: ellipsis; }
+.seating-seat-grid > button.is-empty { border-style: dashed; color: var(--m-muted); }.seating-seat-grid > button.is-selected { border-color: var(--m-wine); background: #faf0ef; box-shadow: 0 0 0 3px rgba(122,37,73,.08); }.seating-seat-grid > button.is-extra { border-color: #bf6868; background: #fff5f3; }
+.seating-seat-prompt { margin: 0 1rem 1rem; border: 1px solid rgba(122,37,73,.2); border-radius: 10px; padding: .7rem .8rem; display: flex; align-items: center; gap: .7rem; background: #f8ecec; color: var(--m-wine); }.seating-seat-prompt strong { font-size: .64rem; }.seating-seat-prompt span { color: var(--m-muted); font-size: .57rem; }.seating-seat-prompt button { margin-left: auto; border: 0; background: transparent; color: var(--m-wine); font-size: .58rem; font-weight: 700; }
+.seating-roster { border-top: 1px solid var(--m-line); }.seating-roster > header,.seating-roster > div { min-height: 58px; padding: .55rem 1rem; display: grid; grid-template-columns: minmax(170px,1.2fr) minmax(140px,.8fr) 90px auto; align-items: center; gap: .65rem; }.seating-roster > header { min-height: 34px; background: #faf5f2; color: var(--m-muted); font-size: .5rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }.seating-roster > div + div { border-top: 1px solid rgba(122,37,73,.09); }.seating-roster > div > span { min-width: 0; display: grid; gap: .1rem; }.seating-roster > div strong { font-size: .64rem; }.seating-roster > div small { color: var(--m-muted); font-size: .51rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.seating-roster select { min-width: 0; min-height: 40px; }.seating-roster > div > button { min-height: 38px; border: 0; background: transparent; color: #a34560; font-size: .55rem; font-weight: 700; }
+
+@media (max-width: 1050px) {
+  .seating-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .seating-setup-bar { flex-wrap: wrap; }.seating-setup-bar > div { flex-basis: 100%; }
+  .seating-workspace { grid-template-columns: 230px minmax(0,1fr); }.salon-canvas { min-height: 520px; }
+}
+@media (max-width: 760px) {
+  .seating-intro { gap: .8rem; align-items: flex-end; }.seating-view-toggle button { min-height: 42px; padding-inline: .72rem; }
+  .seating-summary article { min-height: 88px; padding: .85rem; }.seating-summary strong { font-size: 1.65rem; }
+  .seating-setup-bar > button { flex: 1 1 calc(50% - .3rem); min-height: 44px; }
+  .seating-workspace { min-height: 0; display: flex; flex-direction: column; }.seating-map-panel,.seating-table-list { order: 1; }.seating-guest-bank { order: 2; }.seating-household-list { max-height: none; }
+  .salon-canvas { min-height: 0; aspect-ratio: 1000/700; }.salon-table { width: 58px; min-height: 58px; }.salon-table--banquet { width: 54px; min-height: 124px; }.salon-table--rectangular { width: 82px; min-height: 52px; }.salon-table > strong { max-width: 60px; font-size: .5rem; }.salon-table-seats i { width: 5px; height: 5px; }
+  .seating-table-list { grid-template-columns: 1fr; }.seating-table-tools { align-items: stretch; flex-wrap: wrap; }.seating-table-tools > label { flex: 1 1 100%; }.seating-capacity,.seating-position-controls { flex: 1 1 auto; }.seating-fixed-note { flex: 1 1 100%; }
+  .seating-seat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.seating-roster > header { display: none; }.seating-roster > div { padding-block: .75rem; grid-template-columns: minmax(0,1fr) 86px; }.seating-roster > div > span { grid-column: 1/-1; }.seating-roster > div > button { grid-column: 1/-1; justify-self: start; }
+}
+@media (max-width: 430px) {
+  .seating-intro { display: grid; }.seating-view-toggle { justify-self: start; }.seating-setup-bar > button { flex-basis: 100%; }.salon-canvas { aspect-ratio: 9/8; }.salon-plan-art { inset: 5% 1%; width: 98%; height: 90%; }
+  .seating-seat-grid { padding: .7rem; gap: .4rem; }.seating-seat-grid > button { min-height: 58px; padding: .45rem; grid-template-columns: 1.55rem minmax(0,1fr); }.seating-seat-grid > button > b { width: 1.5rem; height: 1.5rem; }
+}

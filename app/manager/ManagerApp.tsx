@@ -4,8 +4,9 @@ import { compareInvitationGuests } from "../../lib/rsvp-data.mjs";
 import { rsvpDeadlineLabel, rsvpDeadlinePassed } from "../../lib/rsvp-window";
 import { createTablePdf, savePdfOnDevice, type PdfColumn } from "../../lib/simple-pdf";
 
-import { DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { MemoriesManager } from "./MemoriesManager";
+import { SeatingPlanner } from "./SeatingPlanner";
 
 type Guest = {
   id: number; household_id: number | null; first_name: string; last_name: string; preferred_name: string | null;
@@ -206,6 +207,11 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    if (requested && tabs.some((item) => item.id === requested)) setTab(requested);
+  }, []);
+
+  useEffect(() => {
     if (!mobileNav) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMobileNav(false);
@@ -282,7 +288,9 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       // table and activity before it would respond — several seconds on a
       // list this size. The change is already saved; refresh in the
       // background and let the interface answer immediately.
-      void load(true);
+      const seatingActions = new Set(["createTable", "editTable", "deleteTable", "moveGuest", "seatHousehold", "restoreSeating"]);
+      if (seatingActions.has(String(payload.action))) await load(true);
+      else void load(true);
       return result;
     } catch (failure) {
       // Most callers do not catch. Without this the failure was invisible:
@@ -413,7 +421,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
           />
         ) : null}
         {tab === "households" ? <Households replyBy={rsvpDeadlineLabel(data.settings.rsvp_deadline) ?? ""} deadlinePassed={rsvpDeadlinePassed(data.settings.rsvp_deadline)} households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
-        {tab === "seating" ? <SeatingPlan guests={data.guests} tables={data.tables} act={act} /> : null}
+        {tab === "seating" ? <SeatingPlanner guests={data.guests} tables={data.tables} act={act} setUndo={setUndo} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "travel" ? <TravelAndRooms guests={data.guests} /> : null}
@@ -1093,140 +1101,6 @@ function InvitationLinks({ households, guests, replyBy, notify, act }: { househo
       {!households.length ? <p className="empty-note">Add a guest and a household with its own link appears here.</p> : null}
     </section>
   </div>;
-}
-
-function SeatingPlan({ guests, tables, act }: { guests: Guest[]; tables: SeatingTable[]; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {
-  const [name, setName] = useState("");
-  const [shape, setShape] = useState("round");
-  const [capacity, setCapacity] = useState(10);
-  const [search, setSearch] = useState("");
-
-  const confirmed = guests.filter((guest) => guest.rsvp_status === "Confirmed");
-  const unseated = confirmed.filter((guest) => !guest.table_id);
-  const matches = (guest: Guest) =>
-    !search ||
-    displayName(guest).toLowerCase().includes(search.toLowerCase()) ||
-    (guest.household_name ?? "").toLowerCase().includes(search.toLowerCase());
-
-  // the three kinds of table actually being used on the night
-  const presets = [
-    { label: "Round table", shape: "round", capacity: 10 },
-    { label: "Viking table (48)", shape: "banquet", capacity: 48 },
-    { label: "VIP table", shape: "rectangular", capacity: 12 },
-  ];
-
-  const addTable = async (preset?: { label: string; shape: string; capacity: number }) => {
-    const chosen = preset ?? { label: name.trim(), shape, capacity };
-    const finalName = preset
-      ? `${preset.label.replace(/ \(\d+\)$/, "")} ${tables.filter((table) => table.shape === preset.shape).length + 1}`
-      : name.trim();
-    if (!finalName) return;
-    const result = await act({ action: "createTable", name: finalName, shape: chosen.shape, capacity: chosen.capacity }, `${finalName} added`);
-    if (!result) return;
-    setName("");
-  };
-
-  return <div className="manager-page seating-page">
-    <div className="section-intro-row">
-      <div>
-        <p className="panel-kicker">Seating</p>
-        <h2>{tables.length} tables · {unseated.length} still to seat</h2>
-        <span>Make a table, then put people at it. Everyone who has accepted appears below.</span>
-      </div>
-    </div>
-
-    <section className="manager-panel seating-new">
-      <h3>Add a table</h3>
-      <div className="seating-presets">
-        {presets.map((preset) => (
-          <button type="button" key={preset.label} onClick={() => addTable(preset)}>
-            ＋ {preset.label}
-          </button>
-        ))}
-      </div>
-      <div className="seating-custom">
-        <label><span>Name</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Top table" /></label>
-        <label><span>Shape</span><select value={shape} onChange={(event) => setShape(event.target.value)}>
-          <option value="round">Round</option>
-          <option value="banquet">Long / Viking</option>
-          <option value="rectangular">Rectangular</option>
-        </select></label>
-        <label><span>Seats</span><input type="number" min={1} max={200} value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label>
-        <button type="button" onClick={() => addTable()} disabled={!name.trim()}>Add table</button>
-      </div>
-    </section>
-
-    {tables.map((table) => {
-      const seated = confirmed.filter((guest) => guest.table_id === table.id);
-      return (
-        <section className="manager-panel seating-table" key={table.id}>
-          <header>
-            <div>
-              <h3>{table.name}</h3>
-              <p>{seated.length} of {table.capacity} seats · {table.shape === "banquet" ? "long table" : table.shape}</p>
-            </div>
-            <div className="seating-table-actions">
-              <button type="button" onClick={async () => {
-                const next = window.prompt("Rename this table", table.name);
-                if (next && next.trim()) await act({ action: "editTable", tableId: table.id, name: next.trim() }, "Table renamed");
-              }}>Rename</button>
-              <button type="button" onClick={async () => {
-                const next = window.prompt("How many seats?", String(table.capacity));
-                if (next && Number(next) > 0) await act({ action: "editTable", tableId: table.id, capacity: Number(next) }, "Seats updated");
-              }}>Seats</button>
-              <button type="button" className="danger-link" onClick={async () => {
-                if (!window.confirm(`Remove ${table.name}? Anyone seated there goes back to the unseated list.`)) return;
-                await act({ action: "deleteTable", tableId: table.id }, `${table.name} removed`);
-              }}>Remove</button>
-            </div>
-          </header>
-          {seated.length ? (
-            <ol className="seating-list">
-              {seated.map((guest) => (
-                <li key={guest.id}>
-                  <span>{displayName(guest)}<small>{guest.household_name}</small></span>
-                  <button type="button" onClick={() => void act({ action: "moveGuest", guestId: guest.id, tableId: null }, "Guest unseated")}>Remove</button>
-                </li>
-              ))}
-            </ol>
-          ) : <p className="empty-note">No one seated here yet.</p>}
-        </section>
-      );
-    })}
-
-    <section className="manager-panel seating-unseated">
-      <header>
-        <div><h3>Still to seat · {unseated.length}</h3><p>Only guests who have accepted appear here.</p></div>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name" aria-label="Search unseated guests" />
-      </header>
-      {unseated.filter(matches).length ? (
-        <ol className="seating-list">
-          {unseated.filter(matches).map((guest) => (
-            <li key={guest.id}>
-              <span>{displayName(guest)}<small>{guest.household_name}</small></span>
-              <select
-                value=""
-                onChange={(event) => { if (event.target.value) void act({ action: "moveGuest", guestId: guest.id, tableId: Number(event.target.value) }, `${displayName(guest)} seated`); }}
-                aria-label={`Seat ${displayName(guest)}`}
-              >
-                <option value="">Seat at…</option>
-                {tables.map((table) => {
-                  const taken = confirmed.filter((seat) => seat.table_id === table.id).length;
-                  return <option key={table.id} value={table.id} disabled={taken >= table.capacity}>
-                    {table.name} ({taken}/{table.capacity}){taken >= table.capacity ? " — full" : ""}
-                  </option>;
-                })}
-              </select>
-            </li>
-          ))}
-        </ol>
-      ) : <p className="empty-note">{unseated.length ? "No one matches that search." : "Everyone who has accepted has a seat."}</p>}
-    </section>
-  </div>;
-}
-
-function GuestPill({ guest, compact = false }: { guest: Guest; compact?: boolean }) {
-  return <div className={`guest-pill${compact ? " is-compact" : ""}`} draggable onDragStart={(event) => { event.dataTransfer.setData("text/guest-id", String(guest.id)); event.dataTransfer.effectAllowed = "move"; }}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}{!compact ? <small>{guest.household_name}</small> : null}</span>{guest.dietary_requirements || guest.allergies ? <b title="Dietary note">◈</b> : null}</div>;
 }
 
 function AfterParty({ guests, selected, setSelected, act }: { guests: Guest[]; selected: number[]; setSelected: (ids: number[]) => void; act: (payload: Record<string, unknown>, success: string) => Promise<unknown> }) {

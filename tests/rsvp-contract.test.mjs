@@ -46,3 +46,28 @@ test("private API responses are explicitly non-cacheable", async () => {
   assert.match(inviteRoute, /Cache-Control.*private, no-store/);
   assert.match(managerRoute, /Cache-Control.*private, no-store/);
 });
+
+test("the seating planner preserves chair-level integrity and planner access", async () => {
+  const [managerRoute, managerApp, seatingPlanner, pdf] = await Promise.all([
+    read("app/api/manager/route.ts"),
+    read("app/manager/ManagerApp.tsx"),
+    read("app/manager/SeatingPlanner.tsx"),
+    read("lib/simple-pdf.ts"),
+  ]);
+
+  assert.match(managerRoute, /"seatHousehold"/);
+  assert.match(managerRoute, /"restoreSeating"/);
+  assert.match(managerRoute, /code: "SEAT_OCCUPIED"/);
+  assert.match(managerRoute, /allowOverCapacity/);
+  assert.match(managerRoute, /patch\.x/);
+  assert.match(managerRoute, /patch\.y/);
+  assert.match(managerRoute, /currentShape === "round" \? Math\.min\(10, requested\)/);
+  assert.match(managerApp, /<SeatingPlanner/);
+  assert.match(seatingPlanner, /VIKING_SEATS = 48/);
+  assert.match(seatingPlanner, /TARGET_GUESTS = 150/);
+  assert.match(seatingPlanner, /Seat household together/);
+  assert.match(seatingPlanner, /setUndo/);
+  assert.match(seatingPlanner, /Previous household seats restored/);
+  assert.match(seatingPlanner, /Guest chart/);
+  assert.match(pdf, /createSeatingPlanPdf/);
+});

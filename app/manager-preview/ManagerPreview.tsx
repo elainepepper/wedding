@@ -91,8 +91,8 @@ const H = { rivera: 1, tan: 2, osman: 3, lee: 4, solo: 5 };
 
 const demoData: ManagerData = {
   guests: [
-    guest({ first_name: "Amelia", last_name: "Rivera", household_id: H.rivera, household_name: "Amelia & Marco", rsvp_status: "Confirmed", meal_selection: "Salmon", invitation_sent: 1, rsvp_submitted_at: "2026-08-08T13:22:00Z", wishes: "May every year be softer than the last.", table_id: 1, table_name: "Table One", after_party_invited: 1, after_party_attending: "Yes" }),
-    guest({ first_name: "Marco", last_name: "Rivera", household_id: H.rivera, household_name: "Amelia & Marco", rsvp_status: "Confirmed", meal_selection: "Lamb", dietary_requirements: "No shellfish", invitation_sent: 1, rsvp_submitted_at: "2026-08-08T13:22:00Z", table_id: 1, table_name: "Table One", after_party_invited: 1 }),
+    guest({ first_name: "Amelia", last_name: "Rivera", household_id: H.rivera, household_name: "Amelia & Marco", rsvp_status: "Confirmed", meal_selection: "Salmon", invitation_sent: 1, rsvp_submitted_at: "2026-08-08T13:22:00Z", wishes: "May every year be softer than the last.", table_id: 1, table_name: "Table 1", seat_number: 1, after_party_invited: 1, after_party_attending: "Yes" }),
+    guest({ first_name: "Marco", last_name: "Rivera", household_id: H.rivera, household_name: "Amelia & Marco", rsvp_status: "Confirmed", meal_selection: "Lamb", dietary_requirements: "No shellfish", invitation_sent: 1, rsvp_submitted_at: "2026-08-08T13:22:00Z", table_id: 1, table_name: "Table 1", seat_number: 2, after_party_invited: 1 }),
     guest({ first_name: "Mr", last_name: "Tan", household_id: H.tan, household_name: "Mr & Mrs Tan", category: "Family", side: "Bride", invitation_sent: 1 }),
     guest({ first_name: "Mrs", last_name: "Tan", household_id: H.tan, household_name: "Mr & Mrs Tan", category: "Family", side: "Bride", invitation_sent: 1 }),
     guest({ first_name: "Dato", last_name: "Osman", household_id: H.osman, household_name: "Dato & Datin Osman", category: "Family", side: "Groom", rsvp_status: "Confirmed", meal_selection: "Lamb", invitation_sent: 1, rsvp_submitted_at: "2026-08-09T10:05:00Z", marriage_advice: "Never keep score." }),
@@ -108,8 +108,11 @@ const demoData: ManagerData = {
     household({ id: H.solo, name: "Imran Hakim", max_guests: 1, guest_count: 1 }),
   ],
   tables: [
-    { id: 1, name: "Table One", shape: "round", capacity: 10, x: 30, y: 40, locked: 0, notes: null, guest_count: 2 },
-    { id: 2, name: "Table Two", shape: "round", capacity: 10, x: 65, y: 40, locked: 0, notes: null, guest_count: 0 },
+    { id: 1, name: "Table 1", shape: "round", capacity: 10, x: 22, y: 32, locked: 0, notes: null, guest_count: 2 },
+    { id: 2, name: "Table 2", shape: "round", capacity: 10, x: 73, y: 32, locked: 0, notes: null, guest_count: 0 },
+    { id: 3, name: "Table 3", shape: "round", capacity: 10, x: 84, y: 36, locked: 0, notes: null, guest_count: 0 },
+    { id: 4, name: "Viking Left", shape: "banquet", capacity: 24, x: 40, y: 55, locked: 1, notes: null, guest_count: 0 },
+    { id: 5, name: "Viking Right", shape: "banquet", capacity: 24, x: 60, y: 55, locked: 1, notes: null, guest_count: 0 },
   ],
   activities: [
     { id: 1, admin_name: "Guest RSVP", action: "RSVP updated", detail: "Dato & Datin Osman submitted attendance details", created_at: "2026-08-09T10:05:00Z" },
