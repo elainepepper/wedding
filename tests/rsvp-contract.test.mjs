@@ -65,7 +65,10 @@ test("the seating planner preserves chair-level integrity and planner access", a
   assert.match(managerApp, /<SeatingPlanner/);
   assert.match(seatingPlanner, /VIKING_SEATS = 48/);
   assert.match(seatingPlanner, /TARGET_GUESTS = 150/);
-  assert.match(seatingPlanner, /Seat household together/);
+  assert.match(seatingPlanner, /Choose who to seat/);
+  assert.match(seatingPlanner, /Arrange chairs/);
+  assert.match(seatingPlanner, /Edit room/);
+  assert.match(seatingPlanner, /Room map/);
   assert.match(seatingPlanner, /setUndo/);
   assert.match(seatingPlanner, /Previous household seats restored/);
   assert.match(seatingPlanner, /Guest chart/);
