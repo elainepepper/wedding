@@ -1438,3 +1438,324 @@
 @media (max-width: 390px) {
   .guest-mobile-state { padding-right: .85rem; }
 }
+
+/* Live Memories gallery administration. */
+.memories-manager-view { display: grid; gap: 1.15rem; }
+.manager-page-intro { padding: 1.35rem 1.45rem; border: 1px solid var(--m-line); border-radius: 17px; background: var(--m-paper); }
+.manager-page-intro h2 { margin: .28rem 0 .45rem; font: 400 1.65rem/1.1 Georgia, serif; color: var(--m-ink); }
+.manager-page-intro > p:last-child { max-width: 720px; margin: 0; color: var(--m-muted); font-size: .72rem; line-height: 1.65; }
+.memory-manager-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; }
+.memory-manager-stats article { min-height: 100px; padding: 1rem; border: 1px solid var(--m-line); border-radius: 15px; display: grid; align-content: center; gap: .25rem; background: #fff; }
+.memory-manager-stats strong { color: var(--m-wine); font: 400 1.8rem/1 Georgia, serif; }
+.memory-manager-stats span { color: var(--m-muted); font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.memory-qr-panel { padding: 1.25rem; border: 1px solid var(--m-line); border-radius: 17px; display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: center; gap: 1.5rem; background: var(--m-paper); }
+.memory-qr-panel > img { width: 190px; height: 190px; border: 1px solid var(--m-line); background: #fff; }
+.memory-qr-panel h3 { margin: .28rem 0 .4rem; color: var(--m-ink); font: 400 1.35rem/1.15 Georgia, serif; }
+.memory-qr-panel a:not(.memory-manager-button) { color: var(--m-wine); font-size: .75rem; font-weight: 750; }
+.memory-qr-panel p:not(.manager-kicker) { max-width: 620px; margin: .6rem 0 1rem; color: var(--m-muted); font-size: .68rem; line-height: 1.55; }
+.memory-qr-panel > div > div { display: flex; flex-wrap: wrap; gap: .55rem; }
+.memory-manager-button { min-height: 44px; padding: .7rem 1rem; border: 1px solid var(--m-wine); border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--m-wine); color: #fff; font-size: .66rem; font-weight: 750; text-decoration: none; }
+.memory-manager-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.memory-manager-toolbar > div { display: flex; gap: .4rem; }
+.memory-manager-toolbar button { min-height: 42px; padding: .55rem .8rem; border: 1px solid var(--m-line); border-radius: 999px; background: #fff; color: var(--m-ink); font-size: .64rem; font-weight: 700; }
+.memory-manager-toolbar button.is-active { border-color: var(--m-wine); background: var(--m-wine); color: #fff; }
+.memory-manager-error, .memory-manager-empty { margin: 0; padding: 1rem; border: 1px solid var(--m-line); border-radius: 13px; background: var(--m-paper); color: var(--m-muted); font-size: .7rem; }
+.memory-manager-error { border-color: rgba(155,49,96,.25); color: var(--m-wine); }
+.memory-manager-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; }
+.memory-manager-grid article { min-width: 0; border: 1px solid var(--m-line); border-radius: 15px; overflow: hidden; background: #fff; }
+.memory-manager-grid article.is-hidden { opacity: .58; }
+.memory-manager-grid article > a { position: relative; aspect-ratio: 4 / 3; display: block; overflow: hidden; background: #eee5e2; }
+.memory-manager-grid article > a img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.memory-manager-grid article > a span { position: absolute; left: 50%; top: 50%; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.86); color: var(--m-wine); transform: translate(-50%, -50%); }
+.memory-manager-grid article > div { padding: .85rem; display: grid; gap: .25rem; }
+.memory-manager-grid article p { min-height: 2.7em; margin: 0 0 .2rem; color: var(--m-ink); font: 400 .85rem/1.35 Georgia, serif; }
+.memory-manager-grid article strong { overflow: hidden; color: var(--m-wine); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.memory-manager-grid article small { color: var(--m-muted); font-size: .6rem; }
+.memory-manager-grid article button { min-height: 42px; margin-top: .45rem; border: 1px solid var(--m-line); border-radius: 999px; background: #fff; color: var(--m-wine); font-size: .63rem; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .memory-manager-stats { grid-template-columns: 1fr 1fr; }
+  .memory-qr-panel { grid-template-columns: 112px minmax(0, 1fr); align-items: start; gap: .85rem; }
+  .memory-qr-panel > img { width: 112px; height: 112px; }
+  .memory-qr-panel > div > div { grid-column: 1 / -1; }
+  .memory-manager-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .memory-manager-grid article p { font-size: .76rem; }
+}
+
+@media (max-width: 430px) {
+  .memory-qr-panel { grid-template-columns: 96px minmax(0, 1fr); }
+  .memory-qr-panel > img { width: 96px; height: 96px; }
+  .memory-qr-panel p:not(.manager-kicker) { grid-column: 1 / -1; }
+  .memory-manager-grid { grid-template-columns: 1fr; }
+}
+
+/* Grand Salon seating planner. */
+.seating-planner-page { display: grid; gap: 1rem; }
+.seating-view-toggle { padding: 3px; border: 1px solid var(--m-line); border-radius: 999px; display: flex; background: rgba(255,255,255,.72); }
+.seating-view-toggle button { min-height: 38px; border: 0; border-radius: 999px; padding: 0 .9rem; background: transparent; color: var(--m-muted); font-size: .64rem; font-weight: 700; }
+.seating-view-toggle button.is-active { background: var(--m-wine); color: #fff; }
+.seating-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--m-line); border-left: 1px solid var(--m-line); }
+.seating-summary article { min-height: 104px; padding: 1rem 1.1rem; border-right: 1px solid var(--m-line); border-bottom: 1px solid var(--m-line); display: grid; align-content: center; gap: .15rem; background: rgba(255,253,249,.65); }
+.seating-summary span { color: var(--m-muted); font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seating-summary strong { color: var(--m-ink); font: 400 2rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-summary small { color: var(--m-muted); font-size: .6rem; }
+.seating-summary article.needs-attention { background: rgba(184,110,91,.08); }
+.seating-summary article.needs-attention :is(strong,small) { color: #8e3f4d; }
+.seating-setup-bar { padding: .9rem 1rem; display: flex; align-items: center; gap: .55rem; }
+.seating-setup-bar > div { min-width: 220px; margin-right: auto; display: grid; gap: .18rem; }
+.seating-setup-bar > div strong { color: var(--m-ink); font: 500 1rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-setup-bar > div span { color: var(--m-muted); font-size: .6rem; line-height: 1.45; }
+.seating-setup-bar > button { min-height: 40px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 .85rem; background: var(--m-wine); color: #fff; font-size: .61rem; font-weight: 700; white-space: nowrap; }
+.seating-workspace { min-height: 680px; display: grid; grid-template-columns: minmax(240px,285px) minmax(0,1fr); gap: 1rem; }
+.seating-guest-bank { min-height: 0; padding: 1rem; align-self: stretch; overflow: hidden; }
+.seating-guest-bank > header { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+.seating-guest-bank h3 { margin: .12rem 0 0; font: 400 1.3rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-guest-bank > header > strong { min-width: 2.2rem; height: 2.2rem; border-radius: 50%; display: grid; place-items: center; background: #f0d8d5; color: var(--m-wine); font-size: .8rem; }
+.seating-search { position: relative; margin: .85rem 0; display: block; }
+.seating-search > span { position: absolute; z-index: 1; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--m-muted); }
+.seating-search input { width: 100%; min-height: 42px; padding-left: 1.9rem; }
+.seating-household-list { max-height: 585px; padding-right: .2rem; display: grid; align-content: start; gap: .6rem; overflow: auto; }
+.seating-household-card { border: 1px solid var(--m-line); border-radius: 12px; padding: .68rem; display: grid; gap: .38rem; background: #fff; }
+.seating-household-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.seating-household-card > header > div { display: grid; gap: .12rem; }
+.seating-household-card > header strong { color: var(--m-ink); font-size: .65rem; }
+.seating-household-card > header small { color: var(--m-muted); font-size: .53rem; }
+.seating-household-card > header > span { border-radius: 999px; padding: .22rem .42rem; background: #f4e5e1; color: var(--m-wine); font-size: .48rem; font-weight: 700; }
+.seating-household-card > button:not(.seat-together-button) { width: 100%; min-height: 42px; border: 0; border-top: 1px solid rgba(122,37,73,.1); padding: .45rem 0 0; display: grid; grid-template-columns: 1.6rem minmax(0,1fr); align-items: center; gap: .5rem; background: transparent; color: var(--m-ink); text-align: left; }
+.seating-household-card > button:not(.seat-together-button):disabled { opacity: .58; cursor: default; }
+.seating-household-card > button > i { width: 1.55rem; height: 1.55rem; border-radius: 50%; display: grid; place-items: center; background: #f3dedb; color: var(--m-wine); font-style: normal; font-size: .56rem; }
+.seating-household-card > button > span { min-width: 0; display: grid; gap: .1rem; font-size: .62rem; }
+.seating-household-card > button small { color: var(--m-muted); font-size: .5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seat-together-button { min-height: 36px; border: 1px solid var(--m-line); border-radius: 8px; padding: .4rem .55rem; background: #faf2ee; color: var(--m-wine); font-size: .54rem; font-weight: 700; }
+.salon-canvas { position: relative; width: 100%; aspect-ratio: 1000/620; min-height: 560px; border: 1px solid var(--m-line); overflow: hidden; background: linear-gradient(155deg,#fffdf9,#f4ebe5); box-shadow: inset 0 0 70px rgba(122,37,73,.035); }
+.salon-plan-art { position: absolute; inset: 2.5%; width: 95%; height: 95%; }
+.salon-plan-art :where(path,rect,line) { vector-effect: non-scaling-stroke; }
+.salon-outline { fill: rgba(255,255,255,.72); stroke: rgba(78,58,62,.43); stroke-width: 2; }
+.salon-upper-wall { fill: none; stroke: rgba(78,58,62,.28); stroke-width: 1.5; }
+.salon-stage { fill: #d9d5d2; stroke: rgba(78,58,62,.45); }
+.salon-aisle { fill: rgba(229,139,157,.32); stroke: rgba(160,67,94,.32); }
+.salon-dance { fill: rgba(229,139,157,.55); stroke: rgba(160,67,94,.32); }
+.salon-registration { fill: rgba(218,207,201,.76); stroke: rgba(78,58,62,.35); }
+.salon-door { fill: rgba(255,255,255,.7); stroke: rgba(78,58,62,.28); }
+.salon-plan-art text { fill: rgba(52,43,45,.62); font: 600 13px/1 Inter,sans-serif; letter-spacing: 1px; }
+.salon-plan-art .salon-aisle-label { fill: rgba(122,37,73,.68); font-size: 11px; }
+.salon-plan-art .salon-room-label { fill: rgba(52,43,45,.48); font-size: 12px; letter-spacing: 3px; }
+.salon-table { position: absolute; z-index: 3; width: 74px; min-height: 74px; transform: translate(-50%,-50%); border: 1px solid rgba(122,37,73,.24); border-radius: 50%; padding: .25rem; display: grid; place-items: center; align-content: center; gap: .05rem; background: rgba(255,253,249,.96); color: var(--m-ink); box-shadow: 0 7px 18px rgba(84,48,58,.1); transition: border-color .18s ease,box-shadow .18s ease; }
+.salon-table[draggable="true"] { cursor: grab; }
+.salon-table:hover,.salon-table.is-selected { z-index: 5; border-color: var(--m-wine); box-shadow: 0 0 0 4px rgba(122,37,73,.1),0 12px 24px rgba(84,48,58,.13); }
+.salon-table.is-over { border-color: #b1515c; background: #fff5f3; }
+.salon-table--banquet { width: 70px; min-height: 156px; border-radius: 50%/22%; }
+.salon-table--rectangular { width: 106px; min-height: 62px; border-radius: 10px; }
+.salon-table > strong { position: relative; z-index: 2; max-width: 86px; font: 500 .59rem/1.05 "Bodoni Moda",Georgia,serif; text-align: center; }
+.salon-table > small { position: relative; z-index: 2; color: var(--m-muted); font-size: .46rem; }
+.salon-table-seats { position: absolute; inset: 8px; pointer-events: none; }
+.salon-table-seats i { position: absolute; width: 7px; height: 7px; transform: translate(-50%,-50%); border: 1px solid rgba(122,37,73,.28); border-radius: 50%; background: #fff; }
+.salon-table-seats i.is-occupied { border-color: var(--m-wine); background: var(--m-wine); }
+.salon-empty { position: absolute; z-index: 2; inset: 39% 25% auto; display: grid; gap: .3rem; color: var(--m-muted); text-align: center; pointer-events: none; }
+.salon-empty strong { color: var(--m-ink); font: 400 1.2rem/1.1 "Bodoni Moda",Georgia,serif; }
+.salon-empty span,.seating-map-help { color: var(--m-muted); font-size: .58rem; line-height: 1.45; }
+.seating-map-help { margin: .45rem 0 0; text-align: center; }
+.seating-table-list { display: grid; align-content: start; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .7rem; }
+.seating-table-list > button { position: relative; min-height: 82px; border: 1px solid var(--m-line); border-radius: 12px; padding: .8rem 1rem; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--m-paper); color: var(--m-ink); text-align: left; }
+.seating-table-list > button.is-selected { border-color: var(--m-wine); box-shadow: 0 0 0 3px rgba(122,37,73,.08); }
+.seating-table-list > button > span { display: grid; gap: .2rem; }
+.seating-table-list strong { font: 500 .88rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-table-list small { color: var(--m-muted); font-size: .54rem; }
+.seating-table-list b { color: var(--m-wine); font: 500 1rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-table-list i { position: absolute; inset: auto auto 0 0; height: 3px; background: var(--m-rose); }
+.seating-table-editor { overflow: hidden; }
+.seating-table-editor > header { padding: 1rem 1.15rem; border-bottom: 1px solid var(--m-line); display: flex; justify-content: space-between; align-items: flex-start; }
+.seating-table-editor > header h3 { margin: .12rem 0; font: 400 1.55rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-table-editor > header span { color: var(--m-muted); font-size: .6rem; }
+.seating-table-editor > header > button { width: 40px; height: 40px; border: 0; background: transparent; color: var(--m-muted); font-size: 1.4rem; }
+.seating-table-tools { padding: .85rem 1rem; border-bottom: 1px solid var(--m-line); display: flex; align-items: end; gap: .75rem; }
+.seating-table-tools > label { min-width: 180px; display: grid; gap: .3rem; }
+.seating-table-tools > label > span,.seating-capacity > span,.seating-position-controls > span { color: var(--m-muted); font-size: .51rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.seating-table-tools input { min-height: 40px; }
+.seating-capacity,.seating-position-controls { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+.seating-capacity > span,.seating-position-controls > span { flex-basis: 100%; }
+.seating-capacity button,.seating-position-controls button { width: 38px; height: 38px; border: 1px solid var(--m-line); border-radius: 8px; background: #fff; color: var(--m-wine); font-weight: 800; }
+.seating-capacity strong { min-width: 32px; text-align: center; }.seating-capacity button:disabled { opacity: .35; }
+.seating-fixed-note { margin: 0 auto 0 0; color: var(--m-muted); font-size: .58rem; font-style: italic; }.seating-remove-table { margin-left: auto; min-height: 40px; }
+.seating-seat-grid { padding: 1rem; display: grid; grid-template-columns: repeat(auto-fill,minmax(112px,1fr)); gap: .5rem; }
+.seating-seat-grid > button { min-height: 64px; border: 1px solid var(--m-line); border-radius: 10px; padding: .55rem; display: grid; grid-template-columns: 1.75rem minmax(0,1fr); align-items: center; gap: .5rem; background: #fff; color: var(--m-ink); text-align: left; }
+.seating-seat-grid > button > b { width: 1.7rem; height: 1.7rem; border-radius: 50%; display: grid; place-items: center; background: #eee4df; color: var(--m-wine); font-size: .58rem; }
+.seating-seat-grid > button > span { min-width: 0; display: grid; gap: .1rem; overflow: hidden; font-size: .59rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-seat-grid > button small { color: var(--m-muted); font-size: .48rem; overflow: hidden; text-overflow: ellipsis; }
+.seating-seat-grid > button.is-empty { border-style: dashed; color: var(--m-muted); }.seating-seat-grid > button.is-selected { border-color: var(--m-wine); background: #faf0ef; box-shadow: 0 0 0 3px rgba(122,37,73,.08); }.seating-seat-grid > button.is-extra { border-color: #bf6868; background: #fff5f3; }
+.seating-seat-prompt { margin: 0 1rem 1rem; border: 1px solid rgba(122,37,73,.2); border-radius: 10px; padding: .7rem .8rem; display: flex; align-items: center; gap: .7rem; background: #f8ecec; color: var(--m-wine); }.seating-seat-prompt strong { font-size: .64rem; }.seating-seat-prompt span { color: var(--m-muted); font-size: .57rem; }.seating-seat-prompt button { margin-left: auto; border: 0; background: transparent; color: var(--m-wine); font-size: .58rem; font-weight: 700; }
+.seating-roster { border-top: 1px solid var(--m-line); }.seating-roster > header,.seating-roster > div { min-height: 58px; padding: .55rem 1rem; display: grid; grid-template-columns: minmax(170px,1.2fr) minmax(140px,.8fr) 90px auto; align-items: center; gap: .65rem; }.seating-roster > header { min-height: 34px; background: #faf5f2; color: var(--m-muted); font-size: .5rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }.seating-roster > div + div { border-top: 1px solid rgba(122,37,73,.09); }.seating-roster > div > span { min-width: 0; display: grid; gap: .1rem; }.seating-roster > div strong { font-size: .64rem; }.seating-roster > div small { color: var(--m-muted); font-size: .51rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.seating-roster select { min-width: 0; min-height: 40px; }.seating-roster > div > button { min-height: 38px; border: 0; background: transparent; color: #a34560; font-size: .55rem; font-weight: 700; }
+
+@media (max-width: 1050px) {
+  .seating-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .seating-setup-bar { flex-wrap: wrap; }.seating-setup-bar > div { flex-basis: 100%; }
+  .seating-workspace { grid-template-columns: 230px minmax(0,1fr); }.salon-canvas { min-height: 520px; }
+}
+@media (max-width: 760px) {
+  .seating-intro { gap: .8rem; align-items: flex-end; }.seating-view-toggle button { min-height: 42px; padding-inline: .72rem; }
+  .seating-summary article { min-height: 88px; padding: .85rem; }.seating-summary strong { font-size: 1.65rem; }
+  .seating-setup-bar > button { flex: 1 1 calc(50% - .3rem); min-height: 44px; }
+  .seating-workspace { min-height: 0; display: flex; flex-direction: column; }.seating-map-panel,.seating-table-list { order: 1; }.seating-guest-bank { order: 2; }.seating-household-list { max-height: none; }
+  .salon-canvas { min-height: 0; aspect-ratio: 1000/700; }.salon-table { width: 58px; min-height: 58px; }.salon-table--banquet { width: 54px; min-height: 124px; }.salon-table--rectangular { width: 82px; min-height: 52px; }.salon-table > strong { max-width: 60px; font-size: .5rem; }.salon-table-seats i { width: 5px; height: 5px; }
+  .seating-table-list { grid-template-columns: 1fr; }.seating-table-tools { align-items: stretch; flex-wrap: wrap; }.seating-table-tools > label { flex: 1 1 100%; }.seating-capacity,.seating-position-controls { flex: 1 1 auto; }.seating-fixed-note { flex: 1 1 100%; }
+  .seating-seat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.seating-roster > header { display: none; }.seating-roster > div { padding-block: .75rem; grid-template-columns: minmax(0,1fr) 86px; }.seating-roster > div > span { grid-column: 1/-1; }.seating-roster > div > button { grid-column: 1/-1; justify-self: start; }
+}
+@media (max-width: 430px) {
+  .seating-intro { display: grid; }.seating-view-toggle { justify-self: start; }.seating-setup-bar > button { flex-basis: 100%; }.salon-canvas { aspect-ratio: 9/8; }.salon-plan-art { inset: 5% 1%; width: 98%; height: 90%; }
+  .seating-seat-grid { padding: .7rem; gap: .4rem; }.seating-seat-grid > button { min-height: 58px; padding: .45rem; grid-template-columns: 1.55rem minmax(0,1fr); }.seating-seat-grid > button > b { width: 1.5rem; height: 1.5rem; }
+}
+
+/* Seating planner v2: table-first on mobile, with the room map kept secondary. */
+.seating-planner-v2 { gap: .85rem; }
+.seating-planner-v2 .seating-intro { align-items: end; }
+.seating-status-strip { min-height: 70px; border: 1px solid var(--m-line); display: grid; grid-template-columns: repeat(4,minmax(0,1fr)) auto; background: rgba(255,253,249,.72); }
+.seating-status-strip > div { padding: .7rem .9rem; border-right: 1px solid var(--m-line); display: flex; align-items: baseline; gap: .42rem; }
+.seating-status-strip strong { color: var(--m-ink); font: 400 1.35rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-status-strip span,.seating-status-strip > small { color: var(--m-muted); font-size: .55rem; font-weight: 700; letter-spacing: .035em; }
+.seating-status-strip > small { padding: .7rem 1rem; display: grid; place-items: center; white-space: nowrap; }
+.seating-command-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.seating-command-row button { min-height: 40px; border: 1px solid var(--m-line); border-radius: 999px; padding: 0 .9rem; background: rgba(255,255,255,.78); color: var(--m-wine); font-size: .61rem; font-weight: 750; }
+.seating-command-row > button.is-active { border-color: var(--m-wine); background: var(--m-wine); color: #fff; }
+.seating-command-row > div { display: flex; gap: .4rem; }
+.seating-room-editor { padding: .85rem 1rem; display: flex; align-items: center; gap: .55rem; }
+.seating-room-editor > div { margin-right: auto; display: grid; gap: .15rem; }
+.seating-room-editor strong { color: var(--m-ink); font: 500 .95rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-room-editor span { color: var(--m-muted); font-size: .58rem; }
+.seating-room-editor > button { min-height: 40px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 .85rem; background: var(--m-wine); color: #fff; font-size: .61rem; font-weight: 750; }
+
+.seating-table-directory { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: .55rem; }
+.seating-directory-row { position: relative; min-width: 0; border: 1px solid var(--m-line); border-radius: 12px; overflow: hidden; background: rgba(255,253,249,.84); }
+.seating-directory-row.is-expanded { grid-column: 1/-1; border-color: rgba(122,37,73,.38); box-shadow: 0 8px 24px rgba(77,43,53,.055); }
+.seating-directory-row.is-over { border-color: #b65c64; }
+.seating-directory-summary { width: 100%; min-height: 70px; border: 0; padding: .72rem .85rem; display: grid; grid-template-columns: minmax(0,1.3fr) minmax(90px,.7fr) auto 24px; align-items: center; gap: .7rem; background: transparent; color: var(--m-ink); text-align: left; }
+.seating-directory-summary > span:first-child,.seating-directory-meta { min-width: 0; display: grid; gap: .13rem; }
+.seating-directory-summary strong { overflow: hidden; font: 500 .87rem/1.15 "Bodoni Moda",Georgia,serif; text-overflow: ellipsis; white-space: nowrap; }
+.seating-directory-summary small { color: var(--m-muted); font-size: .52rem; }
+.seating-directory-meta b { color: var(--m-wine); font: 500 .9rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-directory-summary em { border-radius: 999px; padding: .28rem .48rem; background: #f4e2df; color: #8d3e55; font-size: .5rem; font-style: normal; font-weight: 750; white-space: nowrap; }
+.seating-directory-summary em.is-clear { background: #f0ece8; color: var(--m-muted); }
+.seating-directory-summary > i { color: var(--m-wine); font: normal 500 1rem/1 Georgia,serif; text-align: center; }
+.seating-directory-progress { position: absolute; z-index: 2; left: 0; top: 68px; height: 2px; background: var(--m-rose); transition: width .25s ease; }
+.seating-directory-detail { border-top: 1px solid var(--m-line); background: #fff; }
+.seating-directory-actions { padding: .7rem .85rem; border-bottom: 1px solid var(--m-line); display: flex; flex-wrap: wrap; gap: .4rem; }
+.seating-directory-actions button { min-height: 38px; border: 1px solid var(--m-line); border-radius: 999px; padding: 0 .72rem; background: #fff; color: var(--m-wine); font-size: .57rem; font-weight: 750; }
+.seating-directory-actions button:last-child { border-color: var(--m-wine); background: var(--m-wine); color: #fff; }
+.seating-directory-households { padding: .75rem; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: .6rem; }
+.seating-directory-households > section { border: 1px solid var(--m-line); border-radius: 10px; overflow: hidden; background: #fffdfa; }
+.seating-directory-households > section > header { min-height: 50px; padding: .58rem .7rem; border-bottom: 1px solid var(--m-line); display: flex; align-items: center; justify-content: space-between; gap: .5rem; background: #faf3ef; }
+.seating-directory-households header > div { display: grid; gap: .1rem; }
+.seating-directory-households header strong { color: var(--m-ink); font-size: .63rem; }
+.seating-directory-households header small { color: var(--m-muted); font-size: .49rem; }
+.seating-directory-households header button { min-height: 30px; border: 0; background: transparent; color: var(--m-wine); font-size: .51rem; font-weight: 750; }
+.seating-household-move { padding: .55rem .7rem; border-bottom: 1px solid var(--m-line); display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: .6rem; }
+.seating-household-move > span { color: var(--m-muted); font-size: .5rem; font-weight: 700; }
+.seating-household-move select { min-height: 38px; }
+.seating-directory-guests > div { min-height: 58px; padding: .5rem .65rem; display: grid; grid-template-columns: 28px minmax(0,1fr) minmax(100px,.55fr) auto; align-items: center; gap: .55rem; }
+.seating-directory-guests > div + div { border-top: 1px solid rgba(122,37,73,.08); }
+.seating-guest-seat { width: 27px; height: 27px; border-radius: 50%; display: grid; place-items: center; background: #eee3df; color: var(--m-wine); font-size: .55rem; font-weight: 750; }
+.seating-directory-guests > div > span:nth-child(2) { min-width: 0; display: grid; gap: .12rem; }
+.seating-directory-guests strong { overflow: hidden; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-directory-guests small { overflow: hidden; color: var(--m-muted); font-size: .49rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-directory-guests label { display: grid; gap: .12rem; }
+.seating-directory-guests label > span { color: var(--m-muted); font-size: .45rem; font-weight: 700; text-transform: uppercase; }
+.seating-directory-guests select { min-width: 0; min-height: 36px; font-size: .56rem; }
+.seating-directory-guests > div > button { min-height: 36px; border: 0; background: transparent; color: #a34560; font-size: .52rem; font-weight: 750; }
+.seating-empty-table,.seating-empty-directory { margin: 0; padding: 1.2rem; color: var(--m-muted); font-size: .62rem; text-align: center; }
+.seating-empty-directory { grid-column: 1/-1; border: 1px dashed var(--m-line); display: grid; gap: .2rem; }
+.seating-empty-directory strong { color: var(--m-ink); font: 500 1rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-inline-room-controls { padding: .75rem; border-top: 1px solid var(--m-line); display: flex; align-items: end; gap: .7rem; background: #faf5f2; }
+.seating-inline-room-controls > label { min-width: 190px; display: grid; gap: .25rem; }
+.seating-inline-room-controls > label span,.seating-inline-room-controls > div > span { color: var(--m-muted); font-size: .49rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.seating-inline-room-controls input { min-height: 40px; }
+.seating-inline-room-controls > div { display: flex; align-items: center; gap: .28rem; flex-wrap: wrap; }
+.seating-inline-room-controls > div > span { flex-basis: 100%; }
+.seating-inline-room-controls > div button { width: 38px; height: 38px; border: 1px solid var(--m-line); border-radius: 8px; background: #fff; color: var(--m-wine); }
+.seating-inline-room-controls > div strong { min-width: 28px; text-align: center; }
+.seating-inline-room-controls > .danger-link { margin-left: auto; min-height: 40px; }
+
+.seating-overview-panel { display: grid; gap: .5rem; }
+.seating-planner-v2 .salon-canvas--overview { width: min(100%,960px); min-height: 0; margin-inline: auto; aspect-ratio: 1000/620; border-radius: 12px; background: #fffdfa; box-shadow: none; }
+.seating-planner-v2 .salon-canvas--overview .salon-plan-art { inset: 4%; width: 92%; height: 92%; }
+.seating-planner-v2 .salon-canvas--overview .salon-outline { fill: rgba(255,255,255,.62); stroke: rgba(78,58,62,.25); stroke-width: 1.5; }
+.seating-planner-v2 .salon-canvas--overview .salon-stage { fill: #ece7e3; stroke: rgba(78,58,62,.25); }
+.seating-planner-v2 .salon-canvas--overview .salon-aisle { fill: rgba(229,139,157,.13); stroke: rgba(160,67,94,.14); }
+.seating-planner-v2 .salon-canvas--overview .salon-dance { fill: rgba(229,139,157,.22); stroke: rgba(160,67,94,.17); }
+.seating-planner-v2 .salon-canvas--overview .salon-plan-art text { fill: rgba(52,43,45,.42); font-size: 11px; }
+.seating-planner-v2 .salon-table { width: 82px; min-height: 82px; box-shadow: 0 5px 14px rgba(84,48,58,.075); }
+.seating-planner-v2 .salon-table--banquet { width: 72px; min-height: 158px; }
+.seating-planner-v2 .salon-table--rectangular { width: 110px; min-height: 64px; }
+.seating-planner-v2 .salon-table strong { font-size: .62rem; }
+.salon-canvas--overview.is-editing .salon-table[draggable="true"] { border-style: dashed; cursor: grab; }
+.seating-map-nudges { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .45rem; }
+.seating-map-nudges > div { padding: .55rem .65rem; border: 1px solid var(--m-line); border-radius: 9px; display: flex; align-items: center; justify-content: space-between; gap: .5rem; background: #fff; }
+.seating-map-nudges strong { font-size: .58rem; }
+.seating-map-nudges span { display: flex; gap: .2rem; }
+.seating-map-nudges button { width: 32px; height: 32px; border: 1px solid var(--m-line); border-radius: 7px; background: #fff; color: var(--m-wine); }
+
+.seating-sheet-backdrop { position: fixed; z-index: 180; inset: 0; padding: 3vh 1rem; display: grid; place-items: end center; background: rgba(46,32,36,.34); backdrop-filter: blur(3px); }
+.seating-assignment-sheet,.seating-chair-sheet { width: min(680px,100%); max-height: 88dvh; border: 1px solid var(--m-line); border-radius: 20px 20px 12px 12px; overflow: hidden auto; background: #fffdfa; box-shadow: 0 20px 70px rgba(46,32,36,.22); }
+.seating-assignment-sheet > header,.seating-chair-sheet > header { position: sticky; z-index: 3; top: 0; padding: 1rem 1.1rem; border-bottom: 1px solid var(--m-line); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; background: rgba(255,253,250,.97); }
+.seating-assignment-sheet h3,.seating-chair-sheet h3 { margin: .12rem 0 0; color: var(--m-ink); font: 400 1.45rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-assignment-sheet > header > button,.seating-chair-sheet > header > button { width: 40px; height: 40px; border: 0; background: transparent; color: var(--m-muted); font-size: 1.35rem; }
+.seating-assignment-tabs { margin: .8rem 1rem 0; padding: 3px; border: 1px solid var(--m-line); border-radius: 999px; display: grid; grid-template-columns: 1fr 1fr; }
+.seating-assignment-tabs button { min-height: 38px; border: 0; border-radius: 999px; background: transparent; color: var(--m-muted); font-size: .59rem; font-weight: 750; }
+.seating-assignment-tabs button.is-active { background: var(--m-wine); color: #fff; }
+.seating-assignment-sheet > .seating-search { margin: .7rem 1rem; }
+.seating-assignment-results { padding: 0 1rem max(1rem,env(safe-area-inset-bottom)); display: grid; gap: .45rem; }
+.seating-assignment-results article { min-height: 62px; border: 1px solid var(--m-line); border-radius: 10px; padding: .6rem .7rem; display: flex; align-items: center; justify-content: space-between; gap: .7rem; background: #fff; }
+.seating-assignment-results article > span { min-width: 0; display: grid; gap: .15rem; }
+.seating-assignment-results strong { font-size: .64rem; }
+.seating-assignment-results small { overflow: hidden; color: var(--m-muted); font-size: .5rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-assignment-results button { min-height: 36px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 .7rem; background: var(--m-wine); color: #fff; font-size: .54rem; font-weight: 750; white-space: nowrap; }
+.seating-assignment-results button:disabled { border-color: var(--m-line); background: #eee8e4; color: var(--m-muted); }
+
+.seating-chair-backdrop { place-items: center; }
+.seating-chair-sheet { width: min(980px,100%); border-radius: 20px; }
+.seating-chair-sheet > header span { display: block; max-width: 560px; margin-top: .35rem; color: var(--m-muted); font-size: .57rem; line-height: 1.45; }
+.seating-chair-layout { position: relative; width: min(540px,86vw); margin: 1.2rem auto; aspect-ratio: 1; }
+.seating-chair-table { position: absolute; left: 50%; top: 50%; width: 44%; height: 44%; border: 1px solid rgba(122,37,73,.3); border-radius: 50%; display: grid; place-content: center; gap: .2rem; background: #f4e7e2; color: var(--m-ink); text-align: center; transform: translate(-50%,-50%); }
+.seating-chair-table strong { font: 500 1.1rem/1 "Bodoni Moda",Georgia,serif; }
+.seating-chair-table small { color: var(--m-muted); font-size: .56rem; }
+.seating-chair-layout > button { position: absolute; width: 96px; min-height: 50px; border: 1px solid var(--m-line); border-radius: 999px; padding: .35rem .45rem; display: grid; grid-template-columns: 20px minmax(0,1fr); align-items: center; gap: .3rem; background: #fff; color: var(--m-ink); text-align: left; transform: translate(-50%,-50%); }
+.seating-chair-layout > button > b { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #eee3df; color: var(--m-wine); font-size: .5rem; }
+.seating-chair-layout > button > span { overflow: hidden; font-size: .51rem; text-overflow: ellipsis; white-space: nowrap; }
+.seating-chair-layout > button.is-empty { border-style: dashed; color: var(--m-muted); }
+.seating-chair-layout > button.is-picked { border-color: var(--m-wine); background: #f8e8e6; box-shadow: 0 0 0 3px rgba(122,37,73,.1); }
+.seating-chair-layout--banquet { width: min(620px,90vw); min-height: 640px; aspect-ratio: auto; display: grid; grid-template-columns: minmax(120px,1fr) 150px minmax(120px,1fr); grid-auto-rows: 48px; align-items: center; gap: .25rem 1rem; }
+.seating-chair-layout--banquet .seating-chair-table { position: static; width: auto; height: auto; min-height: 100%; grid-column: 2; grid-row: 1/13; border-radius: 45%/12%; transform: none; }
+.seating-chair-layout--banquet > button { position: static; width: 100%; min-height: 44px; transform: none; }
+.seating-chair-layout--banquet > button:nth-of-type(odd) { grid-column: 1; }
+.seating-chair-layout--banquet > button:nth-of-type(even) { grid-column: 3; }
+.seating-chair-guests { padding: 1rem; border-top: 1px solid var(--m-line); background: #faf5f2; }
+.seating-chair-guests > strong { display: block; margin-bottom: .6rem; color: var(--m-wine); font-size: .62rem; }
+.seating-chair-guests > div { display: flex; flex-wrap: wrap; gap: .4rem; }
+.seating-chair-guests button { min-height: 40px; border: 1px solid var(--m-line); border-radius: 999px; padding: .3rem .65rem .3rem .35rem; display: flex; align-items: center; gap: .4rem; background: #fff; color: var(--m-ink); font-size: .56rem; }
+.seating-chair-guests button b { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; background: #eee3df; color: var(--m-wine); font-size: .5rem; }
+.seating-chair-guests button.is-selected { border-color: var(--m-wine); background: #f7e8e5; }
+
+@media (max-width: 900px) {
+  .seating-status-strip { grid-template-columns: repeat(4,minmax(0,1fr)); }.seating-status-strip > small { grid-column: 1/-1; border-top: 1px solid var(--m-line); }
+  .seating-table-directory { grid-template-columns: 1fr; }.seating-directory-row.is-expanded { grid-column: auto; }
+}
+@media (max-width: 760px) {
+  .manager-shell:has(.seating-sheet-backdrop) .manager-bottom-nav { opacity: 0; pointer-events: none; }
+  .seating-planner-v2 .seating-intro { display: grid; align-items: start; }.seating-planner-v2 .seating-view-toggle { justify-self: start; }
+  .seating-status-strip { grid-template-columns: repeat(2,minmax(0,1fr)); }.seating-status-strip > div:nth-child(2) { border-right: 0; }.seating-status-strip > div:nth-child(-n+2) { border-bottom: 1px solid var(--m-line); }.seating-status-strip > small { grid-column: 1/-1; }
+  .seating-command-row { align-items: stretch; }.seating-command-row > div { display: grid; grid-template-columns: 1fr 1fr; }.seating-command-row button { min-height: 44px; }
+  .seating-room-editor { align-items: stretch; flex-wrap: wrap; }.seating-room-editor > div { flex-basis: 100%; }.seating-room-editor > button { flex: 1; min-height: 44px; }
+  .seating-directory-summary { min-height: 72px; grid-template-columns: minmax(0,1fr) 74px auto 20px; gap: .45rem; }.seating-directory-summary em { max-width: 85px; overflow: hidden; text-overflow: ellipsis; }.seating-directory-progress { top: 70px; }
+  .seating-directory-actions button { flex: 1 1 auto; min-height: 42px; }.seating-directory-households { grid-template-columns: 1fr; padding: .55rem; }
+  .seating-directory-guests > div { grid-template-columns: 28px minmax(0,1fr) 92px; }.seating-directory-guests > div > button { grid-column: 2/-1; justify-self: start; min-height: 30px; }.seating-directory-guests small { white-space: normal; line-height: 1.35; }
+  .seating-inline-room-controls { align-items: stretch; flex-wrap: wrap; }.seating-inline-room-controls > label { flex: 1 1 100%; }.seating-inline-room-controls > .danger-link { margin-left: auto; }
+  .seating-planner-v2 .salon-canvas--overview { aspect-ratio: 10/8; }.seating-planner-v2 .salon-canvas--overview .salon-plan-art { inset: 8% 1%; width: 98%; height: 84%; }.seating-planner-v2 .salon-table { width: 56px; min-height: 56px; }.seating-planner-v2 .salon-table--banquet { width: 50px; min-height: 116px; }.seating-planner-v2 .salon-table strong { max-width: 54px; font-size: .48rem; }
+  .seating-map-nudges { grid-template-columns: 1fr; }
+  .seating-sheet-backdrop { padding: 9vh 0 0; place-items: end stretch; }.seating-assignment-sheet,.seating-chair-sheet { width: 100%; max-height: 91dvh; padding-bottom: calc(72px + env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; }
+  .seating-chair-backdrop { padding-top: 3vh; }.seating-chair-layout { width: min(340px,88vw); }.seating-chair-layout > button { width: 82px; min-height: 44px; }.seating-chair-layout > button > span { font-size: .46rem; }
+  .seating-chair-layout--banquet { width: calc(100% - 1.4rem); min-height: 650px; grid-template-columns: minmax(98px,1fr) 88px minmax(98px,1fr); gap-inline: .35rem; }.seating-chair-layout--banquet .seating-chair-table strong { font-size: .76rem; }.seating-chair-layout--banquet > button { width: 100%; }
+}
+@media (max-width: 430px) {
+  .seating-command-row { display: grid; grid-template-columns: 1fr; }.seating-command-row > div { order: -1; }
+  .seating-directory-summary { padding-inline: .68rem; grid-template-columns: minmax(0,1fr) 66px 22px; }.seating-directory-summary em { display: none; }
+  .seating-directory-guests > div { grid-template-columns: 26px minmax(0,1fr); }.seating-directory-guests label { grid-column: 1/-1; }.seating-directory-guests > div > button { grid-column: 1/-1; }
+  .seating-assignment-results article { align-items: flex-start; }.seating-assignment-results small { white-space: normal; line-height: 1.35; }
+}
