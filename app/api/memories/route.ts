@@ -82,8 +82,10 @@ export async function GET() {
         createdAt: memory.created_at ?? null,
       }))
       .filter((memory) => memory.url.startsWith("https://res.cloudinary.com/"));
+    const { cloudName, apiKey, apiSecret } = cloudinaryConfiguration();
     return Response.json({
       uploadOpen: memoryUploadOpen(settings.wedding_date),
+      uploadConfigured: Boolean(cloudName && apiKey && apiSecret),
       uploadCloseLabel: memoryCloseLabel(settings.wedding_date),
       prompts: memoryPrompts,
       memories,

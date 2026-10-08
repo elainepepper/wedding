@@ -269,6 +269,7 @@ test("provides a named-guest Memories gallery with verified uploads and owner mo
   assert.match(publicRoute, /timingSafeEqual/);
   assert.match(publicRoute, /consumeUploadAllowance/);
   assert.match(publicRoute, /memoryUploadOpen/);
+  assert.match(publicRoute, /uploadConfigured: Boolean\(cloudName && apiKey && apiSecret\)/);
   assert.match(publicRoute, /overwrite=false&public_id=/);
   assert.match(publicRoute, /allowed_formats=/);
   assert.match(manageRoute, /admin\.role === "planner"/);

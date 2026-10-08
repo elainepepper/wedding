@@ -9,7 +9,7 @@ type Memory = {
   id: string; guestName: string; promptId: string; prompt: string; resourceType: "image" | "video";
   url: string; previewUrl: string; width: number; height: number; duration: number; favouriteCount: number; createdAt: string | null;
 };
-type GalleryResponse = { uploadOpen: boolean; uploadCloseLabel: string; prompts: Prompt[]; memories: Memory[] };
+type GalleryResponse = { uploadOpen: boolean; uploadConfigured: boolean; uploadCloseLabel: string; prompts: Prompt[]; memories: Memory[] };
 
 const visitorStorageKey = "eh-memories-visitor";
 const favouritesStorageKey = "eh-memories-favourites";
@@ -61,7 +61,7 @@ function uploadCloudinary(url: string, body: FormData, onProgress: (percent: num
 }
 
 export function MemoriesExperience() {
-  const [gallery, setGallery] = useState<GalleryResponse>({ uploadOpen: true, uploadCloseLabel: "7 December 2026", prompts: fallbackPrompts, memories: [] });
+  const [gallery, setGallery] = useState<GalleryResponse>({ uploadOpen: true, uploadConfigured: false, uploadCloseLabel: "7 December 2026", prompts: fallbackPrompts, memories: [] });
   const [name, setName] = useState("");
   const [promptId, setPromptId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -228,16 +228,17 @@ export function MemoriesExperience() {
 
       <div className="memory-section-title"><p>03 · Add your memory</p><h2>Photographs, films &amp; Live Photos</h2></div>
       <label className="memory-picker">
-        <input ref={fileInput} type="file" accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v" multiple onChange={chooseFiles} disabled={!gallery.uploadOpen || busy || !name.trim()} />
+        <input ref={fileInput} type="file" accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v" multiple onChange={chooseFiles} disabled={!gallery.uploadOpen || !gallery.uploadConfigured || busy || !name.trim()} />
         <span>＋</span><strong>{files.length ? `${files.length} memor${files.length === 1 ? "y" : "ies"} selected` : "Choose from your camera roll"}</strong>
         <small>Up to 12 at once · photos under 30 MB · videos under 95 MB</small>
       </label>
       {files.length ? <div className="memory-file-list">{files.map((file) => <span key={`${file.name}-${file.lastModified}`}>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span>)}</div> : null}
+      {!gallery.uploadConfigured ? <p className="memory-closed">Photo uploads are still being prepared. The gallery will remain available here.</p> : null}
       {!gallery.uploadOpen ? <p className="memory-closed">Uploads closed on {gallery.uploadCloseLabel}. Every shared memory remains below.</p> : null}
       {error ? <p className="memory-error" role="alert">{error}</p> : null}
       {status ? <p className="memory-success" role="status">{status}</p> : null}
       {busy ? <div className="memory-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><i style={{ width: `${progress}%` }} /><span>{progress}%</span></div> : null}
-      <button className="memory-submit" type="button" disabled={busy || !gallery.uploadOpen || !name.trim() || !promptId} onClick={() => void upload()}>{busy ? "Sharing your memories…" : "Share with Elaine & Haykal"}</button>
+      <button className="memory-submit" type="button" disabled={busy || !gallery.uploadOpen || !gallery.uploadConfigured || !name.trim() || !promptId} onClick={() => void upload()}>{busy ? "Sharing your memories…" : "Share with Elaine & Haykal"}</button>
       <p className="memory-consent">By uploading, you confirm that you may share this photo or video with the couple and their wedding guests.</p>
     </section>
 
