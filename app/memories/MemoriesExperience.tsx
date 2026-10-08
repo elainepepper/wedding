@@ -1,6 +1,8 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memoryPrompts } from "../../lib/memories";
+import { readToken } from "../invite-token";
 
 type Prompt = { id: string; label: string };
 type Memory = {
@@ -11,6 +13,15 @@ type GalleryResponse = { uploadOpen: boolean; uploadCloseLabel: string; prompts:
 
 const visitorStorageKey = "eh-memories-visitor";
 const favouritesStorageKey = "eh-memories-favourites";
+const fallbackPrompts: Prompt[] = memoryPrompts.map(({ id, label }) => ({ id, label }));
+
+function readStorage(key: string) {
+  try { return window.localStorage.getItem(key); } catch { return null; }
+}
+
+function writeStorage(key: string, value: string) {
+  try { window.localStorage.setItem(key, value); } catch { /* Safari private mode can deny storage. */ }
+}
 
 function randomId() {
   const bytes = crypto.getRandomValues(new Uint8Array(18));
@@ -50,7 +61,7 @@ function uploadCloudinary(url: string, body: FormData, onProgress: (percent: num
 }
 
 export function MemoriesExperience() {
-  const [gallery, setGallery] = useState<GalleryResponse>({ uploadOpen: true, uploadCloseLabel: "7 December 2026", prompts: [], memories: [] });
+  const [gallery, setGallery] = useState<GalleryResponse>({ uploadOpen: true, uploadCloseLabel: "7 December 2026", prompts: fallbackPrompts, memories: [] });
   const [name, setName] = useState("");
   const [promptId, setPromptId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -61,22 +72,43 @@ export function MemoriesExperience() {
   const [sort, setSort] = useState<"newest" | "favourites">("newest");
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = useState<Memory | null>(null);
+  const [returnHref, setReturnHref] = useState("/");
   const fileInput = useRef<HTMLInputElement>(null);
+  const lightboxClose = useRef<HTMLButtonElement>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
 
   const load = useCallback(async (quiet = false) => {
     try {
       const response = await fetch(`/api/memories?at=${Date.now()}`, { cache: "no-store" });
       if (!response.ok) throw new Error();
       const data = await response.json() as GalleryResponse;
-      setGallery(data);
+      setGallery({ ...data, prompts: data.prompts?.length ? data.prompts : fallbackPrompts });
     } catch { if (!quiet) setError("The gallery is taking a moment to open. Please try again."); }
   }, []);
 
   useEffect(() => {
-    try { setFavourites(new Set(JSON.parse(localStorage.getItem(favouritesStorageKey) || "[]") as string[])); } catch { /* empty set */ }
-    if (!localStorage.getItem(visitorStorageKey)) localStorage.setItem(visitorStorageKey, randomId());
+    try { setFavourites(new Set(JSON.parse(readStorage(favouritesStorageKey) || "[]") as string[])); } catch { /* empty set */ }
+    if (!readStorage(visitorStorageKey)) writeStorage(visitorStorageKey, randomId());
+    const invitationToken = readToken();
+    if (invitationToken) setReturnHref(`/rsvp?t=${encodeURIComponent(invitationToken)}`);
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    lightboxClose.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightbox(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      lastFocus.current?.focus();
+    };
+  }, [lightbox]);
 
   useEffect(() => {
     const interval = window.setInterval(() => { if (!document.hidden) void load(true); }, 15_000);
@@ -90,8 +122,16 @@ export function MemoriesExperience() {
   const chooseFiles = (event: ChangeEvent<HTMLInputElement>) => {
     setError("");
     const selected = Array.from(event.target.files ?? []);
-    const accepted = selected.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/") || /\.(heic|heif|mov|mp4|m4v)$/i.test(file.name));
-    if (accepted.length !== selected.length) setError("One file was skipped because it was not a photo or video.");
+    const accepted = selected.filter((file) => {
+      const video = file.type.startsWith("video/") || /\.(mov|mp4|m4v)$/i.test(file.name);
+      const image = file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name);
+      const limit = video ? 95 * 1024 * 1024 : 30 * 1024 * 1024;
+      return (video || image) && file.size > 0 && file.size <= limit;
+    });
+    const messages: string[] = [];
+    if (accepted.length !== selected.length) messages.push("Some files were skipped because they were not supported or were too large.");
+    if (accepted.length > 12) messages.push("Only the first 12 memories were selected.");
+    if (messages.length) setError(messages.join(" "));
     setFiles(accepted.slice(0, 12));
   };
 
@@ -108,8 +148,9 @@ export function MemoriesExperience() {
     if (!promptId) { setError("Please choose a prompt."); return; }
     if (!files.length) { fileInput.current?.click(); return; }
     setBusy(true); setError(""); setStatus(""); setProgress(0);
-    const visitorId = localStorage.getItem(visitorStorageKey) || randomId();
-    localStorage.setItem(visitorStorageKey, visitorId);
+    const visitorId = readStorage(visitorStorageKey) || randomId();
+    writeStorage(visitorStorageKey, visitorId);
+    let completed = 0;
     try {
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
@@ -136,6 +177,7 @@ export function MemoriesExperience() {
         }) });
         const saved = await finalise.json() as { error?: string };
         if (!finalise.ok) throw new Error(saved.error || "The memory was uploaded but could not be added to the gallery.");
+        completed += 1;
       }
       setStatus(files.length === 1 ? "Your memory is now part of the evening." : `${files.length} memories are now part of the evening.`);
       setFiles([]); setProgress(100);
@@ -143,18 +185,22 @@ export function MemoriesExperience() {
       await load(true);
       document.getElementById("memory-gallery")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "The upload could not be completed. Please try again.");
+      const message = failure instanceof Error ? failure.message : "The upload could not be completed. Please try again.";
+      const remaining = files.slice(completed);
+      setFiles(remaining);
+      setError(completed ? `${completed} memor${completed === 1 ? "y was" : "ies were"} shared successfully. ${message} Only the remaining files will be retried.` : message);
+      if (completed) await load(true);
     } finally { setBusy(false); }
   };
 
   const toggleFavourite = async (memory: Memory) => {
-    const visitorId = localStorage.getItem(visitorStorageKey) || randomId();
-    localStorage.setItem(visitorStorageKey, visitorId);
+    const visitorId = readStorage(visitorStorageKey) || randomId();
+    writeStorage(visitorStorageKey, visitorId);
     const next = !favourites.has(memory.id);
     const optimistic = new Set(favourites);
     if (next) optimistic.add(memory.id); else optimistic.delete(memory.id);
     setFavourites(optimistic);
-    localStorage.setItem(favouritesStorageKey, JSON.stringify([...optimistic]));
+    writeStorage(favouritesStorageKey, JSON.stringify([...optimistic]));
     setGallery((current) => ({ ...current, memories: current.memories.map((item) => item.id === memory.id ? { ...item, favouriteCount: Math.max(0, item.favouriteCount + (next ? 1 : -1)) } : item) }));
     try {
       const response = await fetch("/api/memories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "favourite", memoryId: memory.id, visitorId, favourite: next }) });
@@ -198,7 +244,7 @@ export function MemoriesExperience() {
     <section className="memory-gallery" id="memory-gallery">
       <header><div><p className="memories-kicker">The evening, through your eyes</p><h2>Shared memories</h2><span>{gallery.memories.length} memor{gallery.memories.length === 1 ? "y" : "ies"} and counting</span></div><div className="memory-sort"><button type="button" className={sort === "newest" ? "is-selected" : ""} onClick={() => setSort("newest")}>Newest</button><button type="button" className={sort === "favourites" ? "is-selected" : ""} onClick={() => setSort("favourites")}>Most loved</button></div></header>
       {displayed.length ? <div className="memory-masonry">{displayed.map((memory) => <article key={memory.id} className={memory.resourceType === "video" ? "is-video" : ""}>
-        <button type="button" className="memory-open" onClick={() => setLightbox(memory)} aria-label={`Open memory shared by ${memory.guestName}`}>
+        <button type="button" className="memory-open" onClick={(event) => { lastFocus.current = event.currentTarget; setLightbox(memory); }} aria-label={`Open memory shared by ${memory.guestName}`}>
           <img src={memory.previewUrl} alt={`${memory.prompt}, shared by ${memory.guestName}`} loading="lazy" />
           {memory.resourceType === "video" ? <span className="memory-play" aria-hidden="true">▶</span> : null}
         </button>
@@ -206,8 +252,8 @@ export function MemoriesExperience() {
       </article>)}</div> : <div className="memory-empty"><span>♡</span><h3>The first memory is waiting.</h3><p>Share yours and begin the evening’s album.</p></div>}
     </section>
 
-    <footer className="memories-footer"><p>Elaine <i>&amp;</i> Haykal</p><span>Every photograph becomes part of the story.</span><a href="/">Return to invitation ↑</a></footer>
+    <footer className="memories-footer"><p>Elaine <i>&amp;</i> Haykal</p><span>Every photograph becomes part of the story.</span><a href={returnHref}>Return to invitation ↑</a></footer>
 
-    {lightbox ? <div className="memory-lightbox" role="dialog" aria-modal="true" aria-label={`Memory shared by ${lightbox.guestName}`} onMouseDown={(event) => { if (event.currentTarget === event.target) setLightbox(null); }}><button type="button" className="memory-lightbox-close" onClick={() => setLightbox(null)} aria-label="Close memory">×</button><div>{lightbox.resourceType === "video" ? <video src={lightbox.url} controls autoPlay playsInline /> : <img src={lightbox.url} alt={`${lightbox.prompt}, shared by ${lightbox.guestName}`} />}<footer><p>{lightbox.prompt}</p><span>Shared by {lightbox.guestName}</span><a href={cloudinaryDownload(lightbox.url)} target="_blank" rel="noreferrer">Download original ↓</a></footer></div></div> : null}
+    {lightbox ? <div className="memory-lightbox" role="dialog" aria-modal="true" aria-label={`Memory shared by ${lightbox.guestName}`} onMouseDown={(event) => { if (event.currentTarget === event.target) setLightbox(null); }}><button ref={lightboxClose} type="button" className="memory-lightbox-close" onClick={() => setLightbox(null)} aria-label="Close memory">×</button><div>{lightbox.resourceType === "video" ? <video src={lightbox.url} controls autoPlay playsInline /> : <img src={lightbox.url} alt={`${lightbox.prompt}, shared by ${lightbox.guestName}`} />}<footer><p>{lightbox.prompt}</p><span>Shared by {lightbox.guestName}</span><a href={cloudinaryDownload(lightbox.url)} target="_blank" rel="noreferrer">Download original ↓</a></footer></div></div> : null}
   </main>;
 }

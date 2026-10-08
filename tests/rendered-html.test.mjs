@@ -258,6 +258,11 @@ test("provides a named-guest Memories gallery with verified uploads and owner mo
   assert.match(experience, /Guest name · required/);
   assert.match(experience, /aria-required="true"/);
   assert.match(experience, /Please enter your name before sharing a memory/);
+  assert.match(experience, /fallbackPrompts/);
+  assert.match(experience, /readStorage/);
+  assert.match(experience, /Only the remaining files will be retried/);
+  assert.match(experience, /readToken/);
+  assert.match(experience, /event\.key === "Escape"/);
   assert.match(experience, /Surprise me/);
   assert.match(experience, /Most loved/);
   assert.match(publicRoute, /Please enter your name before uploading/);
