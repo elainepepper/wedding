@@ -196,6 +196,9 @@ test("offers polished PDF-ready exports and table-specific meal lists", async ()
   assert.match(manager, /createTablePdf/);
   assert.match(manager, /savePdfOnDevice/);
   assert.match(manager, /Save to Files/);
+  assert.match(manager, /preset === "chef" \? "Confirmed" : filter/);
+  assert.match(manager, /Applied filter,\$\{csvValue\(effectiveFilterFor\(preset\)\)\}/);
+  assert.match(manager, /\$\{effectiveFilterFor\(preset\)\} · Generated/);
   assert.match(pdf, /navigator\.share/);
   assert.match(pdf, /link\.download = filename/);
   assert.match(styles, /\.export-status/);

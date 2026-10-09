@@ -1346,7 +1346,6 @@ function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; table
   const [filter, setFilter] = useState("Confirmed");
   const [pdfStatus, setPdfStatus] = useState("");
   const availableRows = guests.filter((guest) => adminRole !== "planner" || guest.category === "Crew");
-  const exportRows = availableRows.filter((guest) => filter === "All" || guest.rsvp_status === filter);
   const [selectedTable, setSelectedTable] = useState(tables[0]?.name ?? "");
   useEffect(() => {
     if (tables.length && !tables.some((table) => table.name === selectedTable)) setSelectedTable(tables[0].name);
@@ -1361,9 +1360,14 @@ function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; table
     complete: [["ID", (g: Guest) => g.id], ["Guest", (g: Guest) => displayName(g)], ["Household", (g: Guest) => g.household_name], ["Age group", (g: Guest) => g.age_group], ["Mobile", (g: Guest) => g.mobile], ["Category", (g: Guest) => g.category], ["Side", (g: Guest) => g.side], ["RSVP", (g: Guest) => g.rsvp_status], ["Main course", (g: Guest) => g.child_meal ? "Children's meal" : g.meal_selection], ["Dietary requirements", (g: Guest) => g.dietary_requirements], ["Allergies", (g: Guest) => g.allergies], ["Accessibility", (g: Guest) => g.accessibility], ["Travelling to Kuala Lumpur", (g: Guest) => g.transport_required ? "Yes" : "No"], ["Grand Hyatt room", (g: Guest) => g.accommodation_required ? "Yes" : "No"], ["Arrival", (g: Guest) => g.travel_arrival], ["Departure", (g: Guest) => g.travel_departure], ["Accommodation", (g: Guest) => g.accommodation_name], ["Bed", (g: Guest) => g.bed_preference], ["Room nights", (g: Guest) => g.room_nights], ["Guest-book message", (g: Guest) => g.wishes], ["Private note", (g: Guest) => g.marriage_advice], ["Table", (g: Guest) => g.table_name], ["Seat", (g: Guest) => g.seat_number], ["Internal notes", (g: Guest) => g.internal_notes]],
   } as const;
   type ExportPreset = keyof typeof maps;
-  const rowsFor = (preset: ExportPreset) => exportRows.filter((guest) => preset !== "afterparty" || guest.after_party_invited);
+  // The kitchen must never receive pending or declined guests, even when the
+  // manager is using the broader "All" filter for another report.
+  const effectiveFilterFor = (preset: ExportPreset) => preset === "chef" ? "Confirmed" : filter;
+  const rowsFor = (preset: ExportPreset) => availableRows
+    .filter((guest) => effectiveFilterFor(preset) === "All" || guest.rsvp_status === effectiveFilterFor(preset))
+    .filter((guest) => preset !== "afterparty" || guest.after_party_invited);
   const exportCsv = (preset: "venue" | "chef" | "afterparty" | "complete") => {
-    const columns = maps[preset]; const content = [`Report,${csvValue(`${preset[0].toUpperCase()}${preset.slice(1)} export`)}`, `Export date,${csvValue(new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth" }))}`, `Wedding,${csvValue("Elaine & Haykal")}`, `Applied filter,${csvValue(filter)}`, "", columns.map(([label]) => csvValue(label)).join(","), ...rowsFor(preset).map((guest) => columns.map(([, getter]) => csvValue(getter(guest) as unknown)).join(","))].join("\r\n");
+    const columns = maps[preset]; const content = [`Report,${csvValue(`${preset[0].toUpperCase()}${preset.slice(1)} export`)}`, `Export date,${csvValue(new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth" }))}`, `Wedding,${csvValue("Elaine & Haykal")}`, `Applied filter,${csvValue(effectiveFilterFor(preset))}`, "", columns.map(([label]) => csvValue(label)).join(","), ...rowsFor(preset).map((guest) => columns.map(([, getter]) => csvValue(getter(guest) as unknown)).join(","))].join("\r\n");
     downloadFile(`elaine-haykal-${preset}-${new Date().toISOString().slice(0, 10)}.csv`, content);
   };
   const allPresets = [{ id: "venue", title: "Venue pack", note: "Attendance, seating, access and transport", glyph: "⌂" }, { id: "chef", title: "Chef & catering", note: "Meals, dietary needs and allergies", glyph: "◇" }, { id: "afterparty", title: "After-party list", note: "Private invitations and late-night RSVPs", glyph: "✦" }, { id: "complete", title: "Complete guest archive", note: "All administrator guest fields", glyph: "▦" }] as const;
@@ -1389,7 +1393,7 @@ function Exports({ guests, tables, adminRole, setTab }: { guests: Guest[]; table
       }
       const bytes = createTablePdf({
         title,
-        subtitle: `${rowsFor(preset).length} guest${rowsFor(preset).length === 1 ? "" : "s"} · ${filter} · Generated ${generatedOn}`,
+        subtitle: `${rowsFor(preset).length} guest${rowsFor(preset).length === 1 ? "" : "s"} · ${effectiveFilterFor(preset)} · Generated ${generatedOn}`,
         columns,
         rows,
       });
