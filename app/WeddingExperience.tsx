@@ -1401,11 +1401,12 @@ export function WeddingExperience({
     if (travelComplete) ids.push("venue");
     if (journeyDone) ids.push("wishes");
     if (submitted) ids.push("confirmation");
-    // The secret chapter stays sealed until the couple assigns a table —
-    // it arrives with the follow-up link that carries the seat allocation.
+    // The server already verifies after-party eligibility and a saved seating
+    // assignment. Table names can remain private until their separate release
+    // date without accidentally hiding an eligible guest's private chapter.
     if (
       submitted &&
-      (previewMode || (inviteData?.afterPartyInvited && tablesAssigned))
+      (previewMode || (inviteData?.afterPartyInvited && token))
     )
       ids.push("afterparty");
     if (submitted && journeyDone) ids.push("gallery");
@@ -2930,7 +2931,7 @@ export function WeddingExperience({
         </section>
       ) : null}
       {stepHas("afterparty") &&
-      ((inviteData?.afterPartyInvited && token && tablesAssigned) ||
+      ((inviteData?.afterPartyInvited && token) ||
         previewMode) ? (
         <section
           id="afterparty"

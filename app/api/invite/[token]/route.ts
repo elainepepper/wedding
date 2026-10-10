@@ -8,6 +8,7 @@ import {
   isValidInternationalMobile,
 } from "../../../../lib/rsvp-data.mjs";
 import { effectiveRsvpDeadline, rsvpDeadlinePassed } from "../../../../lib/rsvp-window";
+import { isTableRevealOpen } from "../../../../lib/table-reveal.mjs";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -118,21 +119,24 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     weddingRef.collection("events").where("is_enabled", "==", 1).get(),
     weddingRef.get(),
   ]);
+  const settings = settingsSnapshot.data() ?? {};
+  const tableRevealOpen = isTableRevealOpen(settings.table_reveal_date);
   const guests = guestSnapshot.docs.map((doc) => doc.data())
     // Every named person on the household invitation is returned, including
     // children. Age changes which dinner question applies; it must never make
     // an invited person disappear from their own household.
     .filter((guest) => !isEnabledFlag(guest.archived))
     .sort(compareInvitationGuests);
-  // The seating plan lives in its own collection; guests only ever learn the
-  // name of their own table, and only once it has been assigned.
+  // The seating plan lives in its own collection. Assignments may be completed
+  // well before guests are told, so table names are not even looked up until
+  // the release date. This protects both the main invitation and /table links.
   const tableIds = [...new Set(guests.map((guest) => Number(guest.table_id)).filter((id) => Number.isFinite(id) && id > 0))];
   const tableNames = new Map<number, string>();
-  if (tableIds.length) {
+  if (tableRevealOpen && tableIds.length) {
     const tableDocs = await Promise.all(tableIds.slice(0, 30).map((id) => weddingRef.collection("tables").doc(String(id)).get()));
     tableDocs.forEach((doc) => { if (doc.exists) tableNames.set(Number(doc.data()?.id), String(doc.data()?.name ?? "")); });
   }
-  guests.forEach((guest) => { guest.table_name = tableNames.get(Number(guest.table_id)) ?? null; });
+  guests.forEach((guest) => { guest.table_name = tableRevealOpen ? tableNames.get(Number(guest.table_id)) ?? null : null; });
   const afterHoursGuestIds = new Set(guests.filter((guest) => isEnabledFlag(guest.after_party_eligible) && isEnabledFlag(guest.after_party_invited) && canonicalRsvpStatus(guest.rsvp_status) === "Confirmed" && isEnabledFlag(guest.reception_attending) && Number(guest.table_id ?? 0) > 0).map((guest) => Number(guest.id)));
   const afterPartyInvited = afterHoursGuestIds.size > 0;
   const events = eventSnapshot.docs.map((doc) => doc.data())
@@ -141,7 +145,6 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     .filter((event) => afterPartyInvited || !/after[\s-]?party/i.test(String(event.name ?? "")))
     .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
     .map((event) => ({ id: event.id, name: event.name ?? "", event_date: event.event_date ?? null, event_time: event.event_time ?? null, venue: event.venue ?? null, sort_order: event.sort_order ?? 0 }));
-  const settings = settingsSnapshot.data() ?? {};
   const roomBlock = await roomBlockState(settings, Number(household.id));
   return Response.json({
     household: { id: household.id, name: household.name, maxGuests: guests.length },

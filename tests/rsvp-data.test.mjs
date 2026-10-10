@@ -9,6 +9,7 @@ import {
   isValidInternationalMobile,
   optionalInteger,
 } from "../lib/rsvp-data.mjs";
+import { DEFAULT_TABLE_REVEAL_DATE, isTableRevealOpen } from "../lib/table-reveal.mjs";
 
 test("canonicalises current and legacy RSVP values", () => {
   assert.equal(canonicalRsvpStatus("Confirmed"), "Confirmed");
@@ -68,4 +69,11 @@ test("orders titled couples husband first without disturbing other guests", () =
     { id: 1, first_name: "Mr Tan" },
   ].sort(compareInvitationGuests);
   assert.deepEqual(mrAndMrs.map((guest) => guest.id), [1, 2]);
+});
+
+test("keeps table assignments private until 25 October in Kuala Lumpur", () => {
+  assert.equal(DEFAULT_TABLE_REVEAL_DATE, "2026-10-25");
+  assert.equal(isTableRevealOpen(undefined, Date.parse("2026-10-24T23:59:59+08:00")), false);
+  assert.equal(isTableRevealOpen(undefined, Date.parse("2026-10-25T00:00:00+08:00")), true);
+  assert.equal(isTableRevealOpen("2026-10-30", Date.parse("2026-10-25T12:00:00+08:00")), false);
 });

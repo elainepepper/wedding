@@ -17,6 +17,9 @@ test("the invitation and manager share the hardened RSVP contract", async () => 
   assert.match(inviteRoute, /marriage_advice: guest\.marriage_advice/);
   assert.match(inviteRoute, /has_submitted/);
   assert.match(inviteRoute, /const afterHoursGuestIds = new Set/);
+  assert.match(inviteRoute, /isTableRevealOpen\(settings\.table_reveal_date\)/);
+  assert.match(inviteRoute, /if \(tableRevealOpen && tableIds\.length\)/);
+  assert.match(inviteRoute, /guest\.table_name = tableRevealOpen \?/);
   assert.doesNotMatch(inviteRoute, /filter\(\(guest\) => !\/\^\(child\|infant/);
 
   assert.match(experience, /submissionInFlight\.current/);
@@ -25,6 +28,7 @@ test("the invitation and manager share the hardened RSVP contract", async () => 
   assert.match(experience, /Children&rsquo;s meal/);
   assert.match(experience, /value=\{rsvp\.advice\}/);
   assert.match(experience, /wishes: guest\.wishes/);
+  assert.match(experience, /inviteData\?\.afterPartyInvited && token/);
   assert.match(inviteRoute, /marriage_advice: Number\(response\.id\) === firstResponseId/);
 
   assert.match(managerRoute, /canonicalRsvpStatus/);
