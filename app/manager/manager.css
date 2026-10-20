@@ -1506,6 +1506,11 @@
 .seating-setup-bar > div strong { color: var(--m-ink); font: 500 1rem/1.1 "Bodoni Moda",Georgia,serif; }
 .seating-setup-bar > div span { color: var(--m-muted); font-size: .6rem; line-height: 1.45; }
 .seating-setup-bar > button { min-height: 40px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 .85rem; background: var(--m-wine); color: #fff; font-size: .61rem; font-weight: 700; white-space: nowrap; }
+.seating-final-plan { padding: .9rem 1rem; display: flex; align-items: center; gap: 1rem; border-color: rgba(122,37,73,.24); background: linear-gradient(105deg,rgba(249,237,234,.92),rgba(255,253,249,.92)); }
+.seating-final-plan > div { margin-right: auto; display: grid; gap: .18rem; }
+.seating-final-plan strong { color: var(--m-ink); font: 500 1rem/1.1 "Bodoni Moda",Georgia,serif; }
+.seating-final-plan span { color: var(--m-muted); font-size: .6rem; }
+.seating-final-plan button { min-height: 42px; border: 1px solid var(--m-wine); border-radius: 999px; padding: 0 1rem; background: var(--m-wine); color: #fff; font-size: .62rem; font-weight: 750; }
 .seating-workspace { min-height: 680px; display: grid; grid-template-columns: minmax(240px,285px) minmax(0,1fr); gap: 1rem; }
 .seating-guest-bank { min-height: 0; padding: 1rem; align-self: stretch; overflow: hidden; }
 .seating-guest-bank > header { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
@@ -1593,6 +1598,7 @@
 }
 @media (max-width: 760px) {
   .seating-intro { gap: .8rem; align-items: flex-end; }.seating-view-toggle button { min-height: 42px; padding-inline: .72rem; }
+  .seating-final-plan { align-items: stretch; flex-direction: column; }.seating-final-plan button { width: 100%; }
   .seating-summary article { min-height: 88px; padding: .85rem; }.seating-summary strong { font-size: 1.65rem; }
   .seating-setup-bar > button { flex: 1 1 calc(50% - .3rem); min-height: 44px; }
   .seating-workspace { min-height: 0; display: flex; flex-direction: column; }.seating-map-panel,.seating-table-list { order: 1; }.seating-guest-bank { order: 2; }.seating-household-list { max-height: none; }

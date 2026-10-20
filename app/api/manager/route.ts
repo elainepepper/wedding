@@ -3,6 +3,7 @@ import { requireAdmin } from "../../../lib/manager-auth";
 import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag, optionalInteger } from "../../../lib/rsvp-data.mjs";
 import { effectiveRsvpDeadline } from "../../../lib/rsvp-window";
 import { normaliseSiteDesign } from "../../../lib/site-design";
+import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../../../lib/final-seating-plan";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -25,6 +26,13 @@ const validMobile = (value: string) => !value || /^\+[1-9][0-9]{7,14}$/.test(val
 const integer = optionalInteger;
 const ids = (value: unknown) => Array.isArray(value) ? value.map(integer).filter((item): item is number => item !== null) : [];
 const PLANNER_ALLOWED_ACTIONS = new Set(["addGuest", "editGuest", "bulkUpdate", "createTable", "editTable", "deleteTable", "moveGuest", "seatHousehold", "restoreSeating"]);
+const seatingKey = (value: unknown) => clean(value, 240)
+  .normalize("NFKD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[‘’`]/g, "'")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
 
 const plannerDenied = () => Response.json({ error: "This action is reserved for Elaine and Haykal." }, { status: 403 });
 
@@ -351,6 +359,115 @@ export async function POST(request: Request) {
       await batch.commit();
       await addActivity(admin.displayName, "Guests bulk edited", "guest", guestIds.join(","), `${field} updated for ${guestIds.length} guests`);
       return Response.json({ ok: true });
+    }
+
+    if (action === "validateFinalSeatingPlan" || action === "applyFinalSeatingPlan") {
+      if (admin.role === "planner") return plannerDenied();
+      const [guestSnapshot, householdSnapshot, tableSnapshot] = await Promise.all([
+        weddingRef.collection("guests").get(),
+        weddingRef.collection("households").get(),
+        weddingRef.collection("tables").get(),
+      ]);
+      const householdNames = new Map(householdSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().name ?? "")]));
+      const confirmedGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived) && canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
+      const unresolved: string[] = [];
+      const ambiguous: string[] = [];
+      const resolvedGuests: Array<{ doc: (typeof confirmedGuests)[number]; tableKey: string; seat: number }> = [];
+      const usedGuestIds = new Set<number>();
+
+      for (const table of FINAL_SEATING_PLAN) {
+        for (const assignment of table.seats) {
+          const acceptedNames = new Set([assignment.label, ...(assignment.aliases ?? [])].map(seatingKey).filter(Boolean));
+          const householdHint = seatingKey(assignment.household);
+          const candidates = confirmedGuests.filter((doc) => {
+            const data = doc.data();
+            const preferred = seatingKey(data.preferred_name);
+            const full = seatingKey(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
+            if (!acceptedNames.has(preferred) && !acceptedNames.has(full)) return false;
+            if (!householdHint) return true;
+            const household = seatingKey(householdNames.get(Number(data.household_id)) ?? "");
+            return Boolean(household) && (household.includes(householdHint) || householdHint.includes(household));
+          });
+          const reference = `${table.name}, seat ${assignment.seat}: ${assignment.label}`;
+          if (!candidates.length) { unresolved.push(reference); continue; }
+          if (candidates.length > 1) { ambiguous.push(reference); continue; }
+          const guestId = Number(candidates[0].data().id);
+          if (usedGuestIds.has(guestId)) { ambiguous.push(`${reference} (guest appears twice)`); continue; }
+          usedGuestIds.add(guestId);
+          resolvedGuests.push({ doc: candidates[0], tableKey: table.key, seat: assignment.seat });
+        }
+      }
+
+      const unmatchedConfirmed = confirmedGuests
+        .filter((doc) => !usedGuestIds.has(Number(doc.data().id)))
+        .map((doc) => String(doc.data().preferred_name || `${String(doc.data().first_name ?? "")} ${String(doc.data().last_name ?? "")}`.trim()));
+      const existingTables = tableSnapshot.docs;
+      const resolvedTables: Array<{ plan: (typeof FINAL_SEATING_PLAN)[number]; doc: (typeof existingTables)[number] | null }> = [];
+      const usedTableDocs = new Set<string>();
+      for (const plan of FINAL_SEATING_PLAN) {
+        const acceptedNames = new Set(plan.aliases.map(seatingKey));
+        const matches = existingTables.filter((doc) => acceptedNames.has(seatingKey(doc.data().name)));
+        if (matches.length > 1) ambiguous.push(`${plan.name} matches more than one existing table`);
+        const match = matches.length === 1 ? matches[0] : null;
+        if (match) usedTableDocs.add(match.id);
+        resolvedTables.push({ plan, doc: match });
+      }
+      const unmatchedOccupiedTables = existingTables
+        .filter((doc) => !usedTableDocs.has(doc.id))
+        .filter((doc) => confirmedGuests.some((guest) => Number(guest.data().table_id) === Number(doc.data().id)))
+        .map((doc) => String(doc.data().name ?? `Table ${doc.data().id}`));
+      if (unmatchedOccupiedTables.length) ambiguous.push(`Occupied tables outside the final plan: ${unmatchedOccupiedTables.join(", ")}`);
+
+      const validation = {
+        finalGuestCount: FINAL_SEATING_GUEST_COUNT,
+        confirmedGuestCount: confirmedGuests.length,
+        resolvedGuestCount: resolvedGuests.length,
+        tableCount: FINAL_SEATING_PLAN.length,
+        unresolved,
+        ambiguous,
+        unmatchedConfirmed,
+      };
+      if (action === "validateFinalSeatingPlan") return Response.json({ ok: !unresolved.length && !ambiguous.length && !unmatchedConfirmed.length, ...validation });
+      if (clean(payload.confirm, 80) !== "APPLY FINAL GRAND SALON PLAN") {
+        return Response.json({ error: "Confirm the final Grand Salon seating plan before applying it.", ...validation }, { status: 400 });
+      }
+      if (unresolved.length || ambiguous.length || unmatchedConfirmed.length || resolvedGuests.length !== FINAL_SEATING_GUEST_COUNT) {
+        return Response.json({ error: "The final seating plan was not applied because every guest could not be matched safely.", ...validation }, { status: 409 });
+      }
+
+      const tableIds = new Map<string, number>();
+      for (const item of resolvedTables) {
+        const id = item.doc ? Number(item.doc.data().id) : await nextId("tables");
+        tableIds.set(item.plan.key, id);
+      }
+      const batch = weddingRef.firestore.batch();
+      for (const item of resolvedTables) {
+        const id = tableIds.get(item.plan.key) as number;
+        const ref = item.doc?.ref ?? weddingRef.collection("tables").doc(String(id));
+        batch.set(ref, {
+          id,
+          final_plan_key: item.plan.key,
+          name: item.plan.name,
+          shape: item.plan.shape,
+          capacity: item.plan.capacity,
+          x: item.plan.x,
+          y: item.plan.y,
+          locked: item.plan.locked ? 1 : 0,
+          notes: item.plan.notes,
+          updated_at: serverTimestamp(),
+          ...(item.doc ? {} : { created_at: serverTimestamp() }),
+        }, { merge: true });
+      }
+      for (const assignment of resolvedGuests) {
+        batch.set(assignment.doc.ref, {
+          table_id: tableIds.get(assignment.tableKey),
+          seat_number: assignment.seat,
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+      }
+      await batch.commit();
+      await addActivity(admin.displayName, "Final seating plan applied", "table", "grand-salon-final", `${resolvedGuests.length} guests seated across ${FINAL_SEATING_PLAN.length} tables`);
+      return Response.json({ ok: true, ...validation, createdTables: resolvedTables.filter((item) => !item.doc).length, updatedTables: resolvedTables.filter((item) => item.doc).length });
     }
 
     if (action === "createTable") {

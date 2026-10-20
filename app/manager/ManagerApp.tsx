@@ -288,7 +288,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
       // table and activity before it would respond — several seconds on a
       // list this size. The change is already saved; refresh in the
       // background and let the interface answer immediately.
-      const seatingActions = new Set(["createTable", "editTable", "deleteTable", "moveGuest", "seatHousehold", "restoreSeating"]);
+      const seatingActions = new Set(["createTable", "editTable", "deleteTable", "moveGuest", "seatHousehold", "restoreSeating", "applyFinalSeatingPlan"]);
       if (seatingActions.has(String(payload.action))) await load(true);
       else void load(true);
       return result;
@@ -421,7 +421,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
           />
         ) : null}
         {tab === "households" ? <Households replyBy={rsvpDeadlineLabel(data.settings.rsvp_deadline) ?? ""} deadlinePassed={rsvpDeadlinePassed(data.settings.rsvp_deadline)} households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
-        {tab === "seating" ? <SeatingPlanner guests={data.guests} tables={data.tables} act={act} setUndo={setUndo} /> : null}
+        {tab === "seating" ? <SeatingPlanner guests={data.guests} tables={data.tables} act={act} setUndo={setUndo} canApplyFinalPlan={data.admin.role !== "planner"} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
         {tab === "travel" ? <TravelAndRooms guests={data.guests} /> : null}
