@@ -372,7 +372,11 @@ export async function POST(request: Request) {
       const confirmedGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived) && canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
       const unresolved: string[] = [];
       const ambiguous: string[] = [];
-      const resolvedGuests: Array<{ doc: (typeof confirmedGuests)[number]; tableKey: string; seat: number }> = [];
+      const resolvedGuests: Array<{
+        doc: (typeof confirmedGuests)[number];
+        tableKey: string;
+        assignment: (typeof FINAL_SEATING_PLAN)[number]["seats"][number];
+      }> = [];
       const usedGuestIds = new Set<number>();
 
       for (const table of FINAL_SEATING_PLAN) {
@@ -394,7 +398,7 @@ export async function POST(request: Request) {
           const guestId = Number(candidates[0].data().id);
           if (usedGuestIds.has(guestId)) { ambiguous.push(`${reference} (guest appears twice)`); continue; }
           usedGuestIds.add(guestId);
-          resolvedGuests.push({ doc: candidates[0], tableKey: table.key, seat: assignment.seat });
+          resolvedGuests.push({ doc: candidates[0], tableKey: table.key, assignment });
         }
       }
 
@@ -459,9 +463,21 @@ export async function POST(request: Request) {
         }, { merge: true });
       }
       for (const assignment of resolvedGuests) {
+        const mealSelection = assignment.assignment.meal === "Lamb" || assignment.assignment.meal === "Salmon"
+          ? assignment.assignment.meal
+          : null;
+        const childMeal = assignment.assignment.meal === "Kids meal" ? 1 : 0;
         batch.set(assignment.doc.ref, {
           table_id: tableIds.get(assignment.tableKey),
-          seat_number: assignment.seat,
+          seat_number: assignment.assignment.seat,
+          meal_selection: mealSelection,
+          child_meal: childMeal,
+          ...(assignment.assignment.dietaryRequirements
+            ? { dietary_requirements: assignment.assignment.dietaryRequirements }
+            : {}),
+          ...(assignment.assignment.allergies
+            ? { allergies: assignment.assignment.allergies }
+            : {}),
           updated_at: serverTimestamp(),
         }, { merge: true });
       }

@@ -217,7 +217,7 @@ export function SeatingPlanner({ guests, tables, act, setUndo, canApplyFinalPlan
     </section>
     <div className="seating-command-row"><button type="button" className={editRoom ? "is-active" : ""} onClick={() => setEditRoom((current) => !current)}>{editRoom ? "Done editing room" : "Edit room"}</button><div><button type="button" onClick={() => void saveHotelPdf()}>Hotel PDF ↓</button><button type="button" onClick={() => void saveGuestPdf()}>Guest chart ↓</button></div></div>
     {canApplyFinalPlan ? <section className="manager-panel seating-final-plan" aria-label="Final Grand Salon plan">
-      <div><strong>Final Grand Salon plan</strong><span>20 October PDF · 149 named seats · 14 tables</span></div>
+      <div><strong>Final Grand Salon plan</strong><span>24 October PDF · 153 named seats · 14 tables</span></div>
       <button type="button" onClick={async () => {
         const validation = await act({ action: "validateFinalSeatingPlan" }, "Final plan checked") as { ok?: boolean; unresolved?: string[]; ambiguous?: string[]; unmatchedConfirmed?: string[] } | null;
         if (!validation) return;
@@ -226,7 +226,7 @@ export function SeatingPlanner({ guests, tables, act, setUndo, canApplyFinalPlan
           window.alert(`The plan was not changed. Resolve these guest matches first:\n\n${problems.slice(0, 12).join("\n")}${problems.length > 12 ? `\n…and ${problems.length - 12} more` : ""}`);
           return;
         }
-        if (!window.confirm("Replace the current table names, room positions and all 149 confirmed guest seat assignments with the finalized Grand Salon PDF plan?")) return;
+        if (!window.confirm("Replace the current table names, room positions, seats and meals for all 153 confirmed guests with the finalized Grand Salon PDF plan?")) return;
         await act({ action: "applyFinalSeatingPlan", confirm: "APPLY FINAL GRAND SALON PLAN" }, "Final Grand Salon seating plan applied");
       }}>Apply finalized plan</button>
     </section> : null}
