@@ -654,8 +654,21 @@ function waLink(mobile: string | null, message: string) {
     ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
     : `https://wa.me/?text=${encodeURIComponent(message)}`;   // no number: compose and pick a contact
 }
-function tableMessage(names: string, tables: string, link: string) {
-  return `Dear ${names},\n\nElaine and Haykal have assigned your seat for 7 November — you are at ${tables}.\n\nYou can see it on your invitation here:\n${link}\n\nWith love,\nElaine & Haykal`;
+function mealPreference(guest: Guest) {
+  if (guest.child_meal) return "Children's meal";
+  if (guest.meal_selection === "Lamb") return "Almond dukkah-crusted rack of lamb";
+  if (guest.meal_selection === "Salmon") return "Seared Alaskan salmon";
+  return guest.meal_selection || "Not selected";
+}
+function tableMessage(names: string, members: Guest[], link: string) {
+  const confirmed = [...members]
+    .filter((guest) => guest.rsvp_status === "Confirmed")
+    .sort(compareInvitationGuests);
+  const details = confirmed.map((guest) => {
+    const care = [guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ") || "None noted";
+    return `${displayName(guest)}\nTable: ${guest.table_name || "Not assigned"}${guest.seat_number ? ` · Seat ${guest.seat_number}` : ""}\nMain course: ${mealPreference(guest)}\nDietary requirements / allergies: ${care}`;
+  }).join("\n\n");
+  return `Dear ${names},\n\nA little note before 7 November — here are your table and dinner details:\n\n${details}\n\nPlease let us know if anything above needs correcting.\n\nYour invitation:\n${link}\n\nWith love,\nElaine & Haykal`;
 }
 function nudgeMessage(names: string, link: string, deadline: string, deadlinePassed = false) {
   const timing = deadline && !deadlinePassed
@@ -1030,7 +1043,7 @@ function Households({ households, guests, archived, adminRole, replyBy, deadline
     {detail ? <div className="modal-backdrop household-sheet-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setDetailId(null); }}><section className="household-sheet" role="dialog" aria-modal="true" aria-labelledby="household-detail-title"><header><div><p className="panel-kicker">{invitationState(detail, guests) === "not-sent" ? "Not sent" : invitationState(detail, guests) === "sent" ? "Sent" : "Replied"}</p><h2 id="household-detail-title">{detail.name}</h2></div><button type="button" onClick={() => setDetailId(null)} aria-label="Close">×</button></header><div className="household-sheet-body">
       <div className="member-stack">{detailMembers.map((guest) => <button type="button" className="member-row" key={guest.id} onClick={() => edit(guest)}><i>{displayName(guest).slice(0, 1)}</i><span>{displayName(guest)}<small>{guest.age_group} · {guest.relationship || guest.category}</small></span><Status value={guest.rsvp_status} /></button>)}<button type="button" className="member-add" onClick={() => addTo(detail.id)}>＋ Add a guest to this invitation</button></div>
       <dl className="household-detail-facts"><div><dt>Primary contact</dt><dd>{detail.email || detail.mobile || "Not supplied"}</dd></div><div><dt>Invitation</dt><dd>{detail.opened_at ? `Opened ${dateLabel(detail.opened_at)}` : "Not opened"}</dd></div><div><dt>Reply</dt><dd>{detailMembers.some((guest) => guest.rsvp_submitted_at) ? dateLabel(detailMembers.map((guest) => guest.rsvp_submitted_at).filter(Boolean).sort().pop() as string) : "Not received"}</dd></div><div><dt>Table</dt><dd>{[...new Set(detailMembers.map((guest) => guest.table_name).filter(Boolean))].join(" and ") || "Not assigned"}</dd></div></dl>
-      <div className="household-sheet-actions"><a className="wa-button" href={waLink(detail.mobile, invitationMessage(detailNames, detailLink, replyBy))} target="_blank" rel="noreferrer">WhatsApp</a><button type="button" onClick={() => copyInvitationMessage(detail)}>Copy message</button>{invitationState(detail, guests) === "sent" ? <><a className="wa-button" href={waLink(detail.mobile, nudgeMessage(detailNames, detailLink, replyBy, deadlinePassed))} target="_blank" rel="noreferrer">WhatsApp follow-up</a><button type="button" onClick={() => copyReminderMessage(detail)}>Copy follow-up</button></> : null}<button type="button" onClick={() => copyLink(detail)}>Copy link</button>{invitationState(detail, guests) === "not-sent" ? <button type="button" onClick={() => void act({ action: "markInvitationSent", householdId: detail.id }, "Invitation marked as sent")}>Mark sent</button> : <button type="button" onClick={() => void act({ action: "markInvitationUnsent", householdId: detail.id }, `${detail.name} marked not sent`)}>Mark not sent</button>}{detailMembers.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(detail.mobile, tableMessage(detailNames, [...new Set(detailMembers.map((guest) => guest.table_name).filter(Boolean))].join(" and "), detailLink))} target="_blank" rel="noreferrer">Send table</a> : null}{detailAfterParty ? <button type="button" onClick={() => copyLink(detail, true)}>Copy after-party</button> : null}<button type="button" onClick={() => void act({ action: "regenerateLink", householdId: detail.id }, "A new secure link was created")}>Regenerate link</button></div>
+        <div className="household-sheet-actions"><a className="wa-button" href={waLink(detail.mobile, invitationMessage(detailNames, detailLink, replyBy))} target="_blank" rel="noreferrer">WhatsApp</a><button type="button" onClick={() => copyInvitationMessage(detail)}>Copy message</button>{invitationState(detail, guests) === "sent" ? <><a className="wa-button" href={waLink(detail.mobile, nudgeMessage(detailNames, detailLink, replyBy, deadlinePassed))} target="_blank" rel="noreferrer">WhatsApp follow-up</a><button type="button" onClick={() => copyReminderMessage(detail)}>Copy follow-up</button></> : null}<button type="button" onClick={() => copyLink(detail)}>Copy link</button>{invitationState(detail, guests) === "not-sent" ? <button type="button" onClick={() => void act({ action: "markInvitationSent", householdId: detail.id }, "Invitation marked as sent")}>Mark sent</button> : <button type="button" onClick={() => void act({ action: "markInvitationUnsent", householdId: detail.id }, `${detail.name} marked not sent`)}>Mark not sent</button>}{detailMembers.some((guest) => guest.table_name) ? <a className="wa-button wa-button--table" href={waLink(detail.mobile, tableMessage(detailNames, detailMembers, detailLink))} target="_blank" rel="noreferrer">Send table &amp; meal</a> : null}{detailAfterParty ? <button type="button" onClick={() => copyLink(detail, true)}>Copy after-party</button> : null}<button type="button" onClick={() => void act({ action: "regenerateLink", householdId: detail.id }, "A new secure link was created")}>Regenerate link</button></div>
       {adminRole !== "planner" ? <button type="button" className="danger-link household-archive" onClick={() => { if (!window.confirm(`Archive ${detail.name}? Their invitation link will stop working until restored.`)) return; void act({ action: "archiveHousehold", householdId: detail.id }, "Household archived").then((result) => { if (!result) return; setDetailId(null); setUndo({ label: `${detail.name} archived`, restore: async () => { await act({ action: "restoreHousehold", householdId: detail.id }, "Household restored"); } }); }); }}>Archive household</button> : null}
     </div></section></div> : null}
   </div>;
@@ -1697,6 +1710,19 @@ function Chasing({ households, guests, settings, act, notify }: {
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const deadline = rsvpDeadlineLabel(settings?.rsvp_deadline) ?? "";
   const deadlineHasPassed = rsvpDeadlinePassed(settings?.rsvp_deadline);
+  const bakhtiar = guests.find((guest) => /\bbakhtiar\b/i.test(`${guest.first_name} ${guest.last_name} ${guest.preferred_name ?? ""}`));
+  const bakhtiarAllergySaved = /shellfish/i.test(bakhtiar?.allergies ?? "");
+
+  const dinnerDetails = households
+    .map((household) => ({
+      household,
+      members: guests
+        .filter((guest) => Number(guest.household_id) === Number(household.id) && guest.rsvp_status === "Confirmed")
+        .sort(compareInvitationGuests),
+    }))
+    .filter(({ members }) => members.length > 0 && members.every((guest) => guest.table_name))
+    .sort((a, b) => String(a.members[0]?.table_name).localeCompare(String(b.members[0]?.table_name), undefined, { numeric: true })
+      || a.household.name.localeCompare(b.household.name));
 
   const waiting = households
     .map((household) => ({
@@ -1741,11 +1767,34 @@ function Chasing({ households, guests, settings, act, notify }: {
   return <div className="manager-page">
     <div className="section-intro-row">
       <div>
-        <p className="panel-kicker">Reminder messages</p>
-        <h2>{waiting.length} sent invitation{waiting.length === 1 ? "" : "s"}</h2>
-        <span>{deadline && !deadlineHasPassed ? `Replies close on ${deadline}. ` : ""}Each reminder is written for that household and carries their own latest link. Nothing is sent automatically.</span>
+        <p className="panel-kicker">Guest follow-up</p>
+        <h2>Messages ready to send</h2>
+        <span>{dinnerDetails.length} table and dinner message{dinnerDetails.length === 1 ? "" : "s"} · {waiting.length} RSVP reminder{waiting.length === 1 ? "" : "s"}. {deadline && !deadlineHasPassed ? `Replies close on ${deadline}. ` : ""}Every message uses the household&apos;s latest link. Nothing is sent automatically.</span>
       </div>
     </div>
+    {bakhtiar && !bakhtiarAllergySaved ? <section className="manager-panel">
+      <h3>Bakhtiar&apos;s allergy note</h3>
+      <p className="import-help">Save this before sending his table and dinner message so the guest record, kitchen brief and follow-up all agree.</p>
+      <div className="chase-actions"><button type="button" onClick={() => void act({ action: "editGuest", guestId: bakhtiar.id, allergies: "Slight shellfish allergy" }, "Bakhtiar's slight shellfish allergy was saved")}>Save slight shellfish allergy</button></div>
+    </section> : null}
+    {dinnerDetails.length ? <section className="manager-panel">
+      <h3>Table &amp; dinner details · {dinnerDetails.length}</h3>
+      <p className="import-help">Ready for confirmed households. Each message includes every guest&apos;s table, chair, main course and any dietary requirement or allergy. Nothing is sent automatically.</p>
+      <div className="chase-list">{dinnerDetails.map((entry) => {
+        const names = entry.members.map(displayName).join(" & ");
+        const link = inviteLink(origin, entry.household.invitation_token, entry.household.name);
+        const tables = [...new Set(entry.members.map((guest) => guest.table_name).filter(Boolean))].join(" & ");
+        const care = entry.members.filter((guest) => guest.dietary_requirements || guest.allergies).map((guest) => `${displayName(guest)}: ${[guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ")}`);
+        const message = tableMessage(names, entry.members, link);
+        return <article className="chase-card" key={`dinner-${entry.household.id}`}>
+          <div><strong>{entry.household.name}</strong><p>{names}</p><p className="chase-meta">{tables}{care.length ? ` · ${care.join("; ")}` : " · no dietary notes"}</p></div>
+          <div className="chase-actions">
+            <button type="button" onClick={async () => { await navigator.clipboard.writeText(message); notify("Table and dinner details copied"); }}>Copy details</button>
+            <a href={waLink(entry.household.mobile, message)} target="_blank" rel="noreferrer">WhatsApp details</a>
+          </div>
+        </article>;
+      })}</div>
+    </section> : null}
     {waiting.length ? <section className="manager-panel"><h3>Sent · awaiting reply</h3><div className="chase-list">{waiting.map((entry) => card(entry, false))}</div></section> : <section className="manager-panel"><p className="import-help">No sent invitations are waiting for a reply.</p></section>}
     {(() => {
       const replied = guests
