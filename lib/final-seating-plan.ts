@@ -8,6 +8,7 @@ export type FinalSeat = {
   household?: string;
   dietaryRequirements?: string;
   allergies?: string;
+  accessibility?: string;
 };
 
 export type FinalSeatingTable = {
@@ -67,12 +68,13 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     key: "table-2",
     name: "Table 2 Haykal's family",
     aliases: ["Table 2 Haykal's family", "Table 2 - Haykal's family"],
-    shape: "round", capacity: 10, x: 55, y: 36, locked: false, notes: "Haykal's family",
+    shape: "round", capacity: 11, x: 55, y: 36, locked: false, notes: "Haykal's family · 10 dining chairs plus a baby chair between Alyn and Mirza",
     seats: [
       seat(1, "Zilan", "Lamb"), seat(2, "Julieza", "Lamb"), seat(3, "Adham", "Lamb"),
       seat(4, "Faudziah", "Lamb"), seat(5, "Juliena", "Lamb"), seat(6, "Reza", "Lamb"),
       seat(7, "Juznida", "Lamb"), seat(8, "Mrs Park", "Salmon"), seat(9, "Alyn", "Lamb"),
-      seat(10, "Mirza", "Lamb"),
+      seat(10, "Fatima", "Kids meal", { aliases: ["Baby Fatima"], household: "Mirza Faiz", accessibility: "Baby chair required" }),
+      seat(11, "Mirza", "Lamb"),
     ],
   },
   {

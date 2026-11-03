@@ -1,5 +1,6 @@
 import { weddingRef } from "../../../lib/firebase-admin";
 import { ensureFinalWeddingDataApplied } from "../../../lib/apply-final-wedding-data";
+import { ensureBabyFatimaSeatApplied } from "../../../lib/apply-baby-fatima-seat";
 
 // Settings are read on every page load; a cached copy would show stale wording.
 export const dynamic = "force-dynamic";
@@ -15,11 +16,12 @@ export async function GET() {
   // rather than a 500 the guest's browser would have to recover from.
   try {
     const finalData = await ensureFinalWeddingDataApplied();
+    const fatimaSeat = await ensureBabyFatimaSeatApplied();
     const snapshot = await weddingRef.get();
     const settings = snapshot.data() ?? {};
     return Response.json(
       { musicUrl: settings.music_url || defaultMusic.url, musicTitle: settings.music_title || defaultMusic.title, siteDesign: settings.site_design ?? null },
-      { headers: { "X-Final-Data-Version": finalData.version } },
+      { headers: { "X-Final-Data-Version": finalData.version, "X-Seating-Adjustment-Version": fatimaSeat.version } },
     );
   } catch {
     return Response.json({ musicUrl: defaultMusic.url, musicTitle: defaultMusic.title, siteDesign: null });

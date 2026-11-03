@@ -217,7 +217,7 @@ export function SeatingPlanner({ guests, tables, act, setUndo, canApplyFinalPlan
     </section>
     <div className="seating-command-row"><button type="button" className={editRoom ? "is-active" : ""} onClick={() => setEditRoom((current) => !current)}>{editRoom ? "Done editing room" : "Edit room"}</button><div><button type="button" onClick={() => void saveHotelPdf()}>Hotel PDF ↓</button><button type="button" onClick={() => void saveGuestPdf()}>Guest chart ↓</button></div></div>
     {canApplyFinalPlan ? <section className="manager-panel seating-final-plan" aria-label="Final Grand Salon plan">
-      <div><strong>Final Grand Salon plan</strong><span>3 November CSV · 154 named seats · 14 tables</span></div>
+      <div><strong>Final Grand Salon plan</strong><span>3 November CSV + Baby Fatima adjustment · 155 named seats · 14 tables</span></div>
       <button type="button" onClick={async () => {
         const validation = await act({ action: "validateFinalSeatingPlan" }, "Final plan checked") as { ok?: boolean; unresolved?: string[]; ambiguous?: string[] } | null;
         if (!validation) return;
@@ -226,7 +226,7 @@ export function SeatingPlanner({ guests, tables, act, setUndo, canApplyFinalPlan
           window.alert(`The plan was not changed. Resolve these guest matches first:\n\n${problems.slice(0, 12).join("\n")}${problems.length > 12 ? `\n…and ${problems.length - 12} more` : ""}`);
           return;
         }
-        if (!window.confirm("Replace the current reception seating, meals, allergies and special needs with the finalized 154-person Grand Salon CSV, then replace After Hours access with the finalized 59-person list? Guests outside these lists will be removed from those arrangements.")) return;
+        if (!window.confirm("Replace the current reception seating, meals, allergies and special needs with the finalized 155-person Grand Salon plan, then replace After Hours access with the finalized 59-person list? Guests outside these lists will be removed from those arrangements.")) return;
         const seatingResult = await act({ action: "applyFinalSeatingPlan", confirm: "APPLY FINAL GRAND SALON PLAN" }, "Final Grand Salon seating plan applied");
         if (!seatingResult) return;
         await act({ action: "applyFinalAfterPartyList", confirm: "APPLY FINAL AFTER PARTY LIST" }, "Final seating and 59-person After Hours list applied");

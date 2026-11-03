@@ -155,6 +155,7 @@ async function applyFinalWeddingData() {
       update.child_meal = seating.assignment.meal === "Kids meal" ? 1 : 0;
       update.dietary_requirements = seating.assignment.dietaryRequirements ?? null;
       update.allergies = seating.assignment.allergies ?? null;
+      if (seating.assignment.accessibility) update.accessibility = seating.assignment.accessibility;
     } else if (activeReceptionGuests.includes(doc)) {
       update.table_id = null;
       update.seat_number = null;

@@ -6,6 +6,7 @@ import { normaliseSiteDesign } from "../../../lib/site-design";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../../../lib/final-seating-plan";
 import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../../../lib/final-after-party-list";
 import { ensureFinalWeddingDataApplied } from "../../../lib/apply-final-wedding-data";
+import { ensureBabyFatimaSeatApplied } from "../../../lib/apply-baby-fatima-seat";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
     assertFirebaseAdminConfigured();
     await ensureFinalWeddingDataApplied();
+    await ensureBabyFatimaSeatApplied();
     const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
       // No "where" on archived: Firestore drops documents missing the field,
       // which silently hid imported guests from the manager as well.
@@ -528,7 +530,7 @@ export async function POST(request: Request) {
       }
       // Remove obsolete reception assignments before writing the authoritative
       // CSV. Confirmed non-crew guests omitted from the final list are marked
-      // declined so kitchen and venue exports contain exactly the final 154.
+      // declined so kitchen and venue exports contain exactly the final 155.
       for (const doc of activeReceptionGuests) {
         if (usedGuestIds.has(Number(doc.data().id))) continue;
         batch.set(doc.ref, {

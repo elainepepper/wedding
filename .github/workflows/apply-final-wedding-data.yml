@@ -17,6 +17,7 @@ jobs:
         shell: bash
         run: |
           expected="2026-11-03-154-seats-59-after-hours"
+          expected_adjustment="2026-11-04-fatima-between-alyn-and-mirza"
           headers="$(mktemp)"
           for attempt in $(seq 1 60); do
             : > "$headers"
@@ -24,9 +25,10 @@ jobs:
               --dump-header "$headers" --output /dev/null \
               "https://haykalelaine.com/api/site-settings"; then
               version="$(tr -d '\r' < "$headers" | awk -F': ' 'tolower($1)=="x-final-data-version" {print $2}' | tail -n 1)"
-              echo "Attempt $attempt: final data version ${version:-not deployed yet}"
-              if [ "$version" = "$expected" ]; then
-                echo "Final reception and After Hours lists were applied successfully."
+              adjustment="$(tr -d '\r' < "$headers" | awk -F': ' 'tolower($1)=="x-seating-adjustment-version" {print $2}' | tail -n 1)"
+              echo "Attempt $attempt: final data ${version:-not deployed yet}; seating adjustment ${adjustment:-not deployed yet}"
+              if [ "$version" = "$expected" ] && [ "$adjustment" = "$expected_adjustment" ]; then
+                echo "Final lists and Baby Fatima seating adjustment were applied successfully."
                 exit 0
               fi
             else
@@ -34,6 +36,6 @@ jobs:
             fi
             sleep 10
           done
-          echo "Production never reported final data version $expected." >&2
+          echo "Production never reported final data $expected and seating adjustment $expected_adjustment." >&2
           exit 1
 

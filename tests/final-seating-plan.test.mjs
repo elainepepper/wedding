@@ -5,7 +5,7 @@ import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../lib/final-seat
 import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../lib/final-after-party-list.ts";
 
 test("the finalized Grand Salon plan accounts for every confirmed place exactly once", () => {
-  assert.equal(FINAL_SEATING_GUEST_COUNT, 154);
+  assert.equal(FINAL_SEATING_GUEST_COUNT, 155);
   assert.equal(FINAL_SEATING_PLAN.length, 14);
   assert.equal(new Set(FINAL_SEATING_PLAN.map((table) => table.key)).size, FINAL_SEATING_PLAN.length);
   for (const table of FINAL_SEATING_PLAN) {
@@ -21,12 +21,12 @@ test("the finalized kitchen totals and safety notes match the supplied CSV", () 
     result[assignment.meal] = (result[assignment.meal] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(totals, { Lamb: 88, Salmon: 65, "Kids meal": 1 });
+  assert.deepEqual(totals, { Lamb: 88, Salmon: 65, "Kids meal": 2 });
   assert.equal(assignments.find((assignment) => assignment.label === "Bakhtiar")?.allergies, undefined);
   assert.equal(assignments.find((assignment) => assignment.label === "Doris")?.allergies, "Honey allergy");
-  assert.equal(assignments.some((assignment) => assignment.label === "Fatima"), false);
+  assert.equal(assignments.find((assignment) => assignment.label === "Fatima")?.accessibility, "Baby chair required");
   const table = (key) => FINAL_SEATING_PLAN.find((entry) => entry.key === key);
-  assert.deepEqual(table("table-2")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Alyn", "Lamb"], ["Mirza", "Lamb"]]);
+  assert.deepEqual(table("table-2")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Alyn", "Lamb"], ["Fatima", "Kids meal"], ["Mirza", "Lamb"]]);
   assert.deepEqual(table("table-10")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Datuk Jerry Axton", "Lamb"], ["Datin Jerry Axton", "Salmon"]]);
   assert.deepEqual(table("table-11")?.seats.slice(4).map(({ label, meal }) => [label, meal]), [["Datin Angie Teh", "Salmon"], ["Datuk Lee Jin Bok", "Lamb"], ["Syed Wafa", "Lamb"], ["Ismail Ani Arope", "Lamb"]]);
 });
