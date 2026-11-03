@@ -364,24 +364,22 @@ export async function POST(request: Request) {
 
     if (action === "validateFinalAfterPartyList" || action === "applyFinalAfterPartyList") {
       if (admin.role === "planner") return plannerDenied();
-      const [guestSnapshot, householdSnapshot, tableSnapshot] = await Promise.all([
+      const [guestSnapshot, householdSnapshot] = await Promise.all([
         weddingRef.collection("guests").get(),
         weddingRef.collection("households").get(),
-        weddingRef.collection("tables").get(),
       ]);
       const activeGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived));
-      const confirmedGuests = activeGuests.filter((doc) => canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
       const householdNames = new Map(householdSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().name ?? "")]));
-      const tableKeys = new Map(tableSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().final_plan_key ?? "")]));
       const unresolved: string[] = [];
       const ambiguous: string[] = [];
-      const seatingMismatches: string[] = [];
       const selectedGuestIds = new Set<number>();
 
       for (const assignment of FINAL_AFTER_PARTY_LIST) {
         const acceptedNames = new Set([assignment.label, ...(assignment.aliases ?? [])].map(seatingKey).filter(Boolean));
         const householdHint = seatingKey(assignment.household);
-        const candidates = confirmedGuests.filter((doc) => {
+        // Elaine's named list is authoritative. Match active people by identity;
+        // do not let stale RSVP or seating data block private After Hours access.
+        const candidates = activeGuests.filter((doc) => {
           const data = doc.data();
           const preferred = seatingKey(data.preferred_name);
           const full = seatingKey(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
@@ -397,10 +395,6 @@ export async function POST(request: Request) {
         const guestId = Number(match.data().id);
         if (selectedGuestIds.has(guestId)) { ambiguous.push(`${reference} (guest appears twice)`); continue; }
         selectedGuestIds.add(guestId);
-        const actualTableKey = tableKeys.get(Number(match.data().table_id)) ?? "";
-        if (actualTableKey !== assignment.tableKey || Number(match.data().seat_number) !== assignment.seat) {
-          seatingMismatches.push(reference);
-        }
       }
 
       const validation = {
@@ -408,9 +402,8 @@ export async function POST(request: Request) {
         resolvedGuestCount: selectedGuestIds.size,
         unresolved,
         ambiguous,
-        seatingMismatches,
       };
-      const valid = !unresolved.length && !ambiguous.length && !seatingMismatches.length && selectedGuestIds.size === FINAL_AFTER_PARTY_COUNT;
+      const valid = !unresolved.length && !ambiguous.length && selectedGuestIds.size === FINAL_AFTER_PARTY_COUNT;
       if (action === "validateFinalAfterPartyList") return Response.json({ ok: valid, ...validation });
       if (clean(payload.confirm, 80) !== "APPLY FINAL AFTER PARTY LIST") {
         return Response.json({ error: "Confirm the final After Hours list before applying it.", ...validation }, { status: 400 });
