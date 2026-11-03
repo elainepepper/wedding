@@ -239,6 +239,7 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /Final-details messages contain no invitation link/);
   assert.match(manager, /10:30 pm until late/);
   assert.match(manager, /Noko Noko/);
+  assert.match(manager, /our after-party at Noko Noko/);
   assert.doesNotMatch(manager, /\\n\\nAfter Hours\\n/);
   assert.match(manager, /settings\.after_hours_address/);
   assert.match(manager, /afterPartyGuests\.length/);
