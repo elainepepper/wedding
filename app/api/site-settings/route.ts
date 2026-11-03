@@ -14,10 +14,13 @@ export async function GET() {
   // invitation must still open, so this answers quietly with the defaults
   // rather than a 500 the guest's browser would have to recover from.
   try {
-    await ensureFinalWeddingDataApplied();
+    const finalData = await ensureFinalWeddingDataApplied();
     const snapshot = await weddingRef.get();
     const settings = snapshot.data() ?? {};
-    return Response.json({ musicUrl: settings.music_url || defaultMusic.url, musicTitle: settings.music_title || defaultMusic.title, siteDesign: settings.site_design ?? null });
+    return Response.json(
+      { musicUrl: settings.music_url || defaultMusic.url, musicTitle: settings.music_title || defaultMusic.title, siteDesign: settings.site_design ?? null },
+      { headers: { "X-Final-Data-Version": finalData.version } },
+    );
   } catch {
     return Response.json({ musicUrl: defaultMusic.url, musicTitle: defaultMusic.title, siteDesign: null });
   }
