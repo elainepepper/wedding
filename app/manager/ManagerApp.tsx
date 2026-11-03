@@ -671,7 +671,7 @@ function tableMessage(names: string, members: Guest[], afterHoursLocation = "") 
   }).join("\n\n");
   const afterPartyGuests = confirmed.filter((guest) => guest.after_party_invited);
   const afterParty = afterPartyGuests.length
-    ? `\n\nAfter Hours\n${afterPartyGuests.length === confirmed.length ? "You are" : `${afterPartyGuests.map(displayName).join(" & ")} — you are`} also invited to join us after dinner from 10:30 pm until late.${afterHoursLocation ? `\nLocation: ${afterHoursLocation}` : ""}\n\nPlease keep the After Hours details private.`
+    ? `\n\nNoko Noko\n${afterPartyGuests.length === confirmed.length ? "You are" : `${afterPartyGuests.map(displayName).join(" & ")} — you are`} also invited to join us at Noko Noko from 10:30 pm until late.${afterHoursLocation ? `\nLocation: ${afterHoursLocation}` : ""}\n\nPlease keep the Noko Noko details private.`
     : "";
   return `Dear ${names},\n\nA little reminder for 7 November — here are your table and dinner details:\n\n${details}${afterParty}\n\nPlease let us know if anything above needs correcting.\n\nWith love,\nElaine & Haykal`;
 }
