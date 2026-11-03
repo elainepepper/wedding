@@ -1,4 +1,5 @@
 import { weddingRef } from "../../../lib/firebase-admin";
+import { ensureFinalWeddingDataApplied } from "../../../lib/apply-final-wedding-data";
 
 // Settings are read on every page load; a cached copy would show stale wording.
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export async function GET() {
   // invitation must still open, so this answers quietly with the defaults
   // rather than a 500 the guest's browser would have to recover from.
   try {
+    await ensureFinalWeddingDataApplied();
     const snapshot = await weddingRef.get();
     const settings = snapshot.data() ?? {};
     return Response.json({ musicUrl: settings.music_url || defaultMusic.url, musicTitle: settings.music_title || defaultMusic.title, siteDesign: settings.site_design ?? null });

@@ -5,6 +5,7 @@ import { effectiveRsvpDeadline } from "../../../lib/rsvp-window";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../../../lib/final-seating-plan";
 import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../../../lib/final-after-party-list";
+import { ensureFinalWeddingDataApplied } from "../../../lib/apply-final-wedding-data";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
     const admin = await requireAdmin(request);
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
     assertFirebaseAdminConfigured();
+    await ensureFinalWeddingDataApplied();
     const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
       // No "where" on archived: Firestore drops documents missing the field,
       // which silently hid imported guests from the manager as well.
