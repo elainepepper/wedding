@@ -1715,13 +1715,32 @@ function HealthCheck({ authToken }: { authToken: string }) {
  * Households are shown rather than individual guests, because one invitation
  * covers everyone on it.
  */
-function Chasing({ households, guests, settings, act, notify }: {
+function Chasing({ households, guests, settings, act: _act, notify }: {
   households: Household[]; guests: Guest[]; settings: Settings;
   act: (payload: Record<string, unknown>, success: string) => Promise<unknown>;
   notify: (message: string) => void;
 }) {
   const [origin, setOrigin] = useState("");
-  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const [mode, setMode] = useState<"details" | "rsvp">("details");
+  const [position, setPosition] = useState(0);
+  const [completed, setCompleted] = useState<{ details: number[]; rsvp: number[] }>({ details: [], rsvp: [] });
+  const [progressReady, setProgressReady] = useState(false);
+  const [lastCompleted, setLastCompleted] = useState<{ mode: "details" | "rsvp"; id: number; name: string } | null>(null);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const progressKey = "haykal-elaine-follow-up-progress-2026-11-07";
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(progressKey) || "null") as { details?: number[]; rsvp?: number[] } | null;
+      if (saved) setCompleted({ details: saved.details ?? [], rsvp: saved.rsvp ?? [] });
+    } catch { /* An unreadable old value should never stop the manager opening. */ }
+    setProgressReady(true);
+  }, []);
+  useEffect(() => {
+    if (!progressReady) return;
+    window.localStorage.setItem(progressKey, JSON.stringify(completed));
+  }, [completed, progressReady]);
   const deadline = rsvpDeadlineLabel(settings?.rsvp_deadline) ?? "";
   const deadlineHasPassed = rsvpDeadlinePassed(settings?.rsvp_deadline);
 
@@ -1754,26 +1773,49 @@ function Chasing({ households, guests, settings, act, notify }: {
       && members.some((guest) => guest.rsvp_status === "Pending")
       && members.some((guest) => guest.rsvp_status !== "Pending"));
 
-  const card = (entry: { household: Household; members: Guest[] }, partial: boolean) => {
-    const names = [...entry.members].sort(compareInvitationGuests).map(displayName).join(" & ");
-    const link = inviteLink(origin, entry.household.invitation_token, entry.household.name);
-    const sentAt = entry.members.find((guest) => guest.invitation_sent_at)?.invitation_sent_at;
-    return (
-      <article className="chase-card" key={entry.household.id}>
-        <div>
-          <strong>{entry.household.name}</strong>
-          <p>{names}</p>
-          <p className="chase-meta">
-            {sentAt ? `Sent ${dateLabel(sentAt)}` : "Sent"}
-            {partial ? " · some of them have replied" : ""}
-          </p>
-        </div>
-        <div className="chase-actions">
-          <button type="button" onClick={async () => { await navigator.clipboard.writeText(nudgeMessage(names, link, deadline, deadlineHasPassed)); notify("Reminder copied"); }}>Copy reminder</button>
-          <a href={waLink(entry.household.mobile, nudgeMessage(names, link, deadline, deadlineHasPassed))} target="_blank" rel="noreferrer">WhatsApp reminder</a>
-        </div>
-      </article>
-    );
+  const rsvpEntries = [
+    ...waiting.map((entry) => ({ ...entry, partial: false })),
+    ...partly.map((entry) => ({ ...entry, partial: true })),
+  ];
+  const entries = mode === "details" ? dinnerDetails : rsvpEntries;
+  const finishedIds = completed[mode];
+  const remaining = entries.filter((entry) => !finishedIds.includes(entry.household.id));
+  const currentPosition = Math.min(position, Math.max(0, remaining.length - 1));
+  const current = remaining[currentPosition];
+  const total = entries.length;
+  const finishedCount = entries.filter((entry) => finishedIds.includes(entry.household.id)).length;
+  const currentNames = current ? [...current.members].sort(compareInvitationGuests).map(displayName).join(" & ") : "";
+  const currentLink = current ? inviteLink(origin, current.household.invitation_token, current.household.name) : "";
+  const currentMessage = current
+    ? mode === "details"
+      ? tableMessage(currentNames, current.members, String(settings.after_hours_address ?? "").trim())
+      : nudgeMessage(currentNames, currentLink, deadline, deadlineHasPassed)
+    : "";
+  const currentMobile = current?.household.mobile || current?.members.find((guest) => guest.mobile)?.mobile || null;
+
+  const move = (by: number) => {
+    if (!remaining.length) return;
+    setPosition((currentIndex) => (Math.min(currentIndex, remaining.length - 1) + by + remaining.length) % remaining.length);
+  };
+  const finishCurrent = () => {
+    if (!current) return;
+    const done = { mode, id: current.household.id, name: current.household.name };
+    setCompleted((value) => ({ ...value, [mode]: value[mode].includes(done.id) ? value[mode] : [...value[mode], done.id] }));
+    setLastCompleted(done);
+    setPosition((value) => remaining.length <= 1 ? 0 : Math.min(value, remaining.length - 2));
+  };
+  const undoLast = () => {
+    if (!lastCompleted) return;
+    setCompleted((value) => ({ ...value, [lastCompleted.mode]: value[lastCompleted.mode].filter((id) => id !== lastCompleted.id) }));
+    setMode(lastCompleted.mode);
+    setPosition(0);
+    notify(`${lastCompleted.name} returned to the deck`);
+    setLastCompleted(null);
+  };
+  const resetMode = () => {
+    setCompleted((value) => ({ ...value, [mode]: [] }));
+    setPosition(0);
+    setLastCompleted(null);
   };
 
   return <div className="manager-page">
@@ -1781,27 +1823,81 @@ function Chasing({ households, guests, settings, act, notify }: {
       <div>
         <p className="panel-kicker">Guest follow-up</p>
         <h2>Messages ready to send</h2>
-        <span>{dinnerDetails.length} final-details message{dinnerDetails.length === 1 ? "" : "s"} · {waiting.length} RSVP reminder{waiting.length === 1 ? "" : "s"}. Final-details messages contain no invitation link. Nothing is sent automatically.</span>
+        <span>{dinnerDetails.length} final-details message{dinnerDetails.length === 1 ? "" : "s"} · {rsvpEntries.length} RSVP reminder{rsvpEntries.length === 1 ? "" : "s"}. Work through one household at a time; your place is remembered on this phone. Nothing is sent automatically. Final-details messages contain no invitation link.</span>
       </div>
     </div>
-    {dinnerDetails.length ? <section className="manager-panel">
-      <h3>Seat, dinner &amp; After Hours · {dinnerDetails.length}</h3>
-      <p className="import-help">Each message includes the household&apos;s seats, main courses and dietary notes. The private After Hours invitation appears only for guests on the final 59-person list. No main invitation link is included.</p>
-      <div className="chase-list">{dinnerDetails.map((entry) => {
-        const names = entry.members.map(displayName).join(" & ");
-        const tables = [...new Set(entry.members.map((guest) => guest.table_name).filter(Boolean))].join(" & ");
-        const care = entry.members.filter((guest) => guest.dietary_requirements || guest.allergies).map((guest) => `${displayName(guest)}: ${[guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ")}`);
-        const message = tableMessage(names, entry.members, String(settings.after_hours_address ?? "").trim());
-        return <article className="chase-card" key={`dinner-${entry.household.id}`}>
-          <div><strong>{entry.household.name}</strong><p>{names}</p><p className="chase-meta">{tables}{care.length ? ` · ${care.join("; ")}` : " · no dietary notes"}</p></div>
-          <div className="chase-actions">
-            <button type="button" onClick={async () => { await navigator.clipboard.writeText(message); notify("Table and dinner details copied"); }}>Copy details</button>
-            <a href={waLink(entry.household.mobile, message)} target="_blank" rel="noreferrer">WhatsApp details</a>
-          </div>
-        </article>;
-      })}</div>
-    </section> : null}
-    {waiting.length ? <section className="manager-panel"><h3>Sent · awaiting reply</h3><div className="chase-list">{waiting.map((entry) => card(entry, false))}</div></section> : <section className="manager-panel"><p className="import-help">No sent invitations are waiting for a reply.</p></section>}
+    <section className="manager-panel followup-deck-panel">
+      <div className="followup-mode" role="tablist" aria-label="Message queue">
+        <button type="button" role="tab" aria-selected={mode === "details"} className={mode === "details" ? "is-active" : ""} onClick={() => { setMode("details"); setPosition(0); }}>
+          <span>Seat, dinner &amp; After Hours</span><em>{dinnerDetails.length}</em>
+        </button>
+        <button type="button" role="tab" aria-selected={mode === "rsvp"} className={mode === "rsvp" ? "is-active" : ""} onClick={() => { setMode("rsvp"); setPosition(0); }}>
+          <span>RSVP reminders</span><em>{rsvpEntries.length}</em>
+        </button>
+      </div>
+
+      <div className="followup-progress" aria-label={`${finishedCount} of ${total} completed`}>
+        <div><span>{finishedCount} sent</span><strong>{remaining.length} left</strong></div>
+        <i><b style={{ width: `${total ? (finishedCount / total) * 100 : 100}%` }} /></i>
+      </div>
+
+      {current ? <article
+        className="followup-card"
+        onTouchStart={(event) => { touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; }}
+        onTouchEnd={(event) => {
+          if (!touch.current) return;
+          const dx = event.changedTouches[0].clientX - touch.current.x;
+          const dy = Math.abs(event.changedTouches[0].clientY - touch.current.y);
+          if (Math.abs(dx) > 60 && dy < 60) move(dx < 0 ? 1 : -1);
+          touch.current = null;
+        }}
+      >
+        <header>
+          <div><p>{currentPosition + 1} of {remaining.length} remaining</p><h3>{current.household.name}</h3><span>{currentNames}</span></div>
+          <b className={currentMobile ? "has-mobile" : "no-mobile"}>{currentMobile || "No mobile"}</b>
+        </header>
+
+        {mode === "details" ? <div className="followup-guests">
+          {current.members.map((guest) => {
+            const care = [guest.dietary_requirements, guest.allergies].filter(Boolean).join(" · ") || "None noted";
+            return <section key={guest.id}>
+              <div><strong>{displayName(guest)}</strong>{guest.after_party_invited ? <em>After Hours</em> : null}</div>
+              <dl>
+                <div><dt>Place</dt><dd>{guest.table_name}{guest.seat_number ? ` · Seat ${guest.seat_number}` : ""}</dd></div>
+                <div><dt>Main course</dt><dd>{mealPreference(guest)}</dd></div>
+                <div><dt>Dietary / allergy</dt><dd>{care}</dd></div>
+              </dl>
+            </section>;
+          })}
+          <p className="followup-private-note">After Hours appears in the message only for invited guests. The main invitation link is not included.</p>
+        </div> : <div className="followup-reminder-summary">
+          <strong>{"partial" in current && current.partial ? "Some guests on this invitation have replied" : "No reply received yet"}</strong>
+          <p>The reminder includes their personal invitation link and the current RSVP timing.</p>
+        </div>}
+
+        <details className="followup-message-preview"><summary>Preview the full message</summary><pre>{currentMessage}</pre></details>
+
+        <div className="followup-primary-actions">
+          <a href={waLink(currentMobile, currentMessage)} target="_blank" rel="noreferrer" onClick={finishCurrent}>{mode === "details" ? "WhatsApp details & next" : "WhatsApp reminder & next"}</a>
+          <button type="button" onClick={async () => {
+            await navigator.clipboard.writeText(currentMessage);
+            notify(mode === "details" ? "Final details copied — next household ready" : "Reminder copied — next household ready");
+            finishCurrent();
+          }}>{mode === "details" ? "Copy details & next" : "Copy reminder & next"}</button>
+        </div>
+        <div className="followup-navigation">
+          <button type="button" onClick={() => move(-1)}>← Back</button>
+          {lastCompleted ? <button type="button" className="followup-undo" onClick={undoLast}>Undo last</button> : <span />}
+          <button type="button" onClick={() => move(1)}>Skip →</button>
+        </div>
+      </article> : <div className="deck-done followup-done">
+        <span aria-hidden="true">✦</span>
+        <h3>{total ? `All ${total} ${mode === "details" ? "final-details messages" : "RSVP reminders"} are complete` : `No ${mode === "details" ? "final-details messages" : "RSVP reminders"} are waiting`}</h3>
+        <p>{total ? "This device has remembered your progress." : mode === "details" ? "Confirmed guests need an assigned table before they appear here." : "No sent invitations currently need a reply."}</p>
+        {lastCompleted ? <button type="button" className="followup-reset" onClick={undoLast}>Undo last</button> : null}
+        {finishedCount ? <button type="button" className="followup-reset" onClick={resetMode}>Start this deck again</button> : null}
+      </div>}
+    </section>
     {(() => {
       const replied = guests
         .filter((guest) => guest.rsvp_submitted_at)
@@ -1816,7 +1912,6 @@ function Chasing({ households, guests, settings, act, notify }: {
         </li>)}</ol>
       </section> : null;
     })()}
-    {partly.length ? <section className="manager-panel"><h3>Partly replied · {partly.length}</h3><p className="import-help">Someone on the invitation has answered and someone has not.</p><div className="chase-list">{partly.map((entry) => card(entry, true))}</div></section> : null}
   </div>;
 }
 

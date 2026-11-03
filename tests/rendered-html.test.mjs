@@ -241,6 +241,10 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /settings\.after_hours_address/);
   assert.match(manager, /afterPartyGuests\.length/);
   assert.match(manager, /Almond dukkah-crusted rack of lamb/);
+  assert.match(manager, /haykal-elaine-follow-up-progress-2026-11-07/);
+  assert.match(manager, /WhatsApp details & next/);
+  assert.match(manager, /Copy details & next/);
+  assert.match(manager, /Undo last/);
   assert.match(managerRoute, /rsvp_deadline: effectiveRsvpDeadline\(settingsSnapshot\.data\(\)\?\.rsvp_deadline\)/);
   assert.match(experience, /"7 October 2026"/);
   assert.match(preview, /rsvp_deadline: "2026-10-07"/);
