@@ -3,6 +3,7 @@
 import { compareInvitationGuests } from "../../lib/rsvp-data.mjs";
 import { rsvpDeadlineLabel, rsvpDeadlinePassed } from "../../lib/rsvp-window";
 import { createTablePdf, savePdfOnDevice, type PdfColumn } from "../../lib/simple-pdf";
+import { AFTER_HOURS_MAP_URL } from "../../lib/wedding-details";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { MemoriesManager } from "./MemoriesManager";
@@ -420,7 +421,7 @@ export function ManagerApp({ initialAdminName, signedInEmail, authToken, onSignO
             groupFilter={groupFilter} setGroupFilter={setGroupFilter} edit={setGuestModal} act={act} rsvpMode={tab === "rsvps"} adminRole={data.admin.role}
           />
         ) : null}
-        {tab === "households" ? <Households replyBy={rsvpDeadlineLabel(data.settings.rsvp_deadline) ?? ""} deadlinePassed={rsvpDeadlinePassed(data.settings.rsvp_deadline)} afterHoursLocation={String(data.settings.after_hours_address ?? "").trim()} households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
+        {tab === "households" ? <Households replyBy={rsvpDeadlineLabel(data.settings.rsvp_deadline) ?? ""} deadlinePassed={rsvpDeadlinePassed(data.settings.rsvp_deadline)} afterHoursLocation={AFTER_HOURS_MAP_URL} households={data.households} guests={data.guests} archived={data.archivedHouseholds ?? []} adminRole={data.admin.role} act={act} notify={notify} setUndo={setUndo} edit={setGuestModal} addTo={(householdId) => { setNewGuestHousehold(householdId); setGuestModal("new"); }} /> : null}
         {tab === "seating" ? <SeatingPlanner guests={data.guests} tables={data.tables} act={act} setUndo={setUndo} canApplyFinalPlan={data.admin.role !== "planner"} /> : null}
         {tab === "afterparty" ? <AfterParty guests={data.guests} selected={selected} setSelected={setSelected} act={act} canApplyFinalList={data.admin.role !== "planner"} /> : null}
         {tab === "wishes" ? <WishesAndAdvice guests={data.guests} /> : null}
@@ -1788,7 +1789,7 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
   const currentLink = current ? inviteLink(origin, current.household.invitation_token, current.household.name) : "";
   const currentMessage = current
     ? mode === "details"
-      ? tableMessage(currentNames, current.members, String(settings.after_hours_address ?? "").trim())
+      ? tableMessage(currentNames, current.members, AFTER_HOURS_MAP_URL)
       : nudgeMessage(currentNames, currentLink, deadline, deadlineHasPassed)
     : "";
   const currentMobile = current?.household.mobile || current?.members.find((guest) => guest.mobile)?.mobile || null;

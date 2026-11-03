@@ -1,5 +1,6 @@
 import { serverTimestamp, weddingRef } from "../../../lib/firebase-admin";
 import { canonicalRsvpStatus, isEnabledFlag } from "../../../lib/rsvp-data.mjs";
+import { AFTER_HOURS_MAP_URL } from "../../../lib/wedding-details";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,7 +54,7 @@ function publicSettings(settings: Record<string, unknown>) {
     settings.after_hours_location_revealed,
   );
   const venue = String(settings.after_hours_venue ?? "").trim();
-  const address = String(settings.after_hours_address ?? "").trim();
+  const address = AFTER_HOURS_MAP_URL;
   return {
     deadline: String(settings.after_hours_rsvp_deadline ?? "2026-10-15"),
     musicUrl: String(settings.after_hours_music_url ?? "").trim() || null,
