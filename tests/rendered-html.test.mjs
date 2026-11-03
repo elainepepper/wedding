@@ -231,11 +231,15 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /WhatsApp follow-up/);
   assert.match(manager, /Copy follow-up/);
   assert.match(manager, /deadlineHasPassed/);
-  assert.match(manager, /latest link/);
+  assert.match(manager, /nudgeMessage\(names, link/);
   assert.match(manager, /Nothing is sent automatically/);
-  assert.match(manager, /Table &amp; dinner details/);
+  assert.match(manager, /Seat, dinner &amp; After Hours/);
   assert.match(manager, /Dietary requirements \/ allergies/);
   assert.match(manager, /WhatsApp details/);
+  assert.match(manager, /Final-details messages contain no invitation link/);
+  assert.match(manager, /10:30 pm until late/);
+  assert.match(manager, /settings\.after_hours_address/);
+  assert.match(manager, /afterPartyGuests\.length/);
   assert.match(manager, /Almond dukkah-crusted rack of lamb/);
   assert.match(manager, /Save slight shellfish allergy/);
   assert.match(manager, /Slight shellfish allergy/);

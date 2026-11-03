@@ -4,6 +4,7 @@ import { canonicalAgeGroup, canonicalRsvpStatus, isChildAgeGroup, isEnabledFlag,
 import { effectiveRsvpDeadline } from "../../../lib/rsvp-window";
 import { normaliseSiteDesign } from "../../../lib/site-design";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../../../lib/final-seating-plan";
+import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../../../lib/final-after-party-list";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -359,6 +360,77 @@ export async function POST(request: Request) {
       await batch.commit();
       await addActivity(admin.displayName, "Guests bulk edited", "guest", guestIds.join(","), `${field} updated for ${guestIds.length} guests`);
       return Response.json({ ok: true });
+    }
+
+    if (action === "validateFinalAfterPartyList" || action === "applyFinalAfterPartyList") {
+      if (admin.role === "planner") return plannerDenied();
+      const [guestSnapshot, householdSnapshot, tableSnapshot] = await Promise.all([
+        weddingRef.collection("guests").get(),
+        weddingRef.collection("households").get(),
+        weddingRef.collection("tables").get(),
+      ]);
+      const activeGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived));
+      const confirmedGuests = activeGuests.filter((doc) => canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
+      const householdNames = new Map(householdSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().name ?? "")]));
+      const tableKeys = new Map(tableSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().final_plan_key ?? "")]));
+      const unresolved: string[] = [];
+      const ambiguous: string[] = [];
+      const seatingMismatches: string[] = [];
+      const selectedGuestIds = new Set<number>();
+
+      for (const assignment of FINAL_AFTER_PARTY_LIST) {
+        const acceptedNames = new Set([assignment.label, ...(assignment.aliases ?? [])].map(seatingKey).filter(Boolean));
+        const householdHint = seatingKey(assignment.household);
+        const candidates = confirmedGuests.filter((doc) => {
+          const data = doc.data();
+          const preferred = seatingKey(data.preferred_name);
+          const full = seatingKey(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
+          if (!acceptedNames.has(preferred) && !acceptedNames.has(full)) return false;
+          if (!householdHint) return true;
+          const household = seatingKey(householdNames.get(Number(data.household_id)) ?? "");
+          return Boolean(household) && (household.includes(householdHint) || householdHint.includes(household));
+        });
+        const reference = `${assignment.label} (${assignment.tableKey}, seat ${assignment.seat})`;
+        if (!candidates.length) { unresolved.push(reference); continue; }
+        if (candidates.length > 1) { ambiguous.push(reference); continue; }
+        const match = candidates[0];
+        const guestId = Number(match.data().id);
+        if (selectedGuestIds.has(guestId)) { ambiguous.push(`${reference} (guest appears twice)`); continue; }
+        selectedGuestIds.add(guestId);
+        const actualTableKey = tableKeys.get(Number(match.data().table_id)) ?? "";
+        if (actualTableKey !== assignment.tableKey || Number(match.data().seat_number) !== assignment.seat) {
+          seatingMismatches.push(reference);
+        }
+      }
+
+      const validation = {
+        finalGuestCount: FINAL_AFTER_PARTY_COUNT,
+        resolvedGuestCount: selectedGuestIds.size,
+        unresolved,
+        ambiguous,
+        seatingMismatches,
+      };
+      const valid = !unresolved.length && !ambiguous.length && !seatingMismatches.length && selectedGuestIds.size === FINAL_AFTER_PARTY_COUNT;
+      if (action === "validateFinalAfterPartyList") return Response.json({ ok: valid, ...validation });
+      if (clean(payload.confirm, 80) !== "APPLY FINAL AFTER PARTY LIST") {
+        return Response.json({ error: "Confirm the final After Hours list before applying it.", ...validation }, { status: 400 });
+      }
+      if (!valid) {
+        return Response.json({ error: "The After Hours list was not applied because every guest could not be matched safely.", ...validation }, { status: 409 });
+      }
+
+      const batch = weddingRef.firestore.batch();
+      for (const doc of activeGuests) {
+        const invited = selectedGuestIds.has(Number(doc.data().id));
+        batch.set(doc.ref, {
+          after_party_eligible: invited ? 1 : 0,
+          after_party_invited: invited ? 1 : 0,
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+      }
+      await batch.commit();
+      await addActivity(admin.displayName, "Final After Hours list applied", "guest", "after-hours-final", `${FINAL_AFTER_PARTY_COUNT} named guests invited`);
+      return Response.json({ ok: true, ...validation });
     }
 
     if (action === "validateFinalSeatingPlan" || action === "applyFinalSeatingPlan") {
