@@ -434,11 +434,12 @@ export async function POST(request: Request) {
         weddingRef.collection("tables").get(),
       ]);
       const householdNames = new Map(householdSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().name ?? "")]));
-      const confirmedGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived) && canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed");
+      const activeGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived));
+      const activeReceptionGuests = activeGuests.filter((doc) => seatingKey(doc.data().category) !== "crew");
       const unresolved: string[] = [];
       const ambiguous: string[] = [];
       const resolvedGuests: Array<{
-        doc: (typeof confirmedGuests)[number];
+        doc: (typeof activeGuests)[number];
         tableKey: string;
         assignment: (typeof FINAL_SEATING_PLAN)[number]["seats"][number];
       }> = [];
@@ -448,7 +449,9 @@ export async function POST(request: Request) {
         for (const assignment of table.seats) {
           const acceptedNames = new Set([assignment.label, ...(assignment.aliases ?? [])].map(seatingKey).filter(Boolean));
           const householdHint = seatingKey(assignment.household);
-          const candidates = confirmedGuests.filter((doc) => {
+          // The supplied CSV is the final reception list. Resolve by identity
+          // across every active guest so stale RSVP status cannot block it.
+          const candidates = activeGuests.filter((doc) => {
             const data = doc.data();
             const preferred = seatingKey(data.preferred_name);
             const full = seatingKey(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
@@ -467,7 +470,7 @@ export async function POST(request: Request) {
         }
       }
 
-      const unmatchedConfirmed = confirmedGuests
+      const unlistedActiveGuests = activeReceptionGuests
         .filter((doc) => !usedGuestIds.has(Number(doc.data().id)))
         .map((doc) => String(doc.data().preferred_name || `${String(doc.data().first_name ?? "")} ${String(doc.data().last_name ?? "")}`.trim()));
       const existingTables = tableSnapshot.docs;
@@ -481,26 +484,20 @@ export async function POST(request: Request) {
         if (match) usedTableDocs.add(match.id);
         resolvedTables.push({ plan, doc: match });
       }
-      const unmatchedOccupiedTables = existingTables
-        .filter((doc) => !usedTableDocs.has(doc.id))
-        .filter((doc) => confirmedGuests.some((guest) => Number(guest.data().table_id) === Number(doc.data().id)))
-        .map((doc) => String(doc.data().name ?? `Table ${doc.data().id}`));
-      if (unmatchedOccupiedTables.length) ambiguous.push(`Occupied tables outside the final plan: ${unmatchedOccupiedTables.join(", ")}`);
-
       const validation = {
         finalGuestCount: FINAL_SEATING_GUEST_COUNT,
-        confirmedGuestCount: confirmedGuests.length,
+        activeGuestCount: activeGuests.length,
         resolvedGuestCount: resolvedGuests.length,
         tableCount: FINAL_SEATING_PLAN.length,
         unresolved,
         ambiguous,
-        unmatchedConfirmed,
+        unlistedActiveGuests,
       };
-      if (action === "validateFinalSeatingPlan") return Response.json({ ok: !unresolved.length && !ambiguous.length && !unmatchedConfirmed.length, ...validation });
+      if (action === "validateFinalSeatingPlan") return Response.json({ ok: !unresolved.length && !ambiguous.length && resolvedGuests.length === FINAL_SEATING_GUEST_COUNT, ...validation });
       if (clean(payload.confirm, 80) !== "APPLY FINAL GRAND SALON PLAN") {
         return Response.json({ error: "Confirm the final Grand Salon seating plan before applying it.", ...validation }, { status: 400 });
       }
-      if (unresolved.length || ambiguous.length || unmatchedConfirmed.length || resolvedGuests.length !== FINAL_SEATING_GUEST_COUNT) {
+      if (unresolved.length || ambiguous.length || resolvedGuests.length !== FINAL_SEATING_GUEST_COUNT) {
         return Response.json({ error: "The final seating plan was not applied because every guest could not be matched safely.", ...validation }, { status: 409 });
       }
 
@@ -527,22 +524,31 @@ export async function POST(request: Request) {
           ...(item.doc ? {} : { created_at: serverTimestamp() }),
         }, { merge: true });
       }
+      // Remove obsolete reception assignments before writing the authoritative
+      // CSV. Confirmed non-crew guests omitted from the final list are marked
+      // declined so kitchen and venue exports contain exactly the final 154.
+      for (const doc of activeReceptionGuests) {
+        if (usedGuestIds.has(Number(doc.data().id))) continue;
+        batch.set(doc.ref, {
+          table_id: null,
+          seat_number: null,
+          ...(canonicalRsvpStatus(doc.data().rsvp_status) === "Confirmed" ? { rsvp_status: "Declined" } : {}),
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+      }
       for (const assignment of resolvedGuests) {
         const mealSelection = assignment.assignment.meal === "Lamb" || assignment.assignment.meal === "Salmon"
           ? assignment.assignment.meal
           : null;
         const childMeal = assignment.assignment.meal === "Kids meal" ? 1 : 0;
         batch.set(assignment.doc.ref, {
+          rsvp_status: "Confirmed",
           table_id: tableIds.get(assignment.tableKey),
           seat_number: assignment.assignment.seat,
           meal_selection: mealSelection,
           child_meal: childMeal,
-          ...(assignment.assignment.dietaryRequirements
-            ? { dietary_requirements: assignment.assignment.dietaryRequirements }
-            : {}),
-          ...(assignment.assignment.allergies
-            ? { allergies: assignment.assignment.allergies }
-            : {}),
+          dietary_requirements: assignment.assignment.dietaryRequirements ?? null,
+          allergies: assignment.assignment.allergies ?? null,
           updated_at: serverTimestamp(),
         }, { merge: true });
       }

@@ -1724,8 +1724,6 @@ function Chasing({ households, guests, settings, act, notify }: {
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const deadline = rsvpDeadlineLabel(settings?.rsvp_deadline) ?? "";
   const deadlineHasPassed = rsvpDeadlinePassed(settings?.rsvp_deadline);
-  const bakhtiar = guests.find((guest) => /\bbakhtiar\b/i.test(`${guest.first_name} ${guest.last_name} ${guest.preferred_name ?? ""}`));
-  const bakhtiarAllergySaved = /shellfish/i.test(bakhtiar?.allergies ?? "");
 
   const dinnerDetails = households
     .map((household) => ({
@@ -1786,11 +1784,6 @@ function Chasing({ households, guests, settings, act, notify }: {
         <span>{dinnerDetails.length} final-details message{dinnerDetails.length === 1 ? "" : "s"} · {waiting.length} RSVP reminder{waiting.length === 1 ? "" : "s"}. Final-details messages contain no invitation link. Nothing is sent automatically.</span>
       </div>
     </div>
-    {bakhtiar && !bakhtiarAllergySaved ? <section className="manager-panel">
-      <h3>Bakhtiar&apos;s allergy note</h3>
-      <p className="import-help">Save this before sending his table and dinner message so the guest record, kitchen brief and follow-up all agree.</p>
-      <div className="chase-actions"><button type="button" onClick={() => void act({ action: "editGuest", guestId: bakhtiar.id, allergies: "Slight shellfish allergy" }, "Bakhtiar's slight shellfish allergy was saved")}>Save slight shellfish allergy</button></div>
-    </section> : null}
     {dinnerDetails.length ? <section className="manager-panel">
       <h3>Seat, dinner &amp; After Hours · {dinnerDetails.length}</h3>
       <p className="import-help">Each message includes the household&apos;s seats, main courses and dietary notes. The private After Hours invitation appears only for guests on the final 59-person list. No main invitation link is included.</p>

@@ -1,4 +1,4 @@
-export type FinalMeal = "Lamb" | "Salmon" | "Kids meal" | "No meal (baby)";
+export type FinalMeal = "Lamb" | "Salmon" | "Kids meal";
 
 export type FinalSeat = {
   seat: number;
@@ -31,12 +31,11 @@ const seat = (
 ): FinalSeat => ({ seat: seatNumber, label, meal, ...options });
 
 /**
- * Final Grand Salon kitchen and seating sheet supplied by Elaine on 24 October 2026.
+ * Final Grand Salon kitchen and seating CSV supplied by Elaine on 3 November 2026.
  *
  * The aliases deliberately include previous table names so applying a revised plan
  * reuses the existing tables. Household hints disambiguate repeated preferred names.
- * Bakhtiar's shellfish allergy is retained from Elaine's direct instruction because
- * the supplied kitchen PDF omitted it; safety notes are never silently removed.
+ * This CSV supersedes every earlier seating and kitchen source.
  */
 export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
   {
@@ -48,7 +47,7 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     seats: [
       seat(1, "Elaine", "Lamb", { aliases: ["The Bride", "Elaine Pepper"] }),
       seat(2, "Haykal", "Salmon", { aliases: ["The Groom", "Haykal"] }),
-      seat(3, "Bakhtiar", "Lamb", { allergies: "Slight shellfish allergy" }),
+      seat(3, "Bakhtiar", "Lamb"),
       seat(4, "Juzlinda", "Lamb"), seat(5, "Ibrahim", "Salmon"), seat(6, "Hasnah", "Lamb"),
       seat(7, "Alice", "Lamb"), seat(8, "Albert", "Salmon"),
     ],
@@ -72,8 +71,8 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     seats: [
       seat(1, "Zilan", "Lamb"), seat(2, "Julieza", "Lamb"), seat(3, "Adham", "Lamb"),
       seat(4, "Faudziah", "Lamb"), seat(5, "Juliena", "Lamb"), seat(6, "Reza", "Lamb"),
-      seat(7, "Juznida", "Lamb"), seat(8, "Mrs Park", "Salmon"), seat(9, "Datin Angie Teh", "Salmon"),
-      seat(10, "Datuk Lee Jin Bok", "Lamb"),
+      seat(7, "Juznida", "Lamb"), seat(8, "Mrs Park", "Salmon"), seat(9, "Alyn", "Lamb"),
+      seat(10, "Mirza", "Lamb"),
     ],
   },
   {
@@ -173,7 +172,7 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
       seat(1, "Mdm Nainasuziha", "Salmon"), seat(2, "Teresa", "Salmon", { household: "Anthony & Tess" }),
       seat(3, "Anthony", "Lamb", { household: "Anthony & Tess" }), seat(4, "Mr Lee Ah Kong", "Salmon"),
       seat(5, "Mrs Lee", "Salmon"), seat(6, "Mr Puvalenthiran", "Salmon"), seat(7, "Ms Effa 'Azura", "Lamb"),
-      seat(8, "Ms Waheda", "Lamb"),
+      seat(8, "Ms Waheda", "Lamb"), seat(9, "Datuk Jerry Axton", "Lamb"), seat(10, "Datin Jerry Axton", "Salmon"),
     ],
   },
   {
@@ -184,9 +183,8 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     seats: [
       seat(1, "Dato' Tiffanee", "Lamb", { aliases: ["Dato’ Tiffanee", "Dato Tiffanee"] }),
       seat(2, "Dato' Prof. Mandy Chew", "Salmon", { aliases: ["Dato’ Prof. Mandy Chew", "Dato Prof Mandy Chew", "Mandy Chew"] }),
-      seat(3, "Wesley", "Lamb"), seat(4, "Suzanne", "Salmon"), seat(5, "Alyn", "Lamb"),
-      seat(6, "Fatima", "No meal (baby)", { dietaryRequirements: "No meal (baby) · High chair needed" }),
-      seat(7, "Mirza", "Lamb"), seat(8, "Syed Wafa", "Lamb"), seat(9, "Ismail Ani Arope", "Lamb"),
+      seat(3, "Wesley", "Lamb"), seat(4, "Suzanne", "Salmon"), seat(5, "Datin Angie Teh", "Salmon"),
+      seat(6, "Datuk Lee Jin Bok", "Lamb"), seat(7, "Syed Wafa", "Lamb"), seat(8, "Ismail Ani Arope", "Lamb"),
     ],
   },
   {

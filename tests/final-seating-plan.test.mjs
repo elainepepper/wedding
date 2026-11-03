@@ -5,7 +5,7 @@ import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../lib/final-seat
 import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../lib/final-after-party-list.ts";
 
 test("the finalized Grand Salon plan accounts for every confirmed place exactly once", () => {
-  assert.equal(FINAL_SEATING_GUEST_COUNT, 153);
+  assert.equal(FINAL_SEATING_GUEST_COUNT, 154);
   assert.equal(FINAL_SEATING_PLAN.length, 14);
   assert.equal(new Set(FINAL_SEATING_PLAN.map((table) => table.key)).size, FINAL_SEATING_PLAN.length);
   for (const table of FINAL_SEATING_PLAN) {
@@ -15,16 +15,20 @@ test("the finalized Grand Salon plan accounts for every confirmed place exactly 
   }
 });
 
-test("the finalized kitchen totals and safety notes match the supplied PDF", () => {
+test("the finalized kitchen totals and safety notes match the supplied CSV", () => {
   const assignments = FINAL_SEATING_PLAN.flatMap((table) => table.seats);
   const totals = assignments.reduce((result, assignment) => {
     result[assignment.meal] = (result[assignment.meal] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(totals, { Lamb: 87, Salmon: 64, "Kids meal": 1, "No meal (baby)": 1 });
-  assert.equal(assignments.find((assignment) => assignment.label === "Bakhtiar")?.allergies, "Slight shellfish allergy");
+  assert.deepEqual(totals, { Lamb: 88, Salmon: 65, "Kids meal": 1 });
+  assert.equal(assignments.find((assignment) => assignment.label === "Bakhtiar")?.allergies, undefined);
   assert.equal(assignments.find((assignment) => assignment.label === "Doris")?.allergies, "Honey allergy");
-  assert.match(assignments.find((assignment) => assignment.label === "Fatima")?.dietaryRequirements ?? "", /No meal \(baby\).*High chair needed/);
+  assert.equal(assignments.some((assignment) => assignment.label === "Fatima"), false);
+  const table = (key) => FINAL_SEATING_PLAN.find((entry) => entry.key === key);
+  assert.deepEqual(table("table-2")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Alyn", "Lamb"], ["Mirza", "Lamb"]]);
+  assert.deepEqual(table("table-10")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Datuk Jerry Axton", "Lamb"], ["Datin Jerry Axton", "Salmon"]]);
+  assert.deepEqual(table("table-11")?.seats.slice(4).map(({ label, meal }) => [label, meal]), [["Datin Angie Teh", "Salmon"], ["Datuk Lee Jin Bok", "Lamb"], ["Syed Wafa", "Lamb"], ["Ismail Ani Arope", "Lamb"]]);
 });
 
 test("ambiguous preferred names carry household hints", () => {
@@ -42,6 +46,14 @@ test("the final After Hours list has 59 unique, seat-verified guests", () => {
   assert.equal(new Set(FINAL_AFTER_PARTY_LIST.map((guest) => `${guest.tableKey}:${guest.seat}`)).size, 59);
   const seating = new Set(FINAL_SEATING_PLAN.flatMap((table) => table.seats.map((guest) => `${table.key}:${guest.seat}`)));
   assert.ok(FINAL_AFTER_PARTY_LIST.every((guest) => seating.has(`${guest.tableKey}:${guest.seat}`)));
+  const normalize = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  for (const afterPartyGuest of FINAL_AFTER_PARTY_LIST) {
+    const table = FINAL_SEATING_PLAN.find((entry) => entry.key === afterPartyGuest.tableKey);
+    const seatedGuest = table?.seats.find((entry) => entry.seat === afterPartyGuest.seat);
+    const afterPartyNames = [afterPartyGuest.label, ...(afterPartyGuest.aliases ?? [])].map(normalize);
+    const seatingNames = [seatedGuest?.label ?? "", ...(seatedGuest?.aliases ?? [])].map(normalize);
+    assert.ok(afterPartyNames.some((name) => seatingNames.includes(name)), `${afterPartyGuest.label} does not match ${afterPartyGuest.tableKey} seat ${afterPartyGuest.seat}`);
+  }
   const counts = FINAL_AFTER_PARTY_LIST.reduce((result, guest) => {
     result[guest.tableKey] = (result[guest.tableKey] ?? 0) + 1;
     return result;
