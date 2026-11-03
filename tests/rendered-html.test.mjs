@@ -249,6 +249,8 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /Copy details/);
   assert.match(manager, /Sent — next household/);
   assert.match(manager, /Undo last/);
+  assert.match(manager, /Sent on this phone/);
+  assert.match(manager, /undoCompleted/);
   assert.match(manager, /AFTER_HOURS_MAP_URL/);
   assert.match(await read("lib/wedding-details.ts"), /DVnsFkHdT9BjuaqU6/);
   assert.match(await read("app\/api\/after-party\/route.ts"), /AFTER_HOURS_MAP_URL/);

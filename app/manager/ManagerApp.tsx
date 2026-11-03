@@ -1726,6 +1726,7 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
   const [position, setPosition] = useState(0);
   const [completed, setCompleted] = useState<{ details: number[]; rsvp: number[] }>({ details: [], rsvp: [] });
   const [progressReady, setProgressReady] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
   const [lastCompleted, setLastCompleted] = useState<{ mode: "details" | "rsvp"; id: number; name: string } | null>(null);
   const touch = useRef<{ x: number; y: number } | null>(null);
   const progressKey = "haykal-elaine-follow-up-progress-2026-11-07";
@@ -1785,6 +1786,9 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
   const current = remaining[currentPosition];
   const total = entries.length;
   const finishedCount = entries.filter((entry) => finishedIds.includes(entry.household.id)).length;
+  const completedEntries = finishedIds
+    .map((id) => entries.find((entry) => entry.household.id === id))
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const currentNames = current ? [...current.members].sort(compareInvitationGuests).map(displayName).join(" & ") : "";
   const currentLink = current ? inviteLink(origin, current.household.invitation_token, current.household.name) : "";
   const currentMessage = current
@@ -1812,6 +1816,12 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
     setPosition(0);
     notify(`${lastCompleted.name} returned to the deck`);
     setLastCompleted(null);
+  };
+  const undoCompleted = (id: number, name: string) => {
+    setCompleted((value) => ({ ...value, [mode]: value[mode].filter((completedId) => completedId !== id) }));
+    setPosition(0);
+    if (lastCompleted?.mode === mode && lastCompleted.id === id) setLastCompleted(null);
+    notify(`${name} returned to the deck`);
   };
   const resetMode = () => {
     setCompleted((value) => ({ ...value, [mode]: [] }));
@@ -1841,6 +1851,19 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
         <div><span>{finishedCount} sent</span><strong>{remaining.length} left</strong></div>
         <i><b style={{ width: `${total ? (finishedCount / total) * 100 : 100}%` }} /></i>
       </div>
+
+      {completedEntries.length ? <section className="followup-sent-log">
+        <button type="button" aria-expanded={showCompleted} onClick={() => setShowCompleted((visible) => !visible)}>
+          <span>{showCompleted ? "▾" : "▸"} Sent on this phone</span><strong>{completedEntries.length}</strong>
+        </button>
+        {showCompleted ? <div>
+          {[...completedEntries].reverse().map((entry) => <article key={`completed-${mode}-${entry.household.id}`}>
+            <span><strong>{entry.household.name}</strong><small>{entry.members.map(displayName).join(" & ")}</small></span>
+            <button type="button" onClick={() => undoCompleted(entry.household.id, entry.household.name)}>Undo</button>
+          </article>)}
+          <p>This is your private device checklist. Undo puts a household back into the deck; it does not alter guest data.</p>
+        </div> : null}
+      </section> : null}
 
       {current ? <article
         className="followup-card"

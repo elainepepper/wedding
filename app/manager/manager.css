@@ -876,6 +876,16 @@
 .followup-progress strong { color: var(--m-wine); font-size: .62rem; }
 .followup-progress > i { height: 4px; overflow: hidden; border-radius: 999px; display: block; background: #eddfdf; }
 .followup-progress > i > b { height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, #b96d84, var(--m-wine)); transition: width .28s ease; }
+.followup-sent-log { margin: 0 0 .8rem; border: 1px solid var(--m-line); border-radius: 13px; overflow: hidden; background: #fbf8f6; }
+.followup-sent-log > button { width: 100%; min-height: 46px; padding: .55rem .75rem; border: 0; display: flex; align-items: center; justify-content: space-between; background: transparent; color: var(--m-wine); font-size: .65rem; font-weight: 800; cursor: pointer; }
+.followup-sent-log > button strong { min-width: 1.6rem; padding: .12rem .38rem; border-radius: 999px; background: #ead9dc; font-size: .58rem; }
+.followup-sent-log > div { max-height: 14rem; padding: 0 .75rem .65rem; overflow-y: auto; overscroll-behavior: contain; }
+.followup-sent-log article { min-height: 48px; padding: .45rem 0; border-top: 1px solid var(--m-line); display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+.followup-sent-log article > span { min-width: 0; display: grid; gap: .12rem; }
+.followup-sent-log article strong { overflow: hidden; color: var(--m-ink); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.followup-sent-log article small { overflow: hidden; color: var(--m-muted); font-size: .57rem; text-overflow: ellipsis; white-space: nowrap; }
+.followup-sent-log article button { min-width: 56px; min-height: 38px; padding: .35rem .55rem; border: 1px solid #d8bfc4; border-radius: 999px; background: #fff; color: var(--m-wine); font-size: .6rem; font-weight: 750; cursor: pointer; }
+.followup-sent-log > div > p { margin: .5rem 0 0; color: var(--m-muted); font-size: .55rem; line-height: 1.45; }
 
 .followup-card {
   padding: 1rem; border: 1px solid #e4d3d5; border-radius: 19px; display: grid; gap: .9rem;
