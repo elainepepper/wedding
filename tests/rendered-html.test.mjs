@@ -245,8 +245,9 @@ test("orders wishes and provides safe sent-invitation reminders", async () => {
   assert.match(manager, /afterPartyGuests\.length/);
   assert.match(manager, /Almond dukkah-crusted rack of lamb/);
   assert.match(manager, /haykal-elaine-follow-up-progress-2026-11-07/);
-  assert.match(manager, /WhatsApp details & next/);
-  assert.match(manager, /Copy details & next/);
+  assert.match(manager, /Open WhatsApp details/);
+  assert.match(manager, /Copy details/);
+  assert.match(manager, /Sent — next household/);
   assert.match(manager, /Undo last/);
   assert.match(manager, /AFTER_HOURS_MAP_URL/);
   assert.match(await read("lib/wedding-details.ts"), /DVnsFkHdT9BjuaqU6/);

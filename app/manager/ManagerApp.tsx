@@ -1879,13 +1879,13 @@ function Chasing({ households, guests, settings, act: _act, notify }: {
         <details className="followup-message-preview"><summary>Preview the full message</summary><pre>{currentMessage}</pre></details>
 
         <div className="followup-primary-actions">
-          <a href={waLink(currentMobile, currentMessage)} target="_blank" rel="noreferrer" onClick={finishCurrent}>{mode === "details" ? "WhatsApp details & next" : "WhatsApp reminder & next"}</a>
+          <a href={waLink(currentMobile, currentMessage)} target="_blank" rel="noreferrer">{mode === "details" ? "Open WhatsApp details" : "Open WhatsApp reminder"}</a>
           <button type="button" onClick={async () => {
             await navigator.clipboard.writeText(currentMessage);
-            notify(mode === "details" ? "Final details copied — next household ready" : "Reminder copied — next household ready");
-            finishCurrent();
-          }}>{mode === "details" ? "Copy details & next" : "Copy reminder & next"}</button>
+            notify(mode === "details" ? "Final details copied" : "Reminder copied");
+          }}>{mode === "details" ? "Copy details" : "Copy reminder"}</button>
         </div>
+        <button type="button" className="followup-sent-next" onClick={finishCurrent}>✓ Sent — next household</button>
         <div className="followup-navigation">
           <button type="button" onClick={() => move(-1)}>← Back</button>
           {lastCompleted ? <button type="button" className="followup-undo" onClick={undoLast}>Undo last</button> : <span />}

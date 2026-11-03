@@ -914,6 +914,11 @@
 }
 .followup-primary-actions a { background: var(--m-wine); color: #fff; }
 .followup-primary-actions a:hover { background: #7d2f45; }
+.followup-sent-next {
+  min-height: 49px; padding: .65rem; border: 0; border-radius: 12px;
+  background: #f0e3e4; color: var(--m-wine); font-size: .7rem; font-weight: 800; cursor: pointer;
+}
+.followup-sent-next:hover { background: #e8d4d7; }
 .followup-navigation { min-height: 44px; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: .35rem; }
 .followup-navigation button { min-height: 44px; border: 0; background: transparent; color: var(--m-muted); font-size: .62rem; font-weight: 750; cursor: pointer; }
 .followup-navigation button:first-child { text-align: left; }
