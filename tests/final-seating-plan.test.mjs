@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../lib/final-seating-plan.ts";
@@ -41,6 +42,12 @@ test("ambiguous preferred names carry household hints", () => {
     if (matches.length < 2) continue;
     assert.ok(matches.every((assignment) => assignment.household), `${label} needs a household hint`);
   }
+});
+
+test("the seating migration cannot overwrite invitation delivery or after-party access", () => {
+  const migration = readFileSync(new URL("../lib/apply-final-wedding-data.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(migration, /invitation_sent\s*:/);
+  assert.doesNotMatch(migration, /after_party_(?:eligible|invited)\s*:/);
 });
 
 test("the separate final after-party list keeps 59 unique identities and current seating references", () => {

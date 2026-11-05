@@ -1,9 +1,8 @@
 import { nextId, serverTimestamp, weddingRef } from "./firebase-admin";
-import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "./final-after-party-list";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "./final-seating-plan";
 import { canonicalRsvpStatus, isEnabledFlag } from "./rsvp-data.mjs";
 
-const FINAL_DATA_VERSION = "2026-11-05-final-table-list-155-seats";
+const FINAL_DATA_VERSION = "2026-11-05-final-table-list-155-seats-v2";
 
 const key = (value: unknown) => String(value ?? "")
   .trim()
@@ -70,28 +69,8 @@ async function applyFinalWeddingData() {
     }
   }
 
-  const afterPartyGuestIds = new Set<number>();
-  const afterPartyProblems: string[] = [];
-  for (const assignment of FINAL_AFTER_PARTY_LIST) {
-    const candidates = matchGuest(assignment.label, assignment.aliases, assignment.household);
-    const reference = `${assignment.label} (${assignment.tableKey}, seat ${assignment.seat})`;
-    if (candidates.length !== 1) {
-      afterPartyProblems.push(`${reference} (${candidates.length ? "ambiguous" : "not found"})`);
-      continue;
-    }
-    const guestId = Number(candidates[0].data().id);
-    if (afterPartyGuestIds.has(guestId)) {
-      afterPartyProblems.push(`${reference} (guest appears twice)`);
-      continue;
-    }
-    afterPartyGuestIds.add(guestId);
-  }
-
   if (seatingProblems.length || seatingMatches.length !== FINAL_SEATING_GUEST_COUNT) {
     throw new Error(`Final seating migration stopped: ${seatingProblems.slice(0, 8).join("; ") || `${seatingMatches.length}/${FINAL_SEATING_GUEST_COUNT} resolved`}`);
-  }
-  if (afterPartyProblems.length || afterPartyGuestIds.size !== FINAL_AFTER_PARTY_COUNT) {
-    throw new Error(`Final After Hours migration stopped: ${afterPartyProblems.slice(0, 8).join("; ") || `${afterPartyGuestIds.size}/${FINAL_AFTER_PARTY_COUNT} resolved`}`);
   }
 
   const existingTables = tableSnapshot.docs;
@@ -141,10 +120,7 @@ async function applyFinalWeddingData() {
     const data = doc.data();
     const guestId = Number(data.id);
     const seating = seatingByGuestId.get(guestId);
-    const afterPartyInvited = afterPartyGuestIds.has(guestId);
     const update: Record<string, unknown> = {
-      after_party_eligible: afterPartyInvited ? 1 : 0,
-      after_party_invited: afterPartyInvited ? 1 : 0,
       updated_at: serverTimestamp(),
     };
     if (seating) {
@@ -168,15 +144,14 @@ async function applyFinalWeddingData() {
     final_data_version: FINAL_DATA_VERSION,
     final_data_applied_at: serverTimestamp(),
     final_seating_guest_count: FINAL_SEATING_GUEST_COUNT,
-    final_after_party_guest_count: FINAL_AFTER_PARTY_COUNT,
   }, { merge: true });
   const activityRef = weddingRef.collection("activityLogs").doc();
   batch.set(activityRef, {
     admin_name: "System",
-    action: "Final wedding lists automatically applied",
+    action: "Final seating plan automatically applied",
     record_type: "wedding",
     record_id: FINAL_DATA_VERSION,
-    detail: `${FINAL_SEATING_GUEST_COUNT} reception seats and ${FINAL_AFTER_PARTY_COUNT} After Hours guests`,
+    detail: `${FINAL_SEATING_GUEST_COUNT} reception seats applied; invitation-sent and after-party data preserved`,
     created_at: serverTimestamp(),
   });
   await batch.commit();
