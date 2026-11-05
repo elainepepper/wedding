@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -14,6 +15,19 @@ test("the finalized Grand Salon plan accounts for every confirmed place exactly 
     assert.equal(new Set(table.seats.map((assignment) => assignment.seat)).size, table.seats.length, `${table.name} repeats a chair`);
     assert.ok(table.seats.every((assignment) => assignment.seat >= 1 && assignment.seat <= table.capacity), `${table.name} has an invalid chair`);
   }
+});
+
+test("all 155 PDF rows retain the visually verified table, seat, name, meal and safety data", () => {
+  const rows = FINAL_SEATING_PLAN.flatMap((table) => table.seats.map((assignment) => [
+    table.key,
+    assignment.seat,
+    assignment.label,
+    assignment.meal,
+    assignment.dietaryRequirements ?? "",
+    assignment.allergies ?? "",
+    assignment.accessibility ?? "",
+  ].join("|"))).join("\n");
+  assert.equal(createHash("sha256").update(rows).digest("hex"), "8833b272a1e3a580615e48aad8598f6222daa0c40053f8b9fefd36c51fe20316");
 });
 
 test("the finalized kitchen totals and safety notes match the supplied PDF", () => {

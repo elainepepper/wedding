@@ -2,7 +2,7 @@ import { nextId, serverTimestamp, weddingRef } from "./firebase-admin";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "./final-seating-plan";
 import { canonicalRsvpStatus, isEnabledFlag } from "./rsvp-data.mjs";
 
-const FINAL_DATA_VERSION = "2026-11-05-final-table-list-155-seats-v2";
+const FINAL_DATA_VERSION = "2026-11-05-final-pdf-155-seats-v3";
 
 const key = (value: unknown) => String(value ?? "")
   .trim()
@@ -144,6 +144,7 @@ async function applyFinalWeddingData() {
     final_data_version: FINAL_DATA_VERSION,
     final_data_applied_at: serverTimestamp(),
     final_seating_guest_count: FINAL_SEATING_GUEST_COUNT,
+    final_seating_source: "Elaine_Haykal_Table_List.pdf",
   }, { merge: true });
   const activityRef = weddingRef.collection("activityLogs").doc();
   batch.set(activityRef, {

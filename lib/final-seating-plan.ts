@@ -36,7 +36,7 @@ const seat = (
  *
  * The aliases deliberately include previous table names so applying a revised plan
  * reuses the existing tables. Household hints disambiguate repeated preferred names.
- * This CSV supersedes every earlier seating and kitchen source.
+ * This PDF supersedes every earlier seating and kitchen source.
  */
 export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
   {
