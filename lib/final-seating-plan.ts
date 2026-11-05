@@ -1,4 +1,4 @@
-export type FinalMeal = "Lamb" | "Salmon" | "Kids meal";
+export type FinalMeal = "Lamb" | "Salmon" | "Kids meal" | "No meal";
 
 export type FinalSeat = {
   seat: number;
@@ -32,7 +32,7 @@ const seat = (
 ): FinalSeat => ({ seat: seatNumber, label, meal, ...options });
 
 /**
- * Final Grand Salon kitchen and seating CSV supplied by Elaine on 3 November 2026.
+ * Final Grand Salon table list supplied by Elaine on 5 November 2026.
  *
  * The aliases deliberately include previous table names so applying a revised plan
  * reuses the existing tables. Household hints disambiguate repeated preferred names.
@@ -68,13 +68,12 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     key: "table-2",
     name: "Table 2 Haykal's family",
     aliases: ["Table 2 Haykal's family", "Table 2 - Haykal's family"],
-    shape: "round", capacity: 11, x: 55, y: 36, locked: false, notes: "Haykal's family · 10 dining chairs plus a baby chair between Alyn and Mirza",
+    shape: "round", capacity: 10, x: 55, y: 36, locked: false, notes: "Haykal's family",
     seats: [
-      seat(1, "Zilan", "Lamb"), seat(2, "Julieza", "Lamb"), seat(3, "Adham", "Lamb"),
-      seat(4, "Faudziah", "Lamb"), seat(5, "Juliena", "Lamb"), seat(6, "Reza", "Lamb"),
-      seat(7, "Juznida", "Lamb"), seat(8, "Mrs Park", "Salmon"), seat(9, "Alyn", "Lamb"),
-      seat(10, "Fatima", "Kids meal", { aliases: ["Baby Fatima"], household: "Mirza Faiz", accessibility: "Baby chair required" }),
-      seat(11, "Mirza", "Lamb"),
+      seat(1, "Zilan", "Lamb"), seat(2, "Mrs Park", "Salmon"),
+      seat(3, "Datuk Lee Jin Bok", "Lamb"), seat(4, "Datin Angie Teh", "Salmon"),
+      seat(5, "Juliena", "Lamb"), seat(6, "Reza", "Lamb"),
+      seat(7, "Juznida", "Lamb"), seat(8, "Julieza", "Lamb"),
     ],
   },
   {
@@ -119,8 +118,8 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     aliases: ["Table 6 Haykal's family", "Table 6 - Haykal's family"],
     shape: "round", capacity: 10, x: 75, y: 49, locked: false, notes: "Haykal's family",
     seats: [
-      seat(1, "Dato' Frank Koay", "Lamb", { aliases: ["Dato’ Frank Koay", "Dato Frank Koay"] }),
-      seat(2, "Datin Vanessa", "Salmon"), seat(3, "Danny See", "Salmon"), seat(4, "Careena Lai", "Lamb"),
+      seat(1, "Adham", "Lamb"), seat(2, "Faudziah", "Lamb"),
+      seat(3, "Careena Lai", "Lamb"), seat(4, "Danny See", "Salmon"),
       seat(5, "Yeoh", "Salmon"), seat(6, "Shida", "Salmon"), seat(7, "Farah", "Salmon"),
       seat(8, "Zainee", "Lamb"), seat(9, "Farhana", "Salmon"), seat(10, "Mukhlis", "Lamb"),
     ],
@@ -134,7 +133,7 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
       seat(1, "Mr Sukhairy bin Abd Rahman", "Lamb", { aliases: ["Mr Sukhairy"] }),
       seat(2, "Mrs Sukhairy bin Abd Rahman", "Lamb", { aliases: ["Mrs Sukhairy"] }),
       seat(3, "Dato' Othman bin Sulan", "Salmon", { aliases: ["Dato’ Othman bin Sulan", "Dato Othman bin Sulan", "Dato' Othman"] }),
-      seat(4, "Datin Othman bin Sulan", "Salmon", { aliases: ["Datin Othman"] }),
+      seat(4, "Datin Othman bin Sulan", "Lamb", { aliases: ["Datin Othman"] }),
       seat(5, "Datuk Dr Visvanathan Ananthan", "Lamb", { aliases: ["Datuk Dr Visvanathan"] }),
       seat(6, "Datin Visvanathan Ananthan", "Lamb", { aliases: ["Datin Visvanathan"] }),
       seat(7, "Datuk Shanker Raj Ayanger", "Lamb", { aliases: ["Datuk Shanker Raj"] }),
@@ -149,8 +148,8 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     aliases: ["Table 8 Haykal's friends", "Table 8 - Haykal's friends", "PERTH PARTY PEOPLE"],
     shape: "round", capacity: 10, x: 60, y: 72, locked: false, notes: "Haykal's friends",
     seats: [
-      seat(1, "Syahirah", "Salmon"), seat(2, "Ezqil", "Lamb"), seat(3, "Sebastian", "Salmon"),
-      seat(4, "Zhi Yie", "Lamb"), seat(5, "Mahmud", "Lamb"), seat(6, "Iverson", "Lamb"),
+      seat(1, "Syahirah", "Salmon"), seat(2, "Ezqil", "Lamb"), seat(3, "Iverson", "Lamb"),
+      seat(4, "Sebastian", "Salmon"), seat(5, "Zhi Yie", "Lamb"), seat(6, "Aiman", "Lamb"),
       seat(7, "Syahiran", "Lamb"), seat(8, "Uyaina", "Salmon"),
     ],
   },
@@ -185,25 +184,29 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     seats: [
       seat(1, "Dato' Tiffanee", "Lamb", { aliases: ["Dato’ Tiffanee", "Dato Tiffanee"] }),
       seat(2, "Dato' Prof. Mandy Chew", "Salmon", { aliases: ["Dato’ Prof. Mandy Chew", "Dato Prof Mandy Chew", "Mandy Chew"] }),
-      seat(3, "Wesley", "Lamb"), seat(4, "Suzanne", "Salmon"), seat(5, "Datin Angie Teh", "Salmon"),
-      seat(6, "Datuk Lee Jin Bok", "Lamb"), seat(7, "Syed Wafa", "Lamb"), seat(8, "Ismail Ani Arope", "Lamb"),
+      seat(3, "Wesley", "Lamb"), seat(4, "Suzanne", "Salmon"), seat(5, "Datin Vanessa", "Salmon"),
+      seat(6, "Dato' Frank Koay", "Lamb", { aliases: ["Dato’ Frank Koay", "Dato Frank Koay"] }),
+      seat(7, "Syed Wafa", "Lamb"), seat(8, "Ismail Ani Arope", "Lamb"),
     ],
   },
   {
     key: "elaine-viking",
     name: "Elaine's Viking curved table",
     aliases: ["Elaine's Viking curved table", "Elaine's Viking", "Elaine’s Viking", "Elaine’s colleagues + Perth people", "Elaine's colleagues + Perth people"],
-    shape: "banquet", capacity: 24, x: 40, y: 57, locked: true,
-    notes: "Seats 1-12 away from aisle, then 13-23 along aisle side",
+    shape: "banquet", capacity: 25, x: 40, y: 57, locked: true,
+    notes: "Seats 1-12 away from aisle; Baby Fatima sits between Mirza and Alyn in a baby chair",
     seats: [
-      seat(1, "Wilson", "Lamb"), seat(2, "Zoey", "Lamb"), seat(3, "Cinzia", "Salmon"),
-      seat(4, "Facundo", "Lamb"), seat(5, "Nathaniel", "Lamb"), seat(6, "Gemma", "Lamb"),
-      seat(7, "Brian", "Lamb"), seat(8, "Natasha", "Lamb"), seat(9, "Alain", "Salmon"),
-      seat(10, "Jinho", "Lamb"), seat(11, "Kita", "Salmon"), seat(12, "Dayoon", "Lamb"),
-      seat(13, "Jordon", "Lamb"), seat(14, "Brandon", "Salmon"), seat(15, "Gregory", "Lamb"),
-      seat(16, "Cecilia", "Lamb"), seat(17, "Bryan", "Salmon"), seat(18, "Loron", "Lamb"),
-      seat(19, "Kit", "Salmon"), seat(20, "Josh", "Lamb"), seat(21, "Aine", "Salmon"),
-      seat(22, "Jemma", "Salmon"), seat(23, "Aaryan", "Lamb"),
+      seat(1, "Wilson", "Lamb"), seat(2, "Zoey", "Lamb"), seat(3, "Fred", "Salmon"),
+      seat(4, "Cinzia", "Salmon"), seat(5, "Facundo", "Lamb"), seat(6, "Brian", "Lamb"),
+      seat(7, "Natasha", "Lamb"), seat(8, "Alain", "Salmon"), seat(9, "Jinho", "Lamb"),
+      seat(10, "Kita", "Salmon"), seat(11, "Dayoon", "Lamb"),
+      seat(12, "Mirza", "Lamb", { household: "Mirza Faiz" }),
+      seat(13, "Fatima", "No meal", { aliases: ["Baby Fatima"], household: "Mirza Faiz", accessibility: "Baby chair required" }),
+      seat(14, "Alyn", "Lamb", { household: "Mirza Faiz" }),
+      seat(15, "Jordon", "Lamb"), seat(16, "Brandon", "Salmon"), seat(17, "Gregory", "Lamb"),
+      seat(18, "Cecilia", "Lamb"), seat(19, "Bryan", "Salmon"), seat(20, "Loron", "Lamb"),
+      seat(21, "Kit", "Salmon"), seat(22, "Josh", "Lamb"), seat(23, "Aine", "Salmon"),
+      seat(24, "Jemma", "Salmon"), seat(25, "Aaryan", "Lamb"),
     ],
   },
   {
@@ -211,17 +214,18 @@ export const FINAL_SEATING_PLAN: FinalSeatingTable[] = [
     name: "Haykal's Viking curved table",
     aliases: ["Haykal's Viking curved table", "Haykal's Viking", "Haykal’s Viking", "Viking 2"],
     shape: "banquet", capacity: 24, x: 60, y: 57, locked: true,
-    notes: "Seats 1-11 away from aisle, then 12-23 along aisle side",
+    notes: "24 seats along the curved table",
     seats: [
       seat(1, "Firzana", "Lamb"), seat(2, "Fauzan", "Lamb"), seat(3, "Sahil", "Lamb"),
-      seat(4, "Sameeha", "Salmon"), seat(5, "Aliff", "Lamb", { household: "Soraya" }),
-      seat(6, "Soraya", "Salmon"), seat(7, "Laura Esseu", "Salmon", { aliases: ["Laura"], household: "Anthony & Laura" }),
-      seat(8, "Anthony Loustau", "Lamb", { aliases: ["Anthony"], household: "Anthony & Laura" }),
-      seat(9, "Marcus", "Lamb"), seat(10, "Kamal", "Lamb"), seat(11, "Ainis", "Salmon"),
-      seat(12, "Tiffiny", "Salmon"), seat(13, "Adam", "Lamb"), seat(14, "Syed Zain", "Lamb"),
-      seat(15, "Muqri", "Lamb"), seat(16, "Afiq", "Lamb"), seat(17, "Manis", "Lamb"),
-      seat(18, "Marissa", "Salmon"), seat(19, "Shawn", "Lamb"), seat(20, "Zhao Hang", "Salmon"),
-      seat(21, "Hafeez", "Lamb"), seat(22, "Steven", "Lamb"), seat(23, "Aiman", "Lamb"),
+      seat(4, "Sameeha", "Salmon"), seat(5, "Soraya", "Salmon"),
+      seat(6, "Aliff", "Lamb", { household: "Soraya" }), seat(7, "Adri", "Lamb"),
+      seat(8, "Steven", "Lamb"), seat(9, "Marcus", "Lamb"), seat(10, "Mahmud", "Lamb"),
+      seat(11, "Kamal", "Lamb"), seat(12, "Ainis", "Salmon"), seat(13, "Tiffiny", "Salmon"),
+      seat(14, "Adam", "Lamb"), seat(15, "Syed Zain", "Lamb"), seat(16, "Muqri", "Lamb"),
+      seat(17, "Afiq", "Lamb"), seat(18, "Manis", "Lamb"), seat(19, "Marissa", "Salmon"),
+      seat(20, "Shawn", "Lamb"), seat(21, "Zhao Hang", "Salmon"), seat(22, "Hafeez", "Lamb"),
+      seat(23, "Anthony Loustau", "Lamb", { aliases: ["Anthony"], household: "Anthony & Laura" }),
+      seat(24, "Laura Esseu", "Salmon", { aliases: ["Laura"], household: "Anthony & Laura" }),
     ],
   },
 ];

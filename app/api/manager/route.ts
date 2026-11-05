@@ -6,7 +6,6 @@ import { normaliseSiteDesign } from "../../../lib/site-design";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "../../../lib/final-seating-plan";
 import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "../../../lib/final-after-party-list";
 import { ensureFinalWeddingDataApplied } from "../../../lib/apply-final-wedding-data";
-import { ensureBabyFatimaSeatApplied } from "../../../lib/apply-baby-fatima-seat";
 
 // Never serve a cached copy: the manager must see a change the instant it is
 // made, and an invitation must reflect the latest reply.
@@ -53,8 +52,14 @@ export async function GET(request: Request) {
     const admin = await requireAdmin(request);
     if (!admin) return Response.json({ error: "Administrator sign-in required." }, { status: 401 });
     assertFirebaseAdminConfigured();
-    await ensureFinalWeddingDataApplied();
-    await ensureBabyFatimaSeatApplied();
+    // A source-plan mismatch must never lock the couple out of the Manager.
+    // The migration itself is all-or-nothing, so it is safe to report the
+    // validation error while continuing to serve the last known-good data.
+    try {
+      await ensureFinalWeddingDataApplied();
+    } catch (migrationError) {
+      console.error("Final seating migration did not apply:", migrationError);
+    }
     const [guestSnapshot, householdSnapshot, tableSnapshot, eventSnapshot, activitySnapshot, settingsSnapshot, managerSnapshot] = await Promise.all([
       // No "where" on archived: Firestore drops documents missing the field,
       // which silently hid imported guests from the manager as well.
@@ -541,7 +546,7 @@ export async function POST(request: Request) {
         }, { merge: true });
       }
       for (const assignment of resolvedGuests) {
-        const mealSelection = assignment.assignment.meal === "Lamb" || assignment.assignment.meal === "Salmon"
+        const mealSelection = assignment.assignment.meal === "Lamb" || assignment.assignment.meal === "Salmon" || assignment.assignment.meal === "No meal"
           ? assignment.assignment.meal
           : null;
         const childMeal = assignment.assignment.meal === "Kids meal" ? 1 : 0;
@@ -553,6 +558,7 @@ export async function POST(request: Request) {
           child_meal: childMeal,
           dietary_requirements: assignment.assignment.dietaryRequirements ?? null,
           allergies: assignment.assignment.allergies ?? null,
+          accessibility: assignment.assignment.accessibility ?? null,
           updated_at: serverTimestamp(),
         }, { merge: true });
       }

@@ -3,7 +3,7 @@ import { FINAL_AFTER_PARTY_COUNT, FINAL_AFTER_PARTY_LIST } from "./final-after-p
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "./final-seating-plan";
 import { canonicalRsvpStatus, isEnabledFlag } from "./rsvp-data.mjs";
 
-const FINAL_DATA_VERSION = "2026-11-03-154-seats-59-after-hours";
+const FINAL_DATA_VERSION = "2026-11-05-final-table-list-155-seats";
 
 const key = (value: unknown) => String(value ?? "")
   .trim()
@@ -151,11 +151,11 @@ async function applyFinalWeddingData() {
       update.rsvp_status = "Confirmed";
       update.table_id = tableIds.get(seating.tableKey);
       update.seat_number = seating.assignment.seat;
-      update.meal_selection = seating.assignment.meal === "Lamb" || seating.assignment.meal === "Salmon" ? seating.assignment.meal : null;
+      update.meal_selection = seating.assignment.meal === "Lamb" || seating.assignment.meal === "Salmon" || seating.assignment.meal === "No meal" ? seating.assignment.meal : null;
       update.child_meal = seating.assignment.meal === "Kids meal" ? 1 : 0;
       update.dietary_requirements = seating.assignment.dietaryRequirements ?? null;
       update.allergies = seating.assignment.allergies ?? null;
-      if (seating.assignment.accessibility) update.accessibility = seating.assignment.accessibility;
+      update.accessibility = seating.assignment.accessibility ?? null;
     } else if (activeReceptionGuests.includes(doc)) {
       update.table_id = null;
       update.seat_number = null;

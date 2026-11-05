@@ -15,20 +15,22 @@ test("the finalized Grand Salon plan accounts for every confirmed place exactly 
   }
 });
 
-test("the finalized kitchen totals and safety notes match the supplied CSV", () => {
+test("the finalized kitchen totals and safety notes match the supplied PDF", () => {
   const assignments = FINAL_SEATING_PLAN.flatMap((table) => table.seats);
   const totals = assignments.reduce((result, assignment) => {
     result[assignment.meal] = (result[assignment.meal] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(totals, { Lamb: 88, Salmon: 65, "Kids meal": 2 });
+  assert.deepEqual(totals, { Lamb: 88, Salmon: 65, "Kids meal": 1, "No meal": 1 });
   assert.equal(assignments.find((assignment) => assignment.label === "Bakhtiar")?.allergies, undefined);
   assert.equal(assignments.find((assignment) => assignment.label === "Doris")?.allergies, "Honey allergy");
   assert.equal(assignments.find((assignment) => assignment.label === "Fatima")?.accessibility, "Baby chair required");
+  assert.equal(assignments.find((assignment) => assignment.label === "Fatima")?.meal, "No meal");
   const table = (key) => FINAL_SEATING_PLAN.find((entry) => entry.key === key);
-  assert.deepEqual(table("table-2")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Alyn", "Lamb"], ["Fatima", "Kids meal"], ["Mirza", "Lamb"]]);
+  assert.deepEqual(table("table-2")?.seats.map(({ label, meal }) => [label, meal]), [["Zilan", "Lamb"], ["Mrs Park", "Salmon"], ["Datuk Lee Jin Bok", "Lamb"], ["Datin Angie Teh", "Salmon"], ["Juliena", "Lamb"], ["Reza", "Lamb"], ["Juznida", "Lamb"], ["Julieza", "Lamb"]]);
+  assert.deepEqual(table("elaine-viking")?.seats.slice(11, 14).map(({ label, meal }) => [label, meal]), [["Mirza", "Lamb"], ["Fatima", "No meal"], ["Alyn", "Lamb"]]);
   assert.deepEqual(table("table-10")?.seats.slice(8).map(({ label, meal }) => [label, meal]), [["Datuk Jerry Axton", "Lamb"], ["Datin Jerry Axton", "Salmon"]]);
-  assert.deepEqual(table("table-11")?.seats.slice(4).map(({ label, meal }) => [label, meal]), [["Datin Angie Teh", "Salmon"], ["Datuk Lee Jin Bok", "Lamb"], ["Syed Wafa", "Lamb"], ["Ismail Ani Arope", "Lamb"]]);
+  assert.deepEqual(table("table-11")?.seats.slice(4).map(({ label, meal }) => [label, meal]), [["Datin Vanessa", "Salmon"], ["Dato' Frank Koay", "Lamb"], ["Syed Wafa", "Lamb"], ["Ismail Ani Arope", "Lamb"]]);
 });
 
 test("ambiguous preferred names carry household hints", () => {
@@ -41,13 +43,14 @@ test("ambiguous preferred names carry household hints", () => {
   }
 });
 
-test("the final After Hours list has 59 unique, seat-verified guests", () => {
+test("the separate final after-party list keeps 59 unique identities and current seating references", () => {
   assert.equal(FINAL_AFTER_PARTY_COUNT, 59);
-  assert.equal(new Set(FINAL_AFTER_PARTY_LIST.map((guest) => `${guest.tableKey}:${guest.seat}`)).size, 59);
-  const seating = new Set(FINAL_SEATING_PLAN.flatMap((table) => table.seats.map((guest) => `${table.key}:${guest.seat}`)));
-  assert.ok(FINAL_AFTER_PARTY_LIST.every((guest) => seating.has(`${guest.tableKey}:${guest.seat}`)));
   const normalize = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  for (const afterPartyGuest of FINAL_AFTER_PARTY_LIST) {
+  assert.equal(new Set(FINAL_AFTER_PARTY_LIST.map((guest) => `${normalize(guest.label)}:${normalize(guest.household ?? "")}`)).size, 59);
+  const seating = new Set(FINAL_SEATING_PLAN.flatMap((table) => table.seats.map((guest) => `${table.key}:${guest.seat}`)));
+  const seatedAfterPartyGuests = FINAL_AFTER_PARTY_LIST.filter((guest) => guest.tableKey !== "unseated");
+  assert.ok(seatedAfterPartyGuests.every((guest) => seating.has(`${guest.tableKey}:${guest.seat}`)));
+  for (const afterPartyGuest of seatedAfterPartyGuests) {
     const table = FINAL_SEATING_PLAN.find((entry) => entry.key === afterPartyGuest.tableKey);
     const seatedGuest = table?.seats.find((entry) => entry.seat === afterPartyGuest.seat);
     const afterPartyNames = [afterPartyGuest.label, ...(afterPartyGuest.aliases ?? [])].map(normalize);
@@ -58,5 +61,5 @@ test("the final After Hours list has 59 unique, seat-verified guests", () => {
     result[guest.tableKey] = (result[guest.tableKey] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(counts, { "elaine-viking": 23, "haykal-viking": 17, "table-3a": 6, "table-1": 7, vip: 2, "table-8": 4 });
+  assert.deepEqual(counts, { "elaine-viking": 21, "haykal-viking": 18, "table-3a": 6, "table-1": 7, unseated: 2, vip: 2, "table-8": 3 });
 });
