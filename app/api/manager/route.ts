@@ -463,8 +463,9 @@ export async function POST(request: Request) {
           const candidates = activeGuests.filter((doc) => {
             const data = doc.data();
             const preferred = seatingKey(data.preferred_name);
+            const first = seatingKey(data.first_name);
             const full = seatingKey(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
-            if (!acceptedNames.has(preferred) && !acceptedNames.has(full)) return false;
+            if (!acceptedNames.has(preferred) && !acceptedNames.has(first) && !acceptedNames.has(full)) return false;
             if (!householdHint) return true;
             const household = seatingKey(householdNames.get(Number(data.household_id)) ?? "");
             return Boolean(household) && (household.includes(householdHint) || householdHint.includes(household));

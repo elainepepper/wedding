@@ -1,8 +1,13 @@
-import { nextId, serverTimestamp, weddingRef } from "./firebase-admin";
+import { nextId, randomToken, serverTimestamp, weddingRef } from "./firebase-admin";
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "./final-seating-plan";
 import { canonicalRsvpStatus, isEnabledFlag } from "./rsvp-data.mjs";
 
-const FINAL_DATA_VERSION = "2026-11-05-final-pdf-155-seats-v3";
+const FINAL_DATA_VERSION = "2026-11-06-final-pdf-155-seats-v4";
+
+const PDF_ONLY_GUESTS: Record<string, { side: "Bride" | "Groom" }> = {
+  Fred: { side: "Bride" },
+  Adri: { side: "Groom" },
+};
 
 const key = (value: unknown) => String(value ?? "")
   .trim()
@@ -26,23 +31,97 @@ async function applyFinalWeddingData() {
     weddingRef.collection("households").get(),
     weddingRef.collection("tables").get(),
   ]);
-  const activeGuests = guestSnapshot.docs.filter((doc) => !isEnabledFlag(doc.data().archived));
+  const allGuests = guestSnapshot.docs;
+  const activeGuests = allGuests.filter((doc) => !isEnabledFlag(doc.data().archived));
   const activeReceptionGuests = activeGuests.filter((doc) => key(doc.data().category) !== "crew");
   const householdNames = new Map(householdSnapshot.docs.map((doc) => [Number(doc.data().id), String(doc.data().name ?? "")]));
 
   const matchGuest = (label: string, aliases: string[] = [], householdHintValue?: string) => {
     const acceptedNames = new Set([label, ...aliases].map(key).filter(Boolean));
     const householdHint = key(householdHintValue);
-    return activeGuests.filter((doc) => {
+    return allGuests.filter((doc) => {
       const data = doc.data();
       const preferred = key(data.preferred_name);
+      const first = key(data.first_name);
       const full = key(`${String(data.first_name ?? "")} ${String(data.last_name ?? "")}`);
-      if (!acceptedNames.has(preferred) && !acceptedNames.has(full)) return false;
+      if (!acceptedNames.has(preferred) && !acceptedNames.has(first) && !acceptedNames.has(full)) return false;
       if (!householdHint) return true;
       const household = key(householdNames.get(Number(data.household_id)) ?? "");
       return Boolean(household) && (household.includes(householdHint) || householdHint.includes(household));
     });
   };
+
+  // Fred and Adri first appear in the final venue PDF. If they were not yet
+  // entered in the Manager, create their own unsent households so the exact
+  // 155-person source can be applied. Existing people are never duplicated:
+  // preferred name, first name and full name are all checked first.
+  const missingPdfOnlyGuests = Object.keys(PDF_ONLY_GUESTS).filter((label) => matchGuest(label).length === 0);
+  if (missingPdfOnlyGuests.length) {
+    const firstHouseholdId = await nextId("households", missingPdfOnlyGuests.length);
+    const firstGuestId = await nextId("guests", missingPdfOnlyGuests.length);
+    const batch = weddingRef.firestore.batch();
+    missingPdfOnlyGuests.forEach((label, index) => {
+      const householdId = firstHouseholdId + index;
+      const guestId = firstGuestId + index;
+      batch.set(weddingRef.collection("households").doc(String(householdId)), {
+        id: householdId,
+        name: label,
+        mobile: null,
+        max_guests: 1,
+        invitation_slug: label.toLowerCase(),
+        invitation_token: randomToken(),
+        invitation_enabled: true,
+        opened_at: null,
+        last_activity_at: null,
+        archived: 0,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+      batch.set(weddingRef.collection("guests").doc(String(guestId)), {
+        id: guestId,
+        household_id: householdId,
+        first_name: label,
+        last_name: "",
+        preferred_name: label,
+        mobile: null,
+        category: "Friends",
+        side: PDF_ONLY_GUESTS[label].side,
+        age_group: "Adult",
+        child_meal: 0,
+        relationship: null,
+        rsvp_status: "Confirmed",
+        ceremony_invited: 0,
+        ceremony_attending: null,
+        reception_invited: 1,
+        reception_attending: 1,
+        after_party_eligible: 0,
+        after_party_invited: 0,
+        after_party_attending: "Pending",
+        meal_selection: null,
+        dietary_requirements: null,
+        allergies: null,
+        accessibility: null,
+        transport_required: 0,
+        accommodation_required: 0,
+        travel_arrival: null,
+        travel_departure: null,
+        accommodation_name: null,
+        bed_preference: null,
+        room_nights: null,
+        wishes: null,
+        marriage_advice: null,
+        table_id: null,
+        seat_number: null,
+        invitation_sent: 0,
+        internal_notes: "Added from the final seating PDF on 6 November 2026",
+        archived: 0,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+    });
+    await batch.commit();
+    return applyFinalWeddingData();
+  }
 
   const seatingMatches: Array<{
     doc: (typeof activeGuests)[number];
@@ -125,6 +204,9 @@ async function applyFinalWeddingData() {
     };
     if (seating) {
       update.rsvp_status = "Confirmed";
+      update.archived = 0;
+      update.reception_invited = 1;
+      update.reception_attending = 1;
       update.table_id = tableIds.get(seating.tableKey);
       update.seat_number = seating.assignment.seat;
       update.meal_selection = seating.assignment.meal === "Lamb" || seating.assignment.meal === "Salmon" || seating.assignment.meal === "No meal" ? seating.assignment.meal : null;

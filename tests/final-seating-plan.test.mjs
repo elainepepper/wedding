@@ -60,8 +60,15 @@ test("ambiguous preferred names carry household hints", () => {
 
 test("the seating migration cannot overwrite invitation delivery or after-party access", () => {
   const migration = readFileSync(new URL("../lib/apply-final-wedding-data.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(migration, /invitation_sent\s*:/);
-  assert.doesNotMatch(migration, /after_party_(?:eligible|invited)\s*:/);
+  assert.doesNotMatch(migration, /update\.invitation_sent|batch\.set\(doc\.ref,\s*\{[^}]*invitation_sent/s);
+  assert.doesNotMatch(migration, /update\.after_party_|batch\.set\(doc\.ref,\s*\{[^}]*after_party_(?:eligible|invited)/s);
+});
+
+test("Fred and Adri can be provisioned once without altering an existing sent card", () => {
+  const migration = readFileSync(new URL("../lib/apply-final-wedding-data.ts", import.meta.url), "utf8");
+  assert.match(migration, /Fred:\s*\{ side: "Bride" \}/);
+  assert.match(migration, /Adri:\s*\{ side: "Groom" \}/);
+  assert.match(migration, /preferred name, first name and full name are all checked first/);
 });
 
 test("the separate final after-party list keeps 59 unique identities and current seating references", () => {
