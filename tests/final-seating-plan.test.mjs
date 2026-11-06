@@ -77,6 +77,13 @@ test("historical duplicate table names cannot block the final PDF", () => {
   assert.match(migration, /tableOccupancy/);
 });
 
+test("the Manager card deck reconciles stale database seats against the final PDF", () => {
+  const managerRoute = readFileSync(new URL("../app/api/manager/route.ts", import.meta.url), "utf8");
+  assert.match(managerRoute, /sourceSeatByGuestId/);
+  assert.match(managerRoute, /table_name: sourceSeat \? sourceSeat\.table\.name/);
+  assert.match(managerRoute, /seat_number: sourceSeat \? sourceSeat\.assignment\.seat/);
+});
+
 test("the separate final after-party list keeps 59 unique identities and current seating references", () => {
   assert.equal(FINAL_AFTER_PARTY_COUNT, 59);
   const normalize = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");

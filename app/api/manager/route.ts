@@ -79,18 +79,56 @@ export async function GET(request: Request) {
     const tables = tableSnapshot.docs.map(plainDoc);
     const householdById = new Map(households.map((item) => [Number(item.id), item]));
     const tableById = new Map(tables.map((item) => [Number(item.id), item]));
-    const guests: Array<Record<string, unknown>> = guestSnapshot.docs.map(plainDoc)
-      .filter((item) => !isEnabledFlag(item.archived))
+    const activeGuestRows = guestSnapshot.docs.map(plainDoc).filter((item) => !isEnabledFlag(item.archived));
+    const sourceSeatByGuestId = new Map<number, {
+      table: (typeof FINAL_SEATING_PLAN)[number];
+      assignment: (typeof FINAL_SEATING_PLAN)[number]["seats"][number];
+    }>();
+    const usedSourceGuestIds = new Set<number>();
+    for (const sourceTable of FINAL_SEATING_PLAN) {
+      for (const assignment of sourceTable.seats) {
+        const acceptedNames = new Set([assignment.label, ...(assignment.aliases ?? [])].map(seatingKey).filter(Boolean));
+        const householdHint = seatingKey(assignment.household);
+        const candidates = activeGuestRows.filter((guest) => {
+          const guestId = Number(guest.id);
+          if (usedSourceGuestIds.has(guestId)) return false;
+          const preferred = seatingKey(guest.preferred_name);
+          const first = seatingKey(guest.first_name);
+          const full = seatingKey(`${String(guest.first_name ?? "")} ${String(guest.last_name ?? "")}`);
+          if (!acceptedNames.has(preferred) && !acceptedNames.has(first) && !acceptedNames.has(full)) return false;
+          if (!householdHint) return true;
+          const householdName = seatingKey(householdById.get(Number(guest.household_id))?.name);
+          return Boolean(householdName) && (householdName.includes(householdHint) || householdHint.includes(householdName));
+        });
+        if (candidates.length !== 1) continue;
+        const guestId = Number(candidates[0].id);
+        usedSourceGuestIds.add(guestId);
+        sourceSeatByGuestId.set(guestId, { table: sourceTable, assignment });
+      }
+    }
+    const sourceTableByKey = new Map(FINAL_SEATING_PLAN.map((sourceTable) => {
+      const keyed = tables.find((table) => seatingKey(table.final_plan_key) === seatingKey(sourceTable.key));
+      const aliases = new Set(sourceTable.aliases.map(seatingKey));
+      const named = tables.find((table) => aliases.has(seatingKey(table.name)));
+      return [sourceTable.key, keyed ?? named ?? null] as const;
+    }));
+    const sourcePlanResolved = sourceSeatByGuestId.size === FINAL_SEATING_GUEST_COUNT;
+    const guests: Array<Record<string, unknown>> = activeGuestRows
       .map((guest): Record<string, unknown> => {
       const household = householdById.get(Number(guest.household_id));
       const table = tableById.get(Number(guest.table_id));
+      const sourceSeat = sourceSeatByGuestId.get(Number(guest.id));
+      const sourceTable = sourceSeat ? sourceTableByKey.get(sourceSeat.table.key) : null;
+      const sourceMeal = sourceSeat?.assignment.meal;
+      const isUnlistedConfirmedGuest = sourcePlanResolved && !sourceSeat && seatingKey(guest.category) !== "crew" && canonicalRsvpStatus(guest.rsvp_status) === "Confirmed";
       return {
         ...guest,
-        rsvp_status: canonicalRsvpStatus(guest.rsvp_status),
+        rsvp_status: sourceSeat ? "Confirmed" : isUnlistedConfirmedGuest ? "Declined" : canonicalRsvpStatus(guest.rsvp_status),
         age_group: canonicalAgeGroup(guest.age_group),
-        child_meal: isChildAgeGroup(guest.age_group) || isEnabledFlag(guest.child_meal) ? 1 : 0,
+        child_meal: sourceSeat ? sourceMeal === "Kids meal" ? 1 : 0 : isChildAgeGroup(guest.age_group) || isEnabledFlag(guest.child_meal) ? 1 : 0,
         ceremony_invited: isEnabledFlag(guest.ceremony_invited) ? 1 : 0,
-        reception_invited: isEnabledFlag(guest.reception_invited) ? 1 : 0,
+        reception_invited: sourceSeat ? 1 : isEnabledFlag(guest.reception_invited) ? 1 : 0,
+        reception_attending: sourceSeat ? 1 : guest.reception_attending,
         after_party_eligible: isEnabledFlag(guest.after_party_eligible) ? 1 : 0,
         after_party_invited: isEnabledFlag(guest.after_party_invited) ? 1 : 0,
         transport_required: isEnabledFlag(guest.transport_required) ? 1 : 0,
@@ -102,7 +140,13 @@ export async function GET(request: Request) {
         opened_at: household?.opened_at ?? null,
         last_activity_at: household?.last_activity_at ?? null,
         table_seen_at: household?.table_seen_at ?? null,
-        table_name: table?.name ?? null,
+        table_id: sourceSeat ? sourceTable?.id ?? guest.table_id : isUnlistedConfirmedGuest ? null : guest.table_id,
+        seat_number: sourceSeat ? sourceSeat.assignment.seat : isUnlistedConfirmedGuest ? null : guest.seat_number,
+        table_name: sourceSeat ? sourceSeat.table.name : isUnlistedConfirmedGuest ? null : table?.name ?? null,
+        meal_selection: sourceSeat ? sourceMeal === "Kids meal" ? null : sourceMeal : guest.meal_selection,
+        dietary_requirements: sourceSeat ? sourceSeat.assignment.dietaryRequirements ?? null : guest.dietary_requirements,
+        allergies: sourceSeat ? sourceSeat.assignment.allergies ?? null : guest.allergies,
+        accessibility: sourceSeat ? sourceSeat.assignment.accessibility ?? null : guest.accessibility,
       };
     }).sort((a, b) => String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")));
     const householdRows: Array<Record<string, unknown>> = households.map((household): Record<string, unknown> => {
