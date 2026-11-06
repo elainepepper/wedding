@@ -71,6 +71,12 @@ test("Fred and Adri can be provisioned once without altering an existing sent ca
   assert.match(migration, /preferred name, first name and full name are all checked first/);
 });
 
+test("historical duplicate table names cannot block the final PDF", () => {
+  const migration = readFileSync(new URL("../lib/apply-final-wedding-data.ts", import.meta.url), "utf8");
+  assert.match(migration, /keyedMatches\.length \? keyedMatches : namedMatches/);
+  assert.match(migration, /tableOccupancy/);
+});
+
 test("the separate final after-party list keeps 59 unique identities and current seating references", () => {
   assert.equal(FINAL_AFTER_PARTY_COUNT, 59);
   const normalize = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");

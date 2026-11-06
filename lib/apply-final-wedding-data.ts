@@ -2,7 +2,7 @@ import { nextId, randomToken, serverTimestamp, weddingRef } from "./firebase-adm
 import { FINAL_SEATING_GUEST_COUNT, FINAL_SEATING_PLAN } from "./final-seating-plan";
 import { canonicalRsvpStatus, isEnabledFlag } from "./rsvp-data.mjs";
 
-const FINAL_DATA_VERSION = "2026-11-06-final-pdf-155-seats-v4";
+const FINAL_DATA_VERSION = "2026-11-06-final-pdf-155-seats-v5";
 
 const PDF_ONLY_GUESTS: Record<string, { side: "Bride" | "Groom" }> = {
   Fred: { side: "Bride" },
@@ -155,12 +155,19 @@ async function applyFinalWeddingData() {
   const existingTables = tableSnapshot.docs;
   const tableDocs = new Map<string, (typeof existingTables)[number] | null>();
   const usedTableDocs = new Set<string>();
+  const tableOccupancy = new Map<number, number>();
+  allGuests.forEach((doc) => {
+    const tableId = Number(doc.data().table_id);
+    if (tableId) tableOccupancy.set(tableId, (tableOccupancy.get(tableId) ?? 0) + 1);
+  });
   for (const plan of FINAL_SEATING_PLAN) {
     const acceptedNames = new Set(plan.aliases.map(key));
-    const matches = existingTables.filter((doc) => acceptedNames.has(key(doc.data().name)));
-    if (matches.length > 1) throw new Error(`${plan.name} matches more than one existing table.`);
-    const match = matches[0] ?? null;
-    if (match && usedTableDocs.has(match.id)) throw new Error(`${plan.name} reuses an already matched table.`);
+    const keyedMatches = existingTables.filter((doc) => key(doc.data().final_plan_key) === key(plan.key));
+    const namedMatches = existingTables.filter((doc) => acceptedNames.has(key(doc.data().name)));
+    const candidates = (keyedMatches.length ? keyedMatches : namedMatches)
+      .filter((doc) => !usedTableDocs.has(doc.id))
+      .sort((a, b) => (tableOccupancy.get(Number(b.data().id)) ?? 0) - (tableOccupancy.get(Number(a.data().id)) ?? 0));
+    const match = candidates[0] ?? null;
     if (match) usedTableDocs.add(match.id);
     tableDocs.set(plan.key, match);
   }

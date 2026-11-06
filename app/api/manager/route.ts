@@ -486,11 +486,19 @@ export async function POST(request: Request) {
       const existingTables = tableSnapshot.docs;
       const resolvedTables: Array<{ plan: (typeof FINAL_SEATING_PLAN)[number]; doc: (typeof existingTables)[number] | null }> = [];
       const usedTableDocs = new Set<string>();
+      const tableOccupancy = new Map<number, number>();
+      activeGuests.forEach((doc) => {
+        const tableId = Number(doc.data().table_id);
+        if (tableId) tableOccupancy.set(tableId, (tableOccupancy.get(tableId) ?? 0) + 1);
+      });
       for (const plan of FINAL_SEATING_PLAN) {
         const acceptedNames = new Set(plan.aliases.map(seatingKey));
-        const matches = existingTables.filter((doc) => acceptedNames.has(seatingKey(doc.data().name)));
-        if (matches.length > 1) ambiguous.push(`${plan.name} matches more than one existing table`);
-        const match = matches.length === 1 ? matches[0] : null;
+        const keyedMatches = existingTables.filter((doc) => seatingKey(doc.data().final_plan_key) === seatingKey(plan.key));
+        const namedMatches = existingTables.filter((doc) => acceptedNames.has(seatingKey(doc.data().name)));
+        const candidates = (keyedMatches.length ? keyedMatches : namedMatches)
+          .filter((doc) => !usedTableDocs.has(doc.id))
+          .sort((a, b) => (tableOccupancy.get(Number(b.data().id)) ?? 0) - (tableOccupancy.get(Number(a.data().id)) ?? 0));
+        const match = candidates[0] ?? null;
         if (match) usedTableDocs.add(match.id);
         resolvedTables.push({ plan, doc: match });
       }
